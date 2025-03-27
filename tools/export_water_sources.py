@@ -34,6 +34,7 @@ from .write_pars_to_template import writeParsToTemplate
 import sqlite3 as sqlite
 from datetime import date, timedelta
 import numpy as np
+import pandas as pd
 
 def exportWaterSources(DBM,outPath, startY,endY,feedback = None,tr=None):
 	# get node layers
@@ -191,43 +192,77 @@ def exportWaterSources(DBM,outPath, startY,endY,feedback = None,tr=None):
 	# ...
 
 	sourceList = '\t'.join(str(x) for x in divList)
-	dischList = '\t'.join(str(x) for x in divDischList)
+	# dischList = '\t'.join(str(x) for x in divDischList) moved down..
 	#print('divList:',divList)
 	# make a big discharge query
-	sql = createDischQuery(sDate = fromTime, eDate= toTime, wsIdList = divList)
-	#print('sql createDischQuery',sql)
+	data_df = None
+	step_div = list(range(0,len(divList),10))
+	if max(step_div)<len(divList): step_div+=[len(divList)] # add the last index
 
-	msg = ''
-	data = None
-	nOfRec = 0
-	try:
-		# start connection
-		conn = sqlite.connect(DBM.DBName, detect_types=sqlite.PARSE_DECLTYPES)
-		# creating a Cursor
-		cur = conn.cursor()
-		# execute query
-		cur.execute(sql)
-		data = cur.fetchall()
-	except Exception as e:
-		msg = str(e)
-	finally:
-		conn.rollback()
-		conn.close()
+	for i in range(0,len(step_div)-1):
+		feedback.setPercentage(100.0*i/10)
+		sql = createDischQuery(sDate = fromTime, eDate= toTime, wsIdList = divList[step_div[i]:step_div[i+1]])
+		#print('sql createDischQuery',sql)
 
-	if msg != '':
-		feedback.reportError(tr('SQL error: %s at %s' % (msg, sql)), True)
-		return -1
+		msg = ''
+		data = None
+		nOfRec = 0
+		try:
+			# start connection
+			conn = sqlite.connect(DBM.DBName, detect_types=sqlite.PARSE_DECLTYPES)
+			# creating a Cursor
+			cur = conn.cursor()
+			# execute query
+			cur.execute(sql)
+			data = cur.fetchall()
+		except Exception as e:
+			msg = str(e)
+		finally:
+			conn.rollback()
+			conn.close()
 
+		if msg != '':
+			feedback.reportError(tr('SQL error: %s at %s' % (msg, sql)), True)
+			return -1
+
+		temp_data_df = pd.DataFrame(data, columns = ['date']+divList[step_div[i]:step_div[i+1]])
+		#print(temp_data_df)
+		if data_df is None:
+			data_df = temp_data_df
+		else:
+			#temp_data_df.drop(columns=['date'], inplace=True)
+			#data_df = data_df.join(temp_data_df,'date')
+			data_df = data_df.merge(temp_data_df,on=['date'], how='left')
+
+	#print(data_df)
+
+	data_df.drop(columns = ['date'],inplace=True)
+	mean_disch = data_df.mean(axis=0,skipna=True).to_list()
+
+	data_df.fillna(0, inplace=True)
+
+
+	#dischList = '\t'.join(str(x) for x in divDischList)
+	dischList = []
+	for q,q_mean in zip(divDischList,mean_disch):
+		if not q: q = round(q_mean,3)
+
+		dischList.append(str(q))
+
+	dischList = '\t'.join(dischList)
+
+	dischTable = data_df.to_string(header=False,index=False, float_format=lambda x: "{:9.3f}".format(x))
 	# parse data
-	dischTable = ''
-	for d in data:
-		valList = []
-		for v in d[1:]:
-			if v is None: valList.append(0.0)
-			else: valList.append(v)
+	# dischTable = ''
+	# for d in data:
+	# 	valList = []
+	# 	for v in d[1:]:
+	# 		if v is None: valList.append(0.0)
+	# 		else: valList.append(v)
+	#
+	# 	dischTable += ''.join(format(x, "9.3f") for x in valList) + '\n'
 
-		dischTable += ''.join(format(x, "9.3f") for x in valList) + '\n'
-
+	#print(dischTable)
 	# Right date format is dd/mm/yyyy
 	writeParsToTemplate(outfile=os.path.join(outPath, 'monit_sources_i.txt'),
 						parsDict={'SOURCELIST': sourceList, 'DISCHLIST': dischList,
