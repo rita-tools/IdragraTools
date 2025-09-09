@@ -334,7 +334,7 @@ class IdragraCalcWaterDepth(QgsProcessingAlgorithm):
 		#						   ncols, nrows, entries)
 
 		calc = QgsRasterCalculator(
-			'(("elevation@1"-0.5) > "watertable@1") * ("elevation@1" - "watertable@1") + (("elevation@1"-0.5) <= "watertable@1") * (0.5)',
+			'(("elevation@1"-0.5) > "watertable@1") * ("elevation@1" - "watertable@1") + (("elevation@1"-0.5) <= "watertable@1") * (1.0/2.0)',
 			wtdepth, driverName, newExt,
 			ncols, nrows, entries)
 
