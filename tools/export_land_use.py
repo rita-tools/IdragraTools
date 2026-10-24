@@ -76,8 +76,8 @@ def checkCropPars(crop,feedback,tr):
 	for k in ['kyT','ky1','ky2','ky3','ky4','praw','ainterception']:
 		checkValue(k, crop[k], 0., '>=', tr, feedback)
 
-	# cl_cn [1,2,3,4,5]
-	checkValue('cl_cn', crop['cl_cn'], [1,2,3,4,5,6], 'in', tr, feedback)
+	# cl_cn [1,2,3,4,5,6,7]
+	checkValue('cl_cn', crop['cl_cn'], [1,2,3,4,5,6,7], 'in', tr, feedback)
 	# irrigation [0,1]
 	checkValue('irrigation', crop['irrigation'], [0,1], 'in', tr, feedback)
 	# gdd %ASC&
