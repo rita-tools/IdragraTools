@@ -30,9 +30,9 @@ __revision__ = '$Format:%H$'
 
 import os
 import sys
-from PyQt5 import QtGui
-from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import QDialog,QAction,QMenu,QMessageBox,QPushButton,QVBoxLayout
+from qgis.PyQt import QtGui
+from qgis.PyQt.QtCore import pyqtSignal
+from qgis.PyQt.QtWidgets import QDialog,QAction,QMenu,QMessageBox,QPushButton,QVBoxLayout
 
 from matplotlib.backends.backend_qt5agg  import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar

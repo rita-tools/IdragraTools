@@ -44,8 +44,8 @@ import scipy.io as sio
 import os.path as osp
 import numpy as np
 
-from PyQt5 import QtSql
-from PyQt5.QtXml import QDomDocument
+from qgis.PyQt import QtSql
+from qgis.PyQt.QtXml import QDomDocument
 from qgis import processing
 
 from tools.export_geodata_vector import ExportGeodataVector
@@ -78,9 +78,9 @@ from qgis.core import QgsProcessingAlgorithm, QgsApplication, QgsProject, QgsVec
     QgsFeatureRequest, QgsExpression
 from qgis.PyQt.QtCore import QVariant, QUrl
 
-from PyQt5.QtCore import qVersion, QCoreApplication, QLocale, QSettings, QTranslator, QThread, Qt, QTimer
-from PyQt5.QtGui import QIcon, QColor, QPixmap
-from PyQt5.QtWidgets import QAction, QMenu, QMessageBox, QProgressBar, QDialog
+from qgis.PyQt.QtCore import qVersion, QCoreApplication, QLocale, QSettings, QTranslator, QThread, Qt, QTimer
+from qgis.PyQt.QtGui import QIcon, QColor, QPixmap
+from qgis.PyQt.QtWidgets import QAction, QMenu, QMessageBox, QProgressBar, QDialog
 
 from .idragratools_provider import IdrAgraToolsProvider
 

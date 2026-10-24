@@ -1,5 +1,5 @@
-from PyQt5.QtCore import QSize
-from PyQt5.QtGui import QImage, QColor, QPainter
+from qgis.PyQt.QtCore import QSize
+from qgis.PyQt.QtGui import QImage, QColor, QPainter
 from qgis._core import QgsMapSettings, QgsProject, QgsRectangle, QgsMapRendererCustomPainterJob
 
 

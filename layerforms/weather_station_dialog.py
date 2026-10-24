@@ -32,7 +32,7 @@ import datetime
 import numpy as np
 import os
 
-from PyQt5.QtWidgets import *
+from qgis.PyQt.QtWidgets import *
 from qgis.core import *
 
 

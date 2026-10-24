@@ -31,8 +31,8 @@ __revision__ = '$Format:%H$'
 import math
 from math import tan, radians
 
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import QCoreApplication,QVariant
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from plugins.processing.algs.gdal import GdalUtils
 from qgis import processing
 from qgis._analysis import QgsZonalStatistics, QgsRasterCalculatorEntry, QgsRasterCalculator

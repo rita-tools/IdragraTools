@@ -32,8 +32,8 @@ import sqlite3
 from math import tan, radians
 
 import qgis
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import QCoreApplication,QVariant
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from osgeo import gdal
 from qgis._analysis import QgsZonalStatistics
 from qgis._core import QgsProcessingParameterCrs

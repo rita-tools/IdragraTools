@@ -29,8 +29,8 @@ __revision__ = '$Format:%H$'
 
 from datetime import datetime
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMdiSubWindow, QTableView
+from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtWidgets import QMdiSubWindow, QTableView
 from qgis.PyQt import QtSql
 
 from data_manager.chart_widget import ChartWidget

@@ -28,7 +28,7 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from PyQt5.QtWidgets import *
+from qgis.PyQt.QtWidgets import *
 
 from IdragraTools.layerforms.utils import *
 from IdragraTools.tools.array_table_model import ArrayTableModel

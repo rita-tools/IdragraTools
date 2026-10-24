@@ -39,7 +39,7 @@ import os
 
 import scipy.io as sio
 
-from PyQt5.QtCore import QObject
+from qgis.PyQt.QtCore import QObject
 
 from qgis.core import (Qgis,
 									QgsRasterBlock,

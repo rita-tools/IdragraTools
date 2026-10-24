@@ -1,7 +1,7 @@
 import os
 
-from PyQt5.QtGui import QCursor
-from PyQt5.QtWidgets import QApplication
+from qgis.PyQt.QtGui import QCursor
+from qgis.PyQt.QtWidgets import QApplication
 from matplotlib.backend_tools import cursors
 from matplotlib.backends.backend_qt5 import NavigationToolbar2QT
 from matplotlib.backend_bases import MouseButton

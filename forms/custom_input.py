@@ -28,9 +28,9 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QDate
-from PyQt5.QtWidgets import QWidget, QLabel, QLineEdit, QGridLayout, QComboBox, QListWidget, QPushButton, QCheckBox, \
+from qgis.PyQt import QtCore, QtGui
+from qgis.PyQt.QtCore import QDate
+from qgis.PyQt.QtWidgets import QWidget, QLabel, QLineEdit, QGridLayout, QComboBox, QListWidget, QPushButton, QCheckBox, \
 	QFileDialog, QSpacerItem, QToolButton, QDateTimeEdit, QPlainTextEdit
 import os.path as osp
 from os import sep as oss

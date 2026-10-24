@@ -31,7 +31,7 @@ __revision__ = '$Format:%H$'
 import glob
 import os
 import numpy as np
-from PyQt5.QtCore import QObject
+from qgis.PyQt.QtCore import QObject
 from qgis import processing
 from qgis._core import QgsVectorLayer, QgsFeatureRequest
 

@@ -31,8 +31,8 @@ __copyright__ = '(C) 2018 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 import sys
-from PyQt5 import QtGui
-from PyQt5.QtWidgets import QDialog,QAction,QMenu,QMessageBox,QPushButton,QWidget,QVBoxLayout,QComboBox,QLabel
+from qgis.PyQt import QtGui
+from qgis.PyQt.QtWidgets import QDialog,QAction,QMenu,QMessageBox,QPushButton,QWidget,QVBoxLayout,QComboBox,QLabel
 		
 import matplotlib
 from matplotlib.backends.backend_qt5agg  import FigureCanvasQTAgg as FigureCanvas

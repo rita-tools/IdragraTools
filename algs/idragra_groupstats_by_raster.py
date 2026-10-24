@@ -31,8 +31,8 @@ __revision__ = '$Format:%H$'
 import glob
 
 import qgis
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import QCoreApplication, QVariant, QDate
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import QCoreApplication, QVariant, QDate
 
 from qgis.core import (QgsProcessing,
 					   QgsFeatureSink,

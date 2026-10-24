@@ -29,11 +29,11 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 import processing
-from PyQt5.QtCore import *
+from qgis.PyQt.QtCore import *
 
-from PyQt5 import uic
+from qgis.PyQt import uic
 
-from PyQt5.QtWidgets import QDialog, QToolBox, QWidget, QVBoxLayout, QFileDialog, QListWidgetItem, QDialogButtonBox, \
+from qgis.PyQt.QtWidgets import QDialog, QToolBox, QWidget, QVBoxLayout, QFileDialog, QListWidgetItem, QDialogButtonBox, \
 	QAbstractItemView, QMainWindow
 
 import os

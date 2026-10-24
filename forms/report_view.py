@@ -2,13 +2,13 @@ import glob
 import os
 import shutil
 
-from PyQt5 import Qt
-#from PyQt5.QtWebEngineWidgets import QWebEngineView
-from PyQt5.QtGui import QIcon
-from PyQt5.QtPrintSupport import QPrinter
-from PyQt5.QtWebKitWidgets import QWebView
-from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, QFileDialog, QTextBrowser
-from PyQt5.QtCore import QUrl, pyqtSignal
+from qgis.PyQt import Qt
+#from qgis.PyQt.QtWebEngineWidgets import QWebEngineView
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtPrintSupport import QPrinter
+from qgis.PyQt.QtWebKitWidgets import QWebView
+from qgis.PyQt.QtWidgets import QApplication, QMainWindow, QAction, QFileDialog, QTextBrowser
+from qgis.PyQt.QtCore import QUrl, pyqtSignal
 
 # if hasattr(Qt, 'AA_EnableHighDpiScaling'):
 #     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)

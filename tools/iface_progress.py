@@ -28,8 +28,8 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from PyQt5.QtCore import QObject
-from PyQt5.QtWidgets import QProgressBar
+from qgis.PyQt.QtCore import QObject
+from qgis.PyQt.QtWidgets import QProgressBar
 from qgis._core import Qgis, QgsMessageLog
 from qgis._gui import QgsMessageBar
 

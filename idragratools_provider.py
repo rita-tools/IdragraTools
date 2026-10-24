@@ -32,7 +32,7 @@ import os
 
 from qgis.core import QgsProcessingProvider
 
-from PyQt5.QtGui import QIcon
+from qgis.PyQt.QtGui import QIcon
 
 from .algs.idragra_create_elev_to_field import IdragraCreateElevToField
 from .algs.idragra_clean_overlap import IdragraCleanOverlap

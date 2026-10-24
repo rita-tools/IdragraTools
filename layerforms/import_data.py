@@ -29,9 +29,9 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 
-from PyQt5.QtCore import *
-from PyQt5 import uic
-from PyQt5.QtWidgets import QDialog,QFileDialog
+from qgis.PyQt.QtCore import *
+from qgis.PyQt import uic
+from qgis.PyQt.QtWidgets import QDialog,QFileDialog
 import os
 
 

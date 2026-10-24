@@ -28,7 +28,7 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from PyQt5.QtWidgets import QPushButton, QLineEdit, QDialog, QMainWindow, QLabel
+from qgis.PyQt.QtWidgets import QPushButton, QLineEdit, QDialog, QMainWindow, QLabel
 
 from data_manager.chart_widget import ChartWidget
 

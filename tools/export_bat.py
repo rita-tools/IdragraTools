@@ -30,7 +30,7 @@ __revision__ = '$Format:%H$'
 
 import os
 
-from PyQt5.QtCore import QSettings
+from qgis.PyQt.QtCore import QSettings
 
 from .write_pars_to_template import writeParsToTemplate
 

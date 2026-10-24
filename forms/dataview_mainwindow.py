@@ -45,11 +45,11 @@ from qgis.gui import (QgsAttributeTableModel,
 									QgsAttributeTableView,
 									QgsAttributeTableFilterModel)
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5 import QtSql
-from PyQt5 import uic
+from qgis.PyQt.QtCore import *
+from qgis.PyQt.QtGui import *
+from qgis.PyQt.QtWidgets import *
+from qgis.PyQt import QtSql
+from qgis.PyQt import uic
 
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar

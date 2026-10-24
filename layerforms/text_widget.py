@@ -29,8 +29,8 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 import sys
-from PyQt5 import QtGui
-from PyQt5.QtWidgets import QDialog,QAction,QMenu,QMessageBox,QPushButton,QVBoxLayout,QWidget,Qlabel
+from qgis.PyQt import QtGui
+from qgis.PyQt.QtWidgets import QDialog,QAction,QMenu,QMessageBox,QPushButton,QVBoxLayout,QWidget,Qlabel
 
 from matplotlib.backends.backend_qt5agg  import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar

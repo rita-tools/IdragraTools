@@ -30,8 +30,8 @@ __revision__ = '$Format:%H$'
 
 import traceback
 
-from PyQt5 import QtGui, QtCore
-from PyQt5.QtCore import QThread
+from qgis.PyQt import QtGui, QtCore
+from qgis.PyQt.QtCore import QThread
 from time import sleep
 
 from qgis._core import QgsProcessingFeedback, QgsFeedback

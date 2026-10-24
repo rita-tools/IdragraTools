@@ -31,7 +31,7 @@ __revision__ = '$Format:%H$'
 import os
 from datetime import date
 
-from PyQt5.QtCore import QObject, QVariant
+from qgis.PyQt.QtCore import QObject, QVariant
 from qgis import processing
 from qgis._core import QgsRasterLayer, QgsVectorLayer, QgsField, QgsProcessing
 
