@@ -30,7 +30,6 @@ __revision__ = '$Format:%H$'
 
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication,QVariant
-from processing.algs.gdal.GdalUtils import GdalUtils
 from qgis.analysis import QgsRasterCalculatorEntry, QgsRasterCalculator
 from qgis.core import (QgsProcessing,
 						QgsFeatureSink,
@@ -217,7 +216,7 @@ class IdragraRasterizeDomain(QgsProcessingAlgorithm):
 		formula = '('+formula+') * 0 +1'
 
 		domainMap = QgsProcessingUtils.generateTempFilename('domain.tif')
-		driverName = GdalUtils.getFormatShortNameFromFilename(domainMap)
+		driverName = QgsRasterFileWriter.driverForExtension(os.path.splitext(domainMap)[1])
 		# Process calculation with input extent and resolution
 		# TODO: update extention
 		xllcorner = rasterExt.xMinimum()
@@ -251,4 +250,4 @@ class IdragraRasterizeDomain(QgsProcessingAlgorithm):
 						   context=context, feedback=feedback, is_child_algorithm=True)
 
 		return {'DESTFILE':algresult['OUTPUT']}
-		
+

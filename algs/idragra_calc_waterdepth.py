@@ -30,7 +30,6 @@ __revision__ = '$Format:%H$'
 
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication,QVariant
-from processing.algs.gdal.GdalUtils import GdalUtils
 from qgis.analysis import QgsRasterCalculatorEntry, QgsRasterCalculator
 from qgis.core import (QgsProcessing,
 					   QgsFeatureSink,
@@ -309,7 +308,7 @@ class IdragraCalcWaterDepth(QgsProcessingAlgorithm):
 		entries.append(raster2)
 
 		wtdepth = QgsProcessingUtils.generateTempFilename('wtdepth.tif')
-		driverName = GdalUtils.getFormatShortNameFromFilename(wtdepth)
+		driverName = QgsRasterFileWriter.driverForExtension(os.path.splitext(wtdepth)[1])
 		# Process calculation with input extent and resolution
 		# TODO: update extention
 		xllcorner = extension.xMinimum()

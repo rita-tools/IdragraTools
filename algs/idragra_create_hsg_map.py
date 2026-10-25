@@ -38,7 +38,8 @@ from qgis.core import (QgsRasterLayer,
 					   QgsProcessingParameterRasterLayer,
 					   QgsProcessingUtils,
 					   QgsProcessingParameterField,
-					   QgsProcessingParameterRasterDestination)
+					   QgsProcessingParameterRasterDestination,
+					   QgsRasterFileWriter)
 						
 import processing
 
@@ -48,8 +49,6 @@ import os
 
 from ..tools.gis_grid import GisGrid
 from ..tools.compact_dataset import getRasterInfos
-
-from processing.algs.gdal.GdalUtils import GdalUtils
 
 class IdragraCreateHSGMap(QgsProcessingAlgorithm):
 	"""
@@ -284,7 +283,7 @@ class IdragraCreateHSGMap(QgsProcessingAlgorithm):
 			entries.append(raster2)
 
 			wtdepth = QgsProcessingUtils.generateTempFilename('wtdepth.tif')
-			driverName = GdalUtils.getFormatShortNameFromFilename(wtdepth)
+			driverName = QgsRasterFileWriter.driverForExtension(os.path.splitext(wtdepth)[1])
 			# Process calculation with input extent and resolution
 
 			calc = QgsRasterCalculator('"elevation@1"-"watertable@1"', wtdepth, driverName, soilmap.extent(),

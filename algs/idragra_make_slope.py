@@ -33,7 +33,6 @@ from math import tan, radians
 
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication,QVariant
-from plugins.processing.algs.gdal import GdalUtils
 from qgis import processing
 from qgis.analysis import QgsZonalStatistics, QgsRasterCalculatorEntry, QgsRasterCalculator
 from qgis.core import (QgsProcessing,
@@ -309,7 +308,7 @@ class IdragraMakeSlope(QgsProcessingAlgorithm):
 		raster1.bandNumber = 1
 		entries.append(raster1)
 
-		driverName = GdalUtils.GdalUtils.getFormatShortNameFromFilename(outSlpMap)
+		driverName = QgsRasterFileWriter.driverForExtension(os.path.splitext(outSlpMap)[1])
 		# Process calculation with input extent and resolution
 		# slope must be in percent
 		# calc = QgsRasterCalculator('100*tan("slope@1"*%s/180)'%math.pi, outSlpMap, driverName,

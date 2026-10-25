@@ -31,7 +31,6 @@ __revision__ = '$Format:%H$'
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from qgis.analysis import QgsRasterCalculatorEntry, QgsRasterCalculator
-from processing.algs.gdal import GdalUtils
 from qgis.core import (QgsProcessing,
 					   QgsFeatureSink,
 					   QgsProcessingException,
@@ -309,7 +308,7 @@ class IdragraRasterQuality(QgsProcessingAlgorithm):
 
 		expression = '"base@1"*"mask@1"'
 		rasterMaskedBaseMap = QgsProcessingUtils.generateTempFilename('rasterMaskedBaseMap.tif')
-		driverName = GdalUtils.GdalUtils.getFormatShortNameFromFilename(rasterMaskedBaseMap)
+		driverName = QgsRasterFileWriter.driverForExtension(os.path.splitext(rasterMaskedBaseMap)[1])
 
 		calc = QgsRasterCalculator(expression,
 								   rasterMaskedBaseMap,
