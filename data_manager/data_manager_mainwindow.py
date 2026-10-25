@@ -66,10 +66,6 @@ class DataManagerMainwindow(QMainWindow):#(QDialog)QMainWindow:
 		self.installation_dir = os.path.dirname(__file__)
 		#self.installation_dir = 'C:/Users/enrico/AppData/Roaming/QGIS/QGIS3/profiles/default/python/plugins/IdragraTools/data_manager'
 		#~ self.model = QStandardItemModel(parent)
-		#~ self.cbDelegate = CheckBoxDelegateQt(parent)
-		#~ self.pbDelegate = PushButtonDelegateQt(parent)
-		#~ self.lDelegate = ComboBoxDelegateQt(['solid','dotted','dashed','dasdot','bars'],parent)
-		#~ self.cDelegate = ComboBoxDelegateQt(['y','y2'],parent)
 		
 		self.dbFile = dbFile
 
