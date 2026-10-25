@@ -2,22 +2,13 @@ import glob
 import os
 import shutil
 
-from qgis.PyQt import Qt
-#from qgis.PyQt.QtWebEngineWidgets import QWebEngineView
-from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtPrintSupport import QPrinter
-from qgis.PyQt.QtWebKitWidgets import QWebView
-from qgis.PyQt.QtWidgets import QApplication, QMainWindow, QFileDialog, QTextBrowser
+from qgis.PyQt.QtWebEngineWidgets import QWebEngineView
+from qgis.PyQt.QtWidgets import QApplication, QMainWindow, QFileDialog
 from qgis.PyQt.QtCore import QUrl, pyqtSignal
 
 from ..qt_compat import QAction
 
-# if hasattr(Qt, 'AA_EnableHighDpiScaling'):
-#     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
-#
-# if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
-#     QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
-from ..tools.show_message import showInfoMessageBox
+from ..tools.show_message import showCriticalMessageBox, showInfoMessageBox
 
 
 class ReportDialog(QMainWindow):
@@ -31,7 +22,9 @@ class ReportDialog(QMainWindow):
         self.current_url = ''
         self.initMenu()
 
-        self.REPORT_WV = QWebView(self)
+        self.REPORT_WV = QWebEngineView(self)
+        self.REPORT_WV.loadFinished.connect(self.reportLoaded)
+        self.REPORT_WV.page().pdfPrintingFinished.connect(self.pdfPrintingFinished)
         # adjust scale factor
         screen = QApplication.primaryScreen()
 
@@ -41,7 +34,7 @@ class ReportDialog(QMainWindow):
         self.REPORT_WV.setZoomFactor(scaleFact)
 
         self.setCentralWidget(self.REPORT_WV)
-        if url: self.loadReport(QUrl(url))
+        if url: self.loadReport(url)
 
     def initMenu(self):
         saveAsHtmlAct= QAction('&Save as html', self)
@@ -49,15 +42,16 @@ class ReportDialog(QMainWindow):
         saveAsHtmlAct.setStatusTip('Save as htnml file')
         saveAsHtmlAct.triggered.connect(self.saveAsHtml)
 
-        saveAsPdfAct = QAction('&Save as pdf', self)
-        saveAsPdfAct.setShortcut('Ctrl+P')
-        saveAsPdfAct.setStatusTip('Save as PDF file')
-        saveAsPdfAct.triggered.connect(self.saveAsPdf)
+        self.saveAsPdfAct = QAction('&Save as pdf', self)
+        self.saveAsPdfAct.setShortcut('Ctrl+P')
+        self.saveAsPdfAct.setStatusTip('Save as PDF file')
+        self.saveAsPdfAct.setEnabled(False)
+        self.saveAsPdfAct.triggered.connect(self.saveAsPdf)
 
         menubar = self.menuBar()
         fileMenu = menubar.addMenu('&File')
         fileMenu.addAction(saveAsHtmlAct)
-        fileMenu.addAction(saveAsPdfAct)
+        fileMenu.addAction(self.saveAsPdfAct)
 
     def saveAsHtml(self):
         filename, _ = QFileDialog.getSaveFileName(filter='HTML file (*.html)')
@@ -98,14 +92,19 @@ class ReportDialog(QMainWindow):
     def saveAsPdf(self):
         filename, _ = QFileDialog.getSaveFileName(filter='Pdf file (*.pdf)')
         if filename:
-            # Initialize printer and set save location
-            printer = QPrinter(QPrinter.HighResolution)
-            printer.setOutputFileName(filename)
-            printer.setPaperSize(QPrinter.A4)
+            self.saveAsPdfAct.setEnabled(False)
+            self.REPORT_WV.page().printToPdf(filename)
 
-            self.REPORT_WV.print(printer)
+    def reportLoaded(self, success):
+        self.saveAsPdfAct.setEnabled(success)
 
-            showInfoMessageBox(self.tr('Concluded!'),self.tr('File saved to %s')%filename)
+    def pdfPrintingFinished(self, filename, success):
+        self.saveAsPdfAct.setEnabled(True)
+        if success:
+            showInfoMessageBox(self.tr('Concluded!'), self.tr('File saved to %s') % filename)
+        else:
+            showCriticalMessageBox(self.tr('Unable to save the report'),
+                                   self.tr('PDF export failed for %s') % filename, '')
 
     def loadReport(self,url):
         self.current_url = url
