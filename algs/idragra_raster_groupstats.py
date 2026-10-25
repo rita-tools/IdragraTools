@@ -34,7 +34,7 @@ from math import tan, radians
 import qgis
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication, QVariant, QDate
-from qgis._analysis import QgsZonalStatistics
+from qgis.analysis import QgsZonalStatistics
 from qgis.core import (QgsProcessing,
 					   QgsFeatureSink,
 					   QgsProcessingException,

@@ -36,7 +36,7 @@ import io
 from datetime import datetime,date
 import pandas as pd
 
-from qgis._core import QgsFeatureRequest
+from qgis.core import QgsFeatureRequest
 from qgis.core import QgsVectorLayer, QgsField, QgsVectorFileWriter, QgsCoordinateTransformContext
 from qgis.PyQt.QtCore import QVariant, QObject
 

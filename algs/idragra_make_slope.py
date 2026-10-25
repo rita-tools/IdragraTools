@@ -35,7 +35,7 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from plugins.processing.algs.gdal import GdalUtils
 from qgis import processing
-from qgis._analysis import QgsZonalStatistics, QgsRasterCalculatorEntry, QgsRasterCalculator
+from qgis.analysis import QgsZonalStatistics, QgsRasterCalculatorEntry, QgsRasterCalculator
 from qgis.core import (QgsProcessing,
 					   QgsFeatureSink,
 					   QgsProcessingException,

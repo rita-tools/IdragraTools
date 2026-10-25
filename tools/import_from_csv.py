@@ -31,7 +31,7 @@ __revision__ = '$Format:%H$'
 import sqlite3 as sqlite
 from datetime import datetime
 
-from qgis._core import QgsProject, QgsVectorLayer, QgsExpression, QgsFeatureRequest, QgsFeature
+from qgis.core import QgsProject, QgsVectorLayer, QgsExpression, QgsFeatureRequest, QgsFeature
 
 from tools.my_progress import MyProgress
 

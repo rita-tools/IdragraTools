@@ -32,7 +32,7 @@ import os
 from os.path import relpath
 
 import processing
-from qgis._core import QgsCoordinateReferenceSystem, QgsRectangle, QgsRasterLayer, QgsRasterBlockFeedback, \
+from qgis.core import QgsCoordinateReferenceSystem, QgsRectangle, QgsRasterLayer, QgsRasterBlockFeedback, \
     QgsRasterFileWriter, QgsRasterPipe, QgsRasterProjector, QgsProject
 
 from tools.delete_raster_from_DB import deleteRasterFromDB

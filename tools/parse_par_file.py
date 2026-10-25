@@ -28,7 +28,7 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from qgis._core import QgsVectorDataProvider
+from qgis.core import QgsVectorDataProvider
 
 def all_encodings():
 	return QgsVectorDataProvider.availableEncodings()

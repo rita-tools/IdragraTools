@@ -34,7 +34,7 @@ from qgis.PyQt import QtGui, QtCore
 from qgis.PyQt.QtCore import QThread
 from time import sleep
 
-from qgis._core import QgsProcessingFeedback, QgsFeedback
+from qgis.core import QgsProcessingFeedback, QgsFeedback
 
 
 class Worker(QgsProcessingFeedback):#(QtCore.QObject):

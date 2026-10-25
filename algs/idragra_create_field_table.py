@@ -30,7 +30,7 @@ __revision__ = '$Format:%H$'
 
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication,QVariant
-from qgis._core import QgsProcessingParameterRasterDestination
+from qgis.core import QgsProcessingParameterRasterDestination
 from qgis.core import (QgsProcessing,
 					   QgsFeatureSink,
 					   QgsProcessingException,

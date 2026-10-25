@@ -30,7 +30,7 @@ __revision__ = '$Format:%H$'
 
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication,QVariant
-from qgis._analysis import QgsRasterCalculatorEntry, QgsRasterCalculator
+from qgis.analysis import QgsRasterCalculatorEntry, QgsRasterCalculator
 from processing.algs.gdal import GdalUtils
 from qgis.core import (QgsProcessing,
 					   QgsFeatureSink,

@@ -40,9 +40,9 @@ from qgis.PyQt.QtWidgets import QDialog, QToolBox, QWidget, QVBoxLayout, QFileDi
 import os
 
 from qgis import processing
-from qgis._core import QgsCoordinateReferenceSystem, QgsRectangle, QgsProject, QgsPoint, QgsGeometry, QgsPointXY, \
+from qgis.core import QgsCoordinateReferenceSystem, QgsRectangle, QgsProject, QgsPoint, QgsGeometry, QgsPointXY, \
 	QgsWkbTypes
-from qgis._gui import QgsDateTimeEdit, QgsRubberBand, QgsVertexMarker
+from qgis.gui import QgsDateTimeEdit, QgsRubberBand, QgsVertexMarker
 
 from ..tools.utils import returnExtent
 

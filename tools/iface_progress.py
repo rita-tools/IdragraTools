@@ -30,8 +30,8 @@ __revision__ = '$Format:%H$'
 
 from qgis.PyQt.QtCore import QObject
 from qgis.PyQt.QtWidgets import QProgressBar
-from qgis._core import Qgis, QgsMessageLog
-from qgis._gui import QgsMessageBar
+from qgis.core import Qgis, QgsMessageLog
+from qgis.gui import QgsMessageBar
 
 # TODO: manage error message
 

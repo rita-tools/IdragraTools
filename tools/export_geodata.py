@@ -33,7 +33,7 @@ import os
 import numpy as np
 from qgis.PyQt.QtCore import QObject
 from qgis import processing
-from qgis._core import QgsVectorLayer, QgsFeatureRequest
+from qgis.core import QgsVectorLayer, QgsFeatureRequest
 
 from .check_value import checkValue
 from .compact_dataset import save2idragra

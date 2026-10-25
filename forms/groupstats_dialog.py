@@ -38,7 +38,7 @@ from qgis.PyQt.QtWidgets import QDialog,QToolBox,QWidget,QVBoxLayout,QFileDialog
 
 import os
 
-from qgis._core import QgsMapLayerProxyModel
+from qgis.core import QgsMapLayerProxyModel
 
 
 class GroupstatsDialog(QDialog):

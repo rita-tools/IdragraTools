@@ -1,6 +1,6 @@
 from qgis.PyQt.QtCore import QSize
 from qgis.PyQt.QtGui import QImage, QColor, QPainter
-from qgis._core import QgsMapSettings, QgsProject, QgsRectangle, QgsMapRendererCustomPainterJob
+from qgis.core import QgsMapSettings, QgsProject, QgsRectangle, QgsMapRendererCustomPainterJob
 
 
 def mapToImage(layerList,imageFile,extent = None):

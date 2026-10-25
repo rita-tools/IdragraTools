@@ -6,7 +6,7 @@ import pandas as pd
 import re
 
 import matplotlib
-from qgis._core import QgsVectorLayer
+from qgis.core import QgsVectorLayer
 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt

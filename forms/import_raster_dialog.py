@@ -39,7 +39,7 @@ from qgis.PyQt.QtWidgets import QDialog, QToolBox, QWidget, QVBoxLayout, QFileDi
 
 import os
 
-from qgis._core import QgsProviderRegistry
+from qgis.core import QgsProviderRegistry
 
 
 

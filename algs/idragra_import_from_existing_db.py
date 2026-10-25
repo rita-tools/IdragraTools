@@ -35,8 +35,8 @@ import qgis
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from osgeo import gdal
-from qgis._analysis import QgsZonalStatistics
-from qgis._core import QgsProcessingParameterCrs
+from qgis.analysis import QgsZonalStatistics
+from qgis.core import QgsProcessingParameterCrs
 from qgis.core import (QgsProcessing,
 					   QgsFeatureSink,
 					   QgsProcessingException,
