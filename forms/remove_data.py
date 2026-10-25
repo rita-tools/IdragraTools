@@ -111,7 +111,7 @@ class RemoveData(QDialog):
 			msg.setWindowTitle('Idragra4QGIS')
 			msg.setDetailedText('Fix time')
 			msg.setStandardButtons(QMessageBox.Ok)
-			msg.exec_()
+			msg.exec()
 		else:
 			msg = QMessageBox()
 			msg.setIcon(QMessageBox.Question)
@@ -119,6 +119,6 @@ class RemoveData(QDialog):
 			msg.setInformativeText('Would you like to delete data from %s to %s'%(str(self.FROMDATE.date().toPyDate()),str(self.TODATE.date().toPyDate())))
 			msg.setWindowTitle('Idragra4QGIS')
 			msg.setStandardButtons(QMessageBox.Yes|QMessageBox.No)
-			ret = msg.exec_()
+			ret = msg.exec()
 			if ret == QMessageBox.Yes:
 				self.accept()

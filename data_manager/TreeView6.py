@@ -63,7 +63,7 @@ class PushButtonDelegateQt(QStyledItemDelegate):
 				if option.rect.contains(event.pos()):
 					# open dialog
 					dialog = QColorDialog(None) 
-					dialog.exec_()
+					dialog.exec()
 					selColor = dialog.currentColor().name()
 					model.setData(index, selColor, Qt.EditRole)  # Model should handle button click action in its setData() method.
 					return True

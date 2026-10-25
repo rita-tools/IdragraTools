@@ -149,7 +149,7 @@ def showEditDialog():
 	#dlg.finished.connect(updateTableValues)
 
 	dlg.show()
-	result = dlg.exec_()
+	result = dlg.exec()
 	# See if OK was pressed
 	res = []
 	if result == 1:

@@ -125,4 +125,4 @@ def toDo():
 	msg.setInformativeText('This function will be deleted or developed in the next release ...')
 	msg.setWindowTitle('QWaDiS')
 	msg.setStandardButtons(QMessageBox.Ok)
-	msg.exec_()
+	msg.exec()

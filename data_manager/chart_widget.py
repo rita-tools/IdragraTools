@@ -420,5 +420,5 @@ class ChartWidget(QWidget):
 		
 if __name__ == '__console__':
 	#app = QtGui.QApplication(sys.argv)
-	#sys.exit(app.exec_())
+	#sys.exit(app.exec())
 	pass

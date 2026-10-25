@@ -85,7 +85,7 @@ class RemoveData(QDialog):
 			msg.setWindowTitle('Data Manager')
 			msg.setDetailedText('Fix time')
 			msg.setStandardButtons(QMessageBox.Ok)
-			msg.exec_()
+			msg.exec()
 		else:
 			msg = QMessageBox()
 			msg.setIcon(QMessageBox.Question)
@@ -98,6 +98,6 @@ class RemoveData(QDialog):
 								   )
 			msg.setWindowTitle('Data Manager')
 			msg.setStandardButtons(QMessageBox.Yes|QMessageBox.No)
-			ret = msg.exec_()
+			ret = msg.exec()
 			if ret == QMessageBox.Yes:
 				self.accept()

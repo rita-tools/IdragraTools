@@ -748,7 +748,7 @@ class IdrAgraTools():
         from .forms.common_settings import CommonSettings
         dlg = CommonSettings(self.iface)
 
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         if result:
             res = dlg.getData()
@@ -792,7 +792,7 @@ class IdrAgraTools():
         # TODO
         dlg = NewDbDialog(self.iface.mainWindow(),self.SIMDIC,self.FILEEXT)
         dlg.show()
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         res = []
         if result == 1:
@@ -1082,7 +1082,7 @@ class IdrAgraTools():
         from .forms.import_data import ImportData
         dlg = ImportData(self.iface.mainWindow(),varDict,sensorsDict,self.s)
         dlg.show()
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         res = []
         if result == 1:
@@ -1104,7 +1104,7 @@ class IdrAgraTools():
         dlg = ImportVectorDialog(self.iface.mainWindow(), layList = layList, fields=wsLay.fields(),
                                  skipFields = ['fid'], settings=self.s, title= self.tr('Weather stations'))
         dlg.show()
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         res = []
         if result == 1:
@@ -1122,7 +1122,7 @@ class IdrAgraTools():
         dlg = ImportVectorDialog(self.iface.mainWindow(), layList=layList, fields=nodeLay.fields(),
                                  skipFields=['fid'], settings=self.s, title= self.tr('Import nodes'))
         dlg.show()
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         res = []
         if result == 1:
@@ -1141,7 +1141,7 @@ class IdrAgraTools():
         dlg = ImportVectorDialog(self.iface.mainWindow(), layList=layList, fields=linkLay.fields(),
                                  skipFields=['fid'], settings=self.s, title = self.tr('Import links'))
         dlg.show()
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         res = []
         if result == 1:
@@ -1214,7 +1214,7 @@ class IdrAgraTools():
         dlg = ImportVectorDialog(self.iface.mainWindow(), layList=layList, fields=wsLay.fields(),
                                  skipFields=['fid','date'], dateFld = [], settings=self.s,title= self.tr('Import soil map'))
         dlg.show()
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         res = []
         if result == 1:
@@ -1232,7 +1232,7 @@ class IdrAgraTools():
         dlg = ImportVectorDialog(self.iface.mainWindow(), layList=layList, fields=wsLay.fields(),
                                  skipFields=['fid'], dateFld=['date'], settings=self.s, title= self.tr('Import land use map'))
         dlg.show()
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         res = []
         if result == 1:
@@ -1250,7 +1250,7 @@ class IdrAgraTools():
         dlg = ImportVectorDialog(self.iface.mainWindow(), layList=layList, fields=wsLay.fields(),
                                  skipFields=['fid'], dateFld=[], settings=self.s, title= self.tr('Import irrigation units map'))
         dlg.show()
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         res = []
         if result == 1:
@@ -1269,7 +1269,7 @@ class IdrAgraTools():
                                  skipFields=['fid'], dateFld=[], settings=self.s,
                                  title=self.tr('Import irrigation methods map'))
         dlg.show()
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         res = []
         if result == 1:
@@ -1288,7 +1288,7 @@ class IdrAgraTools():
                                  skipFields=['fid'], dateFld=[], settings=self.s,
                                  title=self.tr('Import domain map'))
         dlg.show()
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         res = []
         if result == 1:
@@ -1304,7 +1304,7 @@ class IdrAgraTools():
         from .forms.create_grid_dialog import CreateGridDialog
         dlg = CreateGridDialog(self.iface,title=self.tr('Create regular domain grid'))
         dlg.show()
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         res = []
         if result == 1:
@@ -1681,7 +1681,7 @@ class IdrAgraTools():
 
         dlg = SetSimulationDialog(self.iface, yearList, list(self.SIMMODE.values()),self.SIMDIC, luDict,imDict)
         result = 1
-        #result = dlg.exec_()
+        #result = dlg.exec()
         # See if OK was pressed
         res = []
         def updateSim():
@@ -3362,7 +3362,7 @@ class IdrAgraTools():
 
         dlg = ResultsMapDialog(self.iface.mainWindow(), self.STEPNAME)
         dlg.show()
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         if result == 1:
             res = dlg.getData()
@@ -3418,7 +3418,7 @@ class IdrAgraTools():
 
         dlg = GroupstatsDialog(self.iface.mainWindow(), self.STEPNAME, self.AGGRFUNCTIONS)
         dlg.show()
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         if result == 1:
             res = dlg.getData()
@@ -3500,7 +3500,7 @@ class IdrAgraTools():
         from .forms.import_raster_dialog import ImportRasterDialog
         dlg = ImportRasterDialog(self.iface,assignTime)
         dlg.show()
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         if result == 1:
             res = dlg.getData()
@@ -3719,7 +3719,7 @@ class IdrAgraTools():
         from .forms.import_raster_dialog import ImportRasterDialog
         dlg = ImportRasterDialog(self.iface)
         dlg.show()
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         if result == 1:
             res = dlg.getData()

@@ -214,4 +214,4 @@ if __name__ == '__console__':
 	main = Window()
 	main.show()
 
-	#sys.exit(app.exec_())
+	#sys.exit(app.exec())

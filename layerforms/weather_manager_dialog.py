@@ -159,7 +159,7 @@ class WeatherManagerDialog(QDialog):
 		from .import_data import ImportData
 		dlg = ImportData(self,self.METEONAME)
 		dlg.show()
-		result = dlg.exec_() 
+		result = dlg.exec()
 		# See if OK was pressed
 		res = []
 		if result == 1: 
@@ -180,7 +180,7 @@ class WeatherManagerDialog(QDialog):
 		
 		dlg = RemoveData(self.iface.mainWindow(),self.METEONAME,wsDict)
 		dlg.show()
-		result = dlg.exec_() 
+		result = dlg.exec()
 		# See if OK was pressed
 		res = []
 		if result == 1: 
@@ -215,7 +215,7 @@ class WeatherManagerDialog(QDialog):
 		msgBox.setInformativeText(self.tr("Do you want to delete the selected record?"))
 		msgBox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
 		msgBox.setDefaultButton(QMessageBox.Cancel)
-		ret = msgBox.exec_()
+		ret = msgBox.exec()
 		
 		if ret ==QMessageBox.Ok:
 			i = self.NAME_LST.currentIndex().row()
@@ -238,4 +238,4 @@ if __name__ == '__console__':
 
 	dlg = SoilTypeDialog(dbPath='C:/idragra_code/dataset/test.gpkg',wsId=1,title = 'test')
 	dlg.show()
-	
+

@@ -175,7 +175,7 @@ def showEditDialog():
     dlg.resize(0.5 * myDialog.geometry().width(), myDialog.geometry().height())
     #dlg.finished.connect(updateTableValues)
     dlg.show()
-    result = dlg.exec_()
+    result = dlg.exec()
     # See if OK was pressed
     if result == 1:
         updateTableValues()

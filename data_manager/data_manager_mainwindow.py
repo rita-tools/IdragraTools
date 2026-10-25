@@ -425,7 +425,7 @@ class DataManagerMainwindow(QMainWindow):#(QDialog)QMainWindow:
 		from .dialogs.import_data import ImportData
 		dlg = ImportData(self,varName,self.s)
 		dlg.show()
-		result = dlg.exec_() 
+		result = dlg.exec()
 		# See if OK was pressed
 		res = []
 		if result == 1: 
@@ -448,7 +448,7 @@ class DataManagerMainwindow(QMainWindow):#(QDialog)QMainWindow:
 		from .dialogs.import_data import ImportData
 		dlg = ImportData(self, varName, self.s)
 		dlg.show()
-		result = dlg.exec_()
+		result = dlg.exec()
 		# See if OK was pressed
 		res = []
 		if result == 1:
@@ -473,7 +473,7 @@ class DataManagerMainwindow(QMainWindow):#(QDialog)QMainWindow:
 		from .dialogs.remove_data import RemoveData
 		dlg = RemoveData(self,varName,self.s)
 		dlg.show()
-		result = dlg.exec_() 
+		result = dlg.exec()
 		# See if OK was pressed
 		res = []
 		if result == 1: 
@@ -624,7 +624,7 @@ class DataManagerMainwindow(QMainWindow):#(QDialog)QMainWindow:
 			msg.setText('Please add a table or plot to the view')
 			msg.setWindowTitle('IdragraTools')
 			msg.setStandardButtons(QMessageBox.Ok)
-			ret = msg.exec_()
+			ret = msg.exec()
 			return
 			
 		# ask for file name
@@ -643,14 +643,14 @@ class DataManagerMainwindow(QMainWindow):#(QDialog)QMainWindow:
 			msg.setText(self.tr('An error occured while exporting data: %s')%res)
 			msg.setWindowTitle('IdragraTools')
 			msg.setStandardButtons(QMessageBox.Ok)
-			ret = msg.exec_()
+			ret = msg.exec()
 		else:
 			msg = QMessageBox()
 			msg.setIcon(QMessageBox.Information)
 			msg.setText(self.tr('Data are exported to: %s')%filePath)
 			msg.setWindowTitle('IdragraTools')
 			msg.setStandardButtons(QMessageBox.Ok)
-			ret = msg.exec_()
+			ret = msg.exec()
 			
 
 

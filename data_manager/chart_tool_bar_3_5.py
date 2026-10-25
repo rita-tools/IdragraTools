@@ -136,7 +136,7 @@ class ChartToolBar(NavigationToolbar2QT):
 
 		# open form and send line options
 		dlg = EditLegend(self.canvas,line_opt_list)
-		result = dlg.exec_()
+		result = dlg.exec()
 		# See if OK was pressed
 		if result:
 			res = dlg.getData()
