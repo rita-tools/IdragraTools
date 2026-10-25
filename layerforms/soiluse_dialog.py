@@ -33,6 +33,8 @@ from qgis.PyQt.QtGui import *
 from qgis.PyQt.QtWidgets import *
 from qgis.gui import *
 
+from IdragraTools.qt_compat import QAction
+
 #from QWaDiS.layerforms.utils import *
 
 from IdragraTools.layerforms.utils import toFloat, parseString, toInt,updateListItems

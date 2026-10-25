@@ -48,6 +48,8 @@ from qgis.PyQt.QtWidgets import *
 from qgis.PyQt import QtSql
 from qgis.PyQt import uic
 
+from ..qt_compat import QAction
+
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt

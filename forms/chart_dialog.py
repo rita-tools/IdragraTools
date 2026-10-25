@@ -30,7 +30,7 @@ __revision__ = '$Format:%H$'
 
 import sys
 from qgis.PyQt import QtGui
-from qgis.PyQt.QtWidgets import QDialog,QAction,QMenu,QMessageBox,QPushButton,QVBoxLayout
+from qgis.PyQt.QtWidgets import QDialog,QMenu,QMessageBox,QPushButton,QVBoxLayout
 
 from matplotlib.backends.backend_qt5agg  import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar

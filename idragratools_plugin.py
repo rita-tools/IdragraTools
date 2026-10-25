@@ -80,7 +80,9 @@ from qgis.PyQt.QtCore import QVariant, QUrl
 
 from qgis.PyQt.QtCore import qVersion, QCoreApplication, QLocale, QSettings, QTranslator, QThread, Qt, QTimer
 from qgis.PyQt.QtGui import QIcon, QColor, QPixmap
-from qgis.PyQt.QtWidgets import QAction, QMenu, QMessageBox, QProgressBar, QDialog
+from qgis.PyQt.QtWidgets import QMenu, QMessageBox, QProgressBar, QDialog
+
+from .qt_compat import QAction
 
 from .idragratools_provider import IdrAgraToolsProvider
 

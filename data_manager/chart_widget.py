@@ -32,7 +32,7 @@ __revision__ = '$Format:%H$'
 
 import sys
 from qgis.PyQt import QtGui
-from qgis.PyQt.QtWidgets import QDialog,QAction,QMenu,QMessageBox,QPushButton,QWidget,QVBoxLayout,QComboBox,QLabel
+from qgis.PyQt.QtWidgets import QDialog,QMenu,QMessageBox,QPushButton,QWidget,QVBoxLayout,QComboBox,QLabel
 		
 import matplotlib
 from matplotlib.backends.backend_qt5agg  import FigureCanvasQTAgg as FigureCanvas

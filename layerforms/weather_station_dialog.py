@@ -35,6 +35,8 @@ import os
 from qgis.PyQt.QtWidgets import *
 from qgis.core import *
 
+from IdragraTools.qt_compat import QAction
+
 
 from IdragraTools.layerforms.utils import *
 

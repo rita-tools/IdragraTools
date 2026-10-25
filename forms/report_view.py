@@ -7,8 +7,10 @@ from qgis.PyQt import Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtPrintSupport import QPrinter
 from qgis.PyQt.QtWebKitWidgets import QWebView
-from qgis.PyQt.QtWidgets import QApplication, QMainWindow, QAction, QFileDialog, QTextBrowser
+from qgis.PyQt.QtWidgets import QApplication, QMainWindow, QFileDialog, QTextBrowser
 from qgis.PyQt.QtCore import QUrl, pyqtSignal
+
+from ..qt_compat import QAction
 
 # if hasattr(Qt, 'AA_EnableHighDpiScaling'):
 #     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
