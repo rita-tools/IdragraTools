@@ -2,7 +2,15 @@ import glob
 import os
 import shutil
 
-from qgis.PyQt.QtWebEngineWidgets import QWebEngineView
+try:
+    from qgis.PyQt.QtWebEngineWidgets import QWebEngineView
+    REPORT_VIEW_BACKEND = 'webengine'
+except ImportError:
+    #%PS%: QWebView is used for compatibility with QGIS 3.x; once that is no longer supported, we can rely on QWebEngineView entirely.
+    from qgis.PyQt.QtWebKitWidgets import QWebView
+    REPORT_VIEW_BACKEND = 'webkit'
+
+from qgis.PyQt.QtPrintSupport import QPrinter
 from qgis.PyQt.QtWidgets import QApplication, QMainWindow, QFileDialog
 from qgis.PyQt.QtCore import QUrl, pyqtSignal
 
@@ -22,9 +30,14 @@ class ReportDialog(QMainWindow):
         self.current_url = ''
         self.initMenu()
 
-        self.REPORT_WV = QWebEngineView(self)
-        self.REPORT_WV.loadFinished.connect(self.reportLoaded)
-        self.REPORT_WV.page().pdfPrintingFinished.connect(self.pdfPrintingFinished)
+        if REPORT_VIEW_BACKEND == 'webengine':
+            self.REPORT_WV = QWebEngineView(self)
+            self.REPORT_WV.loadFinished.connect(self.reportLoaded)
+            self.REPORT_WV.page().pdfPrintingFinished.connect(self.pdfPrintingFinished)
+        else:
+            self.REPORT_WV = QWebView(self)
+            self.REPORT_WV.loadFinished.connect(self.reportLoaded)
+
         # adjust scale factor
         screen = QApplication.primaryScreen()
 
@@ -92,8 +105,14 @@ class ReportDialog(QMainWindow):
     def saveAsPdf(self):
         filename, _ = QFileDialog.getSaveFileName(filter='Pdf file (*.pdf)')
         if filename:
-            self.saveAsPdfAct.setEnabled(False)
-            self.REPORT_WV.page().printToPdf(filename)
+            if REPORT_VIEW_BACKEND == 'webengine':
+                self.saveAsPdfAct.setEnabled(False)
+                self.REPORT_WV.page().printToPdf(filename)
+            else:
+                printer = QPrinter()
+                printer.setOutputFileName(filename)
+                self.REPORT_WV.print(printer)
+                showInfoMessageBox(self.tr('Concluded!'), self.tr('File saved to %s') % filename)
 
     def reportLoaded(self, success):
         self.saveAsPdfAct.setEnabled(success)
@@ -108,7 +127,8 @@ class ReportDialog(QMainWindow):
 
     def loadReport(self,url):
         self.current_url = url
-        self.REPORT_WV.load(QUrl.fromLocalFile(self.current_url))
+        reportUrl = QUrl.fromLocalFile(self.current_url)
+        self.REPORT_WV.load(reportUrl)
 
 if __name__ == '__main__':
     pass
