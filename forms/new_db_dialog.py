@@ -113,9 +113,10 @@ class NewDbDialog(QDialog):
         self.closed.emit()
 
     def switchImportMode(self):
-        self.SOURCEFOLDER_FW.setEnabled(not self.SOURCEFOLDER_FW.isEnabled())
-        self.LOADPAR_CB.setEnabled(not self.LOADPAR_CB.isEnabled())
-        self.LOADDATA_CB.setEnabled(not self.LOADDATA_CB.isEnabled())
+        useSource = self.USESOURCE_RB.isChecked()
+        self.SOURCEFOLDER_FW.setEnabled(useSource)
+        self.LOADPAR_CB.setEnabled(not useSource)
+        self.LOADDATA_CB.setEnabled(not useSource)
 
     def getData(self):
         # get output file
