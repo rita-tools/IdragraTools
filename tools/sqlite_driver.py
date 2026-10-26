@@ -207,8 +207,7 @@ class SQLiteDriver(QObject):
 			options.layerName = lyr.name()
 
 			#print('in init table',gpkgPath)
-			#_writer = QgsVectorFileWriter.writeAsVectorFormat(lyr, gpkgPath, options ) # deprecated
-			_writer = QgsVectorFileWriter.writeAsVectorFormatV2(lyr, gpkgPath, QgsCoordinateTransformContext(), options)
+			_writer = QgsVectorFileWriter.writeAsVectorFormatV3(lyr, gpkgPath, QgsCoordinateTransformContext(), options)
 
 			#print(options.layerName,_writer)
 
@@ -1684,7 +1683,7 @@ if __name__ == '__console__':
 	pr.addAttributes([QgsField("id", QVariant.String),
 								QgsField("name",  QVariant.String)])
 	ws_lyr.updateFields()
-	_writer = QgsVectorFileWriter.writeAsVectorFormat(ws_lyr, gpkgPath, options)
+	_writer = QgsVectorFileWriter.writeAsVectorFormatV3(ws_lyr, gpkgPath, QgsCoordinateTransformContext(), options)
 	print(_writer)
 	
 	options2 = QgsVectorFileWriter.SaveVectorOptions()
@@ -1701,6 +1700,6 @@ if __name__ == '__console__':
 								QgsField("id_soil",  QVariant.String),
 								QgsField("id_soiluse",  QVariant.String)])
 	field_lyr.updateFields()
-	_writer = QgsVectorFileWriter.writeAsVectorFormat(field_lyr, gpkgPath,  options2)
+	_writer = QgsVectorFileWriter.writeAsVectorFormatV3(field_lyr, gpkgPath, QgsCoordinateTransformContext(), options2)
 	print(_writer)
 	print('OK')
