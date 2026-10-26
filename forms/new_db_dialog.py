@@ -58,6 +58,7 @@ class NewDbDialog(QDialog):
 
     def __init__(self, parent=None, settings=None,fileext = 'gpkg'):
         QDialog.__init__(self, parent)
+        self.fileext = fileext.lstrip('.')
         # add file browser
         self.layout = QVBoxLayout()
         self.GPKG_FILE = FileOutput('GPKG_FILE', self.tr('Create database file'), settings['DBFILE'], type='*.'+fileext,
@@ -133,6 +134,9 @@ class NewDbDialog(QDialog):
     def getData(self):
         # get output file
         dbFile = self.GPKG_FILE.getValue().strip()
+        expectedSuffix = '.' + self.fileext
+        if not dbFile.lower().endswith(expectedSuffix.lower()):
+            dbFile += expectedSuffix
         crs = self.CRS.getValue()
         loadSamplePar = self.LOADPAR_CB.getValue()
         loadSampleData = self.LOADDATA_CB.getValue()

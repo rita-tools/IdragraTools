@@ -38,7 +38,7 @@ import pandas as pd
 
 from qgis.core import QgsFeatureRequest
 from qgis.core import QgsVectorLayer, QgsField, QgsVectorFileWriter, QgsCoordinateTransformContext
-from qgis.PyQt.QtCore import QVariant, QObject
+from qgis.PyQt.QtCore import QVariant, QObject, QMetaType
 
 
 def adapt_array(arr):
@@ -122,6 +122,7 @@ class SQLiteDriver(QObject):
 					pass
 		except Exception as e:
 			self.progress.setInfo(str(e),True)
+			raise
 
 		try:
 			self.resetCounter()
@@ -138,43 +139,43 @@ class SQLiteDriver(QObject):
 		STdefList = [{'type':'MultiPoint',
 							'name':'idr_weather_stations',
 							'fldNames':['id','name','lat','alt'],
-							'fldTypes':[QVariant.Int,QVariant.String,QVariant.Double,QVariant.Double]},
+							'fldTypes':[QMetaType.Type.Int,QMetaType.Type.QString,QMetaType.Type.Double,QMetaType.Type.Double]},
 						{'type':'MultiPoint',
 							'name':'idr_gw_wells',
 							'fldNames':['id','name','alt','type'],
-							'fldTypes':[QVariant.Int,QVariant.String,QVariant.Double,QVariant.Int]},
+							'fldTypes':[QMetaType.Type.Int,QMetaType.Type.QString,QMetaType.Type.Double,QMetaType.Type.Int]},
 					 {'type': 'MultiPoint',
 					  'name': 'idr_control_points',
 					  'fldNames': ['id','name', 'descr'],
-					  'fldTypes': [QVariant.Int, QVariant.String, QVariant.String]},
+					  'fldTypes': [QMetaType.Type.Int, QMetaType.Type.QString, QMetaType.Type.QString]},
 						{'type':'MultiLinestring',
 							'name':'idr_links',
 							'fldNames':['id','name','inlet_node','outlet_node','flow_rate','inf_losses'],
-							'fldTypes':[QVariant.Int,QVariant.String,QVariant.Int,QVariant.Int,QVariant.Double,QVariant.Double]},
+							'fldTypes':[QMetaType.Type.Int,QMetaType.Type.QString,QMetaType.Type.Int,QMetaType.Type.Int,QMetaType.Type.Double,QMetaType.Type.Double]},
 						{'type':'MultiPoint',
 							'name':'idr_nodes',
 							'fldNames':['id','name','node_type','q_sum','q_win','sum_start','sum_end','win_start','win_end','act_trshold','act_ratio'],
-							'fldTypes':[QVariant.Int,QVariant.String,QVariant.Int,QVariant.Double,QVariant.Double,QVariant.Int,QVariant.Int,QVariant.Int,QVariant.Int,QVariant.String,QVariant.String]},
+							'fldTypes':[QMetaType.Type.Int,QMetaType.Type.QString,QMetaType.Type.Int,QMetaType.Type.Double,QMetaType.Type.Double,QMetaType.Type.Int,QMetaType.Type.Int,QMetaType.Type.Int,QMetaType.Type.Int,QMetaType.Type.QString,QMetaType.Type.QString]},
 						{'type': 'MultiPolygon',
 							'name': 'idr_soilmap',
 							'fldNames': ['id','name','extid','date'],
-							'fldTypes': [QVariant.Int, QVariant.String, QVariant.Int, QVariant.Date]},
+							'fldTypes': [QMetaType.Type.Int, QMetaType.Type.QString, QMetaType.Type.Int, QMetaType.Type.QDate]},
 						{'type': 'MultiPolygon',
 							'name': 'idr_usemap',
 							'fldNames': ['id','name','extid', 'date'],
-							'fldTypes': [QVariant.Int, QVariant.String, QVariant.Int, QVariant.Date]},
+							'fldTypes': [QMetaType.Type.Int, QMetaType.Type.QString, QMetaType.Type.Int, QMetaType.Type.QDate]},
 						{'type': 'MultiPolygon',
 							'name': 'idr_irrmap',
 							'fldNames': ['id','name','extid', 'date'],
-							'fldTypes': [QVariant.Int, QVariant.String,QVariant.Int, QVariant.Date]},
+							'fldTypes': [QMetaType.Type.Int, QMetaType.Type.QString,QMetaType.Type.Int, QMetaType.Type.QDate]},
 						{'type': 'MultiPolygon',
 							'name': 'idr_distrmap',
 							'fldNames': ['id', 'name','inlet_node','outlet_node','distr_eff','expl_factor','wat_shift'],
-							'fldTypes': [QVariant.Int,QVariant.String,QVariant.Int,QVariant.Int,QVariant.Double,QVariant.Int,QVariant.Int]},
+							'fldTypes': [QMetaType.Type.Int,QMetaType.Type.QString,QMetaType.Type.Int,QMetaType.Type.Int,QMetaType.Type.Double,QMetaType.Type.Int,QMetaType.Type.Int]},
 						{'type': 'MultiPolygon',
 							'name': 'idr_domainmap',
 							'fldNames': ['id', 'name','area_m2'],
-							'fldTypes': [QVariant.Int, QVariant.String, QVariant.Double]}
+							'fldTypes': [QMetaType.Type.Int, QMetaType.Type.QString, QMetaType.Type.Double]}
 					 ]
 		
 		firstt = True
@@ -183,6 +184,8 @@ class SQLiteDriver(QObject):
 		for STdef in STdefList:
 			self.progress.pushInfo(self.tr('Processing %s'%STdef['name']))
 			lyr =  QgsVectorLayer(STdef['type'], STdef['name'], "memory")
+			if not lyr.isValid():
+				raise RuntimeError(self.tr('Unable to create temporary layer %s') % STdef['name'])
 			if crs: lyr.setCrs(crs)
 			
 			pr = lyr.dataProvider()
@@ -206,10 +209,22 @@ class SQLiteDriver(QObject):
 				
 			options.layerName = lyr.name()
 
-			#print('in init table',gpkgPath)
-			_writer = QgsVectorFileWriter.writeAsVectorFormatV3(lyr, gpkgPath, QgsCoordinateTransformContext(), options)
+			writerResult = QgsVectorFileWriter.writeAsVectorFormatV3(
+				lyr, gpkgPath, QgsCoordinateTransformContext(), options
+			)
 
-			#print(options.layerName,_writer)
+			if isinstance(writerResult, (tuple, list)):
+				writerError = writerResult[0]
+				errorMessage = writerResult[1] if len(writerResult) > 1 else ''
+			else:
+				writerError = writerResult
+				errorMessage = ''
+
+			if writerError != QgsVectorFileWriter.NoError:
+				raise RuntimeError(
+					self.tr('Unable to create layer %s (writer error %s): %s') %
+					(STdef['name'], writerError, errorMessage)
+				)
 
 		# replace id field with constrained by sql command
 		# for STdef in STdefList:
