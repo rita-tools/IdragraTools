@@ -45,7 +45,7 @@ class OverviewReportBuilder(ReportBuilder):
         # 100.dat 520827.026118634 5018562.6834552
         # 200.dat 520315.301608933 5019014.775729
 
-        df = pd.read_csv(pathToMeteoFile, sep='\s* \s*', engine='python', skiprows=10)
+        df = pd.read_csv(pathToMeteoFile, sep=r'\s* \s*', engine='python', skiprows=10)
         # print(df)
         res = {}
         for index, row in df.iterrows():
@@ -128,7 +128,7 @@ class OverviewReportBuilder(ReportBuilder):
             wsName = toks2[1].strip()
             # pass elevation data
             text = f.readline()
-            toks = re.split('\s+', text)
+            toks = re.split(r'\s+', text)
             wsAlt = float(toks[1].strip())
             # parse start and end date
             text = f.readline()
@@ -138,7 +138,7 @@ class OverviewReportBuilder(ReportBuilder):
 
         listOfYears = list(range(startDate.year, endDate.year + 1))
 
-        df = pd.read_csv(pathToMeteoDataFile, sep='\s* \s*', engine='python', skiprows=3)
+        df = pd.read_csv(pathToMeteoDataFile, sep=r'\s* \s*', engine='python', skiprows=3)
         df['datetime'] = pd.date_range(startDate, endDate)
 
         df['year'] = df["datetime"].dt.year

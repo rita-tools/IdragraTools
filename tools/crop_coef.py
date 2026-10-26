@@ -769,7 +769,7 @@ def readWeatherFile(fileName):
 		ws['startDay'] = datetime.strptime(toks[0],'%d/%m/%Y').date()
 		ws['endDay'] = datetime.strptime(toks[1], '%d/%m/%Y').date()
 
-	df = pd.read_csv(fileName, sep='\s* \s*', usecols=['T_max', 'T_min', 'U_min', 'V_med'], skiprows=3, engine='python')
+	df = pd.read_csv(fileName, sep=r'\s* \s*', usecols=['T_max', 'T_min', 'U_min', 'V_med'], skiprows=3, engine='python')
 
 	T_max = df['T_max'].to_numpy()
 	T_min = df['T_min'].to_numpy()
@@ -1059,7 +1059,7 @@ def compare(cropSeqIds = [11],fileName = 'H.dat'):
 
 	cols = ['CrID_%d'%x for x in cropSeqIds]
 
-	meteoDf = pd.read_csv(meteoFile, sep='\s* \s*', usecols=['T_max', 'T_min'], skiprows=3, engine='python')
+	meteoDf = pd.read_csv(meteoFile, sep=r'\s* \s*', usecols=['T_max', 'T_min'], skiprows=3, engine='python')
 	#origDf = pd.read_csv(os.path.join(origFolder,fileName), sep='\t', usecols=cols)
 	newDf = pd.read_csv(os.path.join(newFolder, fileName), sep='\t', usecols=cols)
 

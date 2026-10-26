@@ -38,8 +38,8 @@ def checkMatlabInstalled(version= '9.9'):
 	print('platform: ',platform)
 	try:
 		if platform == "win32":
-			queryMLruntime = ['reg','query','HKEY_LOCAL_MACHINE\SOFTWARE\MathWorks\MATLAB Runtime'+'\\'+version]
-			queryMLframework = ['reg','query','HKEY_LOCAL_MACHINE\SOFTWARE\MathWorks\MATLAB'+'\\'+version]
+			queryMLruntime = ['reg','query',r'HKEY_LOCAL_MACHINE\SOFTWARE\MathWorks\MATLAB Runtime'+'\\'+version]
+			queryMLframework = ['reg','query',r'HKEY_LOCAL_MACHINE\SOFTWARE\MathWorks\MATLAB'+'\\'+version]
 
 			# try with matlab runtime
 			proc = subprocess.Popen(queryMLruntime, stderr=subprocess.PIPE, stdout=subprocess.PIPE, encoding='utf8')

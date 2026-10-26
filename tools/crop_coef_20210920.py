@@ -453,7 +453,7 @@ def test1():
 
 	# open table
 	csvFile = 'C:/test_landriano/test11_SIM/meteodata/100.dat'
-	df = pd.read_csv(csvFile, sep='\s* \s*',usecols = ['T_max','T_min'],skiprows = 3, engine='python')
+	df = pd.read_csv(csvFile, sep=r'\s* \s*',usecols = ['T_max','T_min'],skiprows = 3, engine='python')
 
 	# calculate
 	cropTbase = 10.0
@@ -517,7 +517,7 @@ def test2():
 
 	# open table
 	csvFile = 'C:/test_landriano/test11_SIM/meteodata/100.dat'
-	df = pd.read_csv(csvFile, sep='\s* \s*', usecols=['T_max', 'T_min'], skiprows=3, engine='python')
+	df = pd.read_csv(csvFile, sep=r'\s* \s*', usecols=['T_max', 'T_min'], skiprows=3, engine='python')
 
 	cropsList = [{'id':1,'name':'mais600',
 				 'minSowingDate':91, 'sowingDelay':14, 'T_sowing':9,
@@ -553,7 +553,7 @@ def test3():
 
 	# open table
 	csvFile = 'C:/test_landriano/test11_SIM/meteodata/100.dat'
-	df = pd.read_csv(csvFile, sep='\s* \s*', usecols=['T_max', 'T_min'], skiprows=3, engine='python')
+	df = pd.read_csv(csvFile, sep=r'\s* \s*', usecols=['T_max', 'T_min'], skiprows=3, engine='python')
 
 	cropsList = [{'id':1,'name':'mais600',
 				 'minSowingDate':91, 'sowingDelay':14, 'T_sowing':9,
@@ -590,7 +590,7 @@ def test4():
 
 	# open table
 	csvFile = 'C:/test_landriano/test11_SIM/meteodata/100.dat'
-	df = pd.read_csv(csvFile, sep='\s* \s*', usecols=['T_max', 'T_min','U_min','V_med'], skiprows=3, engine='python')
+	df = pd.read_csv(csvFile, sep=r'\s* \s*', usecols=['T_max', 'T_min','U_min','V_med'], skiprows=3, engine='python')
 
 	T_max = df['T_max'].to_numpy()
 	T_min = df['T_min'].to_numpy()

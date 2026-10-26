@@ -157,7 +157,7 @@ class IdragraImportCropPar(QgsProcessingAlgorithm):
 						The algorithm import crop parameters from files contained in the selected folder. 
 						<b>Parameters:</b>
 						DB filename: the file path to the database [DB_FILENAME]
-						Files directory: the path where crop parameters files are saved [FILE_DIR]<sup>1<\sup>
+						Files directory: the path where crop parameters files are saved [FILE_DIR]<sup>1</sup>
 						<b>Note:</b>
 						[1] default is *.tab, the standard file format from IdrAgra.  
 						"""
