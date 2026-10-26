@@ -56,7 +56,6 @@ from .tools.check_matlab_installed import checkMatlabInstalled
 from .data_manager.chart_widget import ChartWidget
 from .tools.gis_grid import GisGrid
 from .tools.iface_progress import IfaceProgress
-from .tools.import_from_csv import importDataFromCSVXXX
 from .tools.import_raster_in_db import importRasterInDB
 from .tools.my_progress import MyProgress
 from .forms.manage_rasters_dialog import ManageRastersDialog
@@ -1082,22 +1081,20 @@ class IdrAgraTools():
 
     def importData(self,sensorsDict = {},varDict={}):
         from .forms.import_data import ImportData
-        dlg = ImportData(self.iface.mainWindow(),varDict,sensorsDict,self.s)
-        dlg.show()
-        result = dlg.exec()
-        # See if OK was pressed
-        res = []
-        if result == 1:
-            res = dlg.getData()
-            progress = IfaceProgress(self.iface)
-            #print('res',res)
-            self.importDataFromCSV(
-                             filename=res['selFile'], tablename=res['selVar'],
-                             timeFldIdx=res['timeFldIdx'],valueFldIdx=res['valueFldIdx'],
-                             sensorId=res['selSensor'],
-                             skip=res['skipLines'], timeFormat=res['timeFormat'], column_sep=res['sep'],
-                             overWrite = res['overWrite'],saveEdit = res['saveEdit'],year = '',
-                             progress=progress)
+        dlg = ImportData(
+            self.iface.mainWindow(), varDict, sensorsDict, self.s,
+            databasePath=self.DBM.DBName
+        )
+        dlg.dataImported.connect(self.reloadImportedTimeSeries)
+        dlg.exec()
+
+    def reloadImportedTimeSeries(self, tableNames):
+        tableNames = set(tableNames)
+        for layer in QgsProject.instance().mapLayers().values():
+            source = layer.source().replace('\\', '/')
+            if any('|layername=%s' % tableName in source for tableName in tableNames):
+                layer.dataProvider().reloadData()
+                layer.triggerRepaint()
 
     def importWeatherStations(self):
         wsLay = self.getVectorLayerByName('idr_weather_stations')
@@ -2788,126 +2785,6 @@ class IdrAgraTools():
 
 
             if progress: progress.setPercentage(100.0 * (nOfNode - len(nodeList)) / nOfNode)
-
-    def importDataFromCSV(self, filename, tablename, timeFldIdx, valueFldIdx, sensorId, skip, timeFormat, column_sep,
-                          overWrite = True, saveEdit = False, year='',
-                          progress = None):
-
-        self.DBM.resetCounter()
-
-        tsList = []
-        valList = []
-        # open CSV file
-        #print("importDataFromCSV")
-        try:
-            with open(filename, "r") as in_file:
-                i = 0
-                if progress: progress.setText(self.tr('%s loaded' % filename))
-                while 1:
-                    in_line = in_file.readline()
-                    if i >= skip:
-                        if len(in_line) == 0:
-                            break
-
-                        # process the line
-                        in_line = in_line.rstrip() # remove newline
-                        if column_sep != ' ': in_line = in_line.replace(' ', '')
-                        #print('LN %d: %s'%(i,in_line))
-                        data = in_line.split(column_sep)
-                        timestamp = datetime.strptime(str(year) + data[timeFldIdx], timeFormat)
-                        value = float(data[valueFldIdx])
-                        tsList.append(timestamp.strftime('%Y-%m-%d'))
-                        valList.append(value)
-
-                    i += 1
-
-        except Exception as e:
-            progress.reportError(
-                self.tr('Unable to load %s: %s') %
-                (filename, str(e)), True)
-            return
-
-        nOfRecord = len(tsList)
-
-        if progress: progress.setText(self.tr('n. of imported record: %s') % nOfRecord)
-        #get table layer
-        lyrSourcesList = [layer.source().replace('\\', '/') for layer in QgsProject.instance().mapLayers().values()]
-        gpkg_layer = self.DBM.DBName + '|layername=' + tablename
-        gpkg_layer = gpkg_layer.replace('\\', '/')
-        self.vLayer = None
-        for layer in QgsProject.instance().mapLayers().values():
-            if layer.source() == gpkg_layer:
-                self.vLayer = layer
-
-        if self.vLayer is None:
-            self.vLayer = QgsVectorLayer(gpkg_layer, tablename, "ogr")
-
-
-        # start editing
-        if progress: progress.setText(self.tr('Starting editing %s') % tablename)
-
-        if self.vLayer.isEditable():
-            pass
-        else:
-            flg = self.vLayer.startEditing()
-            if flg == False:
-                progress.reportError(
-                    self.tr('Unable to edit layer %s') %
-                    (gpkg_layer), True)
-                return
-
-
-        pr = self.vLayer.dataProvider()
-        fieldNames = [field.name() for field in pr.fields()]
-        nOfRec = 0
-
-        idxTS = fieldNames.index('timestamp')
-        idxSens = fieldNames.index('wsid')
-        idxVal = fieldNames.index('recval')
-
-        # populate data
-        i = 0
-        newFeatList=[]
-        for t,v in zip(tsList,valList):
-            # check if the record exist
-            # check if attribute already exist
-            expr = QgsExpression(
-                "\"%s\" = '%s' and \"%s\" = '%s'" % ('timestamp', str(t), 'wsid', sensorId))
-            featList = self.vLayer.getFeatures(QgsFeatureRequest(expr))
-            updateFeat = 0
-            for feat in featList:
-                if feat['recval'] != v:
-                    if overWrite:
-                        progress.setText(self.tr('Updating feature %s') % feat.id())
-                        # FIX: update existing values
-                        self.vLayer.changeAttributeValues(feat.id(), {idxVal: v}, {idxVal: feat['recval']})
-                updateFeat += 1
-
-            if updateFeat > 1:
-                progress.reportError(
-                    self.tr('Unexpected number of matches (%s) for timestamp "%s" and sensor "%s"') %
-                    (updateFeat, timestamp, sensorId), True)
-                return
-
-
-            # no feature to update --> add it
-            if updateFeat == 0:
-                # add new record to table
-                try:
-                    newFeat = QgsFeature(pr.fields())
-                    newFeat.setAttribute(idxTS, str(t))
-                    newFeat.setAttribute(idxSens, sensorId)
-                    newFeat.setAttribute(idxVal, v)
-                    newFeatList.append(newFeat)
-                    self.vLayer.addFeature(newFeat)
-                except Exception as e:
-                    print('error',str(e))
-            i+=1
-            if progress: progress.setPercentage(100*i/nOfRecord)
-
-        if saveEdit:
-            if progress: progress.setText(self.tr('Save edits ...'))
-            self.vLayer.commitChanges()
 
     def printMsg(self, text,col = None):
         self.progressDlg.setText(text,col)

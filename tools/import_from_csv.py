@@ -31,11 +31,6 @@ __revision__ = '$Format:%H$'
 import sqlite3 as sqlite
 from datetime import datetime
 
-from qgis.core import QgsProject, QgsVectorLayer, QgsExpression, QgsFeatureRequest, QgsFeature
-
-from tools.my_progress import MyProgress
-
-
 def previewImportFromCSV(filename, dbname, tablename, timeFldIdx, valueFldIdx, sensorId, skip,timeFormat,column_sep, feedback,tr=None):
 	msg = ''
 	
@@ -195,97 +190,3 @@ def executeSQL(dbname,sql):
 		conn.close()
 		
 	return msg
-
-
-def importDataFromCSVXXX(filename, vLayer, timeFldIdx, valueFldIdx, sensorId, skip, timeFormat, column_sep,
-					  overWrite=True, saveEdit=False, year='',
-					  progress=None,tr = None):
-
-	if not tr: tr = lambda x: x
-	if not progress: progress = MyProgress()
-
-	msg = ''
-	progress.setText(tr('INFO: loading %s' % filename))
-	tsList = []
-	valList = []
-	# open CSV file
-	try:
-		in_file = open(filename, "r")
-		i = 0
-		while 1:
-			in_line = in_file.readline()
-			if i >= skip:
-				if len(in_line) == 0:
-					break
-
-				# process the line
-				in_line = in_line[:-1]
-				if column_sep != ' ': in_line = in_line.replace(' ', '')
-				# print 'LN %d: %s'%(i,in_line)
-				data = in_line.split(column_sep)
-				timestamp = datetime.strptime(str(year) + data[timeFldIdx], timeFormat)
-				value = float(data[valueFldIdx])
-
-				tsList.append(timestamp)
-				valList.append(value)
-
-			i += 1
-	except Exception as e:
-		progress.reportError(
-			tr('Unable to parse input file %s: %s') % (filename, str(e)), True)
-		return
-	finally:
-		in_file.close()
-
-	nOfRecord = len(tsList)
-
-	progress.setText(tr('n. of imported record: %s') % nOfRecord)
-
-	# start ediding
-	vLayer.startEditing()
-
-	pr = vLayer.dataProvider()
-	fieldNames = [field.name() for field in pr.fields()]
-	nOfRec = 0
-
-	idxTS = fieldNames.index('timestamp')
-	idxSens = fieldNames.index('wsid')
-	idxVal = fieldNames.index('recval')
-
-	# populate data
-	i = 0
-	for t, v in zip(tsList, valList):
-		# check if the record exist
-		# check if attribute already exist
-		expr = QgsExpression(
-			"\"%s\" = '%s' and \"%s\" = '%s'" % ('timestamp', str(t), 'wsid', sensorId))
-		featList = vLayer.getFeatures(QgsFeatureRequest(expr))
-		updateFeat = 0
-		for feat in featList:
-			if feat['recval'] != value:
-				if overWrite:
-					progress.pushInfo(tr('Updating feature %s') % feat.id())
-					vLayer.changeAttributeValues(feat.id(), {idxVal: value}, {idxVal: feat['recval']})
-			updateFeat += 1
-
-		if updateFeat > 1:
-			progress.reportError(
-				tr('Unexpected number of matches (%s) for timestamp "%s" and sensor "%s"') %
-				(updateFeat, timestamp, sensorId), True)
-			return
-
-		# no feature to update --> add it
-		if updateFeat == 0:
-			# add new record to table
-			newFeat = QgsFeature(pr.fields())
-			newFeat.setAttribute(idxTS, str(t))
-			newFeat.setAttribute(idxSens, sensorId)
-			newFeat.setAttribute(idxVal, value)
-			vLayer.addFeatures([newFeat])
-
-		i += 1
-		progress.setPercentage(100 * i / nOfRecord)
-
-	if saveEdit:
-		progress.pushInfo(tr('Save edits ...'))
-		vLayer.commitChanges()
