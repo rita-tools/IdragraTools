@@ -35,7 +35,7 @@ from qgis.PyQt.QtGui import *
 from qgis.PyQt import uic
 
 from qgis.PyQt.QtWidgets import QDialog, QToolBox, QWidget, QVBoxLayout, QFileDialog, QListWidgetItem, QDialogButtonBox, \
-    QTableWidgetItem, QRadioButton
+    QTableWidgetItem, QRadioButton, QMessageBox
 
 # qgis import
 from qgis.core import *
@@ -112,6 +112,18 @@ class NewDbDialog(QDialog):
     def closeEvent(self, event):
         self.closed.emit()
 
+    def accept(self):
+        if not self.GPKG_FILE.getValue().strip():
+            QMessageBox.warning(
+                self,
+                self.tr('Missing database filename'),
+                self.tr('Select a filename for the new GeoPackage database.')
+            )
+            self.GPKG_FILE.setFocus()
+            return
+
+        super().accept()
+
     def switchImportMode(self):
         useSource = self.USESOURCE_RB.isChecked()
         self.SOURCEFOLDER_FW.setEnabled(useSource)
@@ -120,7 +132,7 @@ class NewDbDialog(QDialog):
 
     def getData(self):
         # get output file
-        dbFile = self.GPKG_FILE.getValue()
+        dbFile = self.GPKG_FILE.getValue().strip()
         crs = self.CRS.getValue()
         loadSamplePar = self.LOADPAR_CB.getValue()
         loadSampleData = self.LOADDATA_CB.getValue()

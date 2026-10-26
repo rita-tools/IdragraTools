@@ -2922,6 +2922,12 @@ class IdrAgraTools():
         #print('enableOKBtn')
         self.thread.quit()
         self.threadIsConcluded = True  # it's true only in this case
+        if self.worker.exception is not None:
+            self.threadIsConcludedWithError = True
+            self.progressDlg.setText(self.tr('** Process failed! **'), 'red')
+            self.progressDlg.enableOK()
+            return
+
         if not self.threadIsConcludedWithError:
             self.progressDlg.setPercentage(100.)
             self.progressDlg.setText(self.tr('** Process concluded! **'), 'green')
@@ -2968,7 +2974,7 @@ class IdrAgraTools():
 
         # self.worker.finished.connect(self.thread.quit)
         self.worker.finished.connect(self.enableOKBtn)
-        if onFinished: self.worker.finished.connect(onFinished)
+        if onFinished: self.worker.succeeded.connect(onFinished)
         # self.thread.finished.connect(self.enableOKBtn)
 
         # self.progressDlg.closed.connect(self.stopThread)

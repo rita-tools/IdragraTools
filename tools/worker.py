@@ -39,6 +39,7 @@ from qgis.core import QgsProcessingFeedback, QgsFeedback
 
 class Worker(QgsProcessingFeedback):#(QtCore.QObject):
 	finished = QtCore.pyqtSignal()
+	succeeded = QtCore.pyqtSignal()
 	finishedBefore = QtCore.pyqtSignal()
 	ready = QtCore.pyqtSignal()
 	reportProgress = QtCore.pyqtSignal(object)
@@ -50,6 +51,7 @@ class Worker(QgsProcessingFeedback):#(QtCore.QObject):
 		QgsProcessingFeedback.__init__(self)
 		self.parent = parent
 		self._flag = True
+		self.exception = None
 		self.function = function
 		self.args = args
 		self.kwargs = kwargs
@@ -114,11 +116,13 @@ class Worker(QgsProcessingFeedback):#(QtCore.QObject):
 		try:
 			self._flag = self.function(*self.args, **self.kwargs)
 		except Exception as e:
+			self.exception = e
 			self.setInfo('Unmanaged error %s'%str(e),True)
 			# credits: https://stackoverflow.com/questions/11414894/extract-traceback-info-from-an-exception-object/14564261#14564261
 			traceback_str = ''.join(traceback.format_tb(e.__traceback__))
 			self.setInfo('Traceback %s' % traceback_str, True)
-
+		else:
+			self.succeeded.emit()
 		finally:
 			self.finished.emit()
 
