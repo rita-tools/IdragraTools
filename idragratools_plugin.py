@@ -891,6 +891,8 @@ class IdrAgraTools():
             dbpath = QFileDialog.getOpenFileName(None, self.tr('Open idragra database'), s.value('lastPath'),
                                                  self.tr(self.FILEFORMAT))
             dbpath = dbpath[0]
+            if not dbpath:
+                return
 
         proj = None
         # update project record
