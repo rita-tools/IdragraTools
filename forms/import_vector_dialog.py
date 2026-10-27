@@ -55,7 +55,8 @@ from forms.custom_input import FieldInput, CheckInput, DateInput
 class ImportVectorDialog(QDialog):
     closed = pyqtSignal()
 
-    def __init__(self, parent=None, layList = [],fields=[],skipFields = [], dateFld = [], settings=None, title='Import vector dialog'):
+    def __init__(self, parent=None, layList=[], fields=[], skipFields=[], dateFld=[], settings=None,
+                 title='Import vector dialog', fieldLabels=None):
         QDialog.__init__(self, parent)
         # Set up the user interface from Designer.
         uiFilePath = os.path.abspath(os.path.join(os.path.dirname(__file__), 'import_vector_dialog.ui'))
@@ -65,6 +66,7 @@ class ImportVectorDialog(QDialog):
 
         self.FLDLIST = []
         self.LAYLIST = layList
+        fieldLabels = fieldLabels or {}
         # populate station ids
         for l,v in layList.items():
             self.SOURCE_CB.addItem(l)
@@ -73,9 +75,7 @@ class ImportVectorDialog(QDialog):
         for f in fields:
             fieldName = f.name()
             if fieldName not in skipFields:
-                label = fieldName
-                if f.alias():
-                    label = f.alias()
+                label = fieldLabels.get(fieldName, f.alias() or fieldName)
 
                 if fieldName in dateFld:
                     newFI = DateInput(objName = fieldName, labelString = label, defaultValue ='',descr = '')

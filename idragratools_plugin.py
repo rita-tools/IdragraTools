@@ -1213,7 +1213,12 @@ class IdrAgraTools():
         layList = self.getLayerList(geomTypeList = [QgsWkbTypes.PolygonGeometry])
         from .forms.import_vector_dialog import ImportVectorDialog
         dlg = ImportVectorDialog(self.iface.mainWindow(), layList=layList, fields=wsLay.fields(),
-                                 skipFields=['fid','date'], dateFld = [], settings=self.s,title= self.tr('Import soil map'))
+                                 skipFields=['fid', 'name', 'date'], dateFld=[], settings=self.s,
+                                 title=self.tr('Import soil map'),
+                                 fieldLabels={
+                                     'id': self.tr('Polygon ID'),
+                                     'extid': self.tr('Soil type ID'),
+                                 })
         dlg.show()
         result = dlg.exec()
         # See if OK was pressed
@@ -1231,7 +1236,12 @@ class IdrAgraTools():
         layList = self.getLayerList(geomTypeList=[QgsWkbTypes.PolygonGeometry])
         from .forms.import_vector_dialog import ImportVectorDialog
         dlg = ImportVectorDialog(self.iface.mainWindow(), layList=layList, fields=wsLay.fields(),
-                                 skipFields=['fid'], dateFld=['date'], settings=self.s, title= self.tr('Import land use map'))
+                                 skipFields=['fid', 'name'], dateFld=['date'], settings=self.s,
+                                 title=self.tr('Import land use map'),
+                                 fieldLabels={
+                                     'id': self.tr('Polygon ID'),
+                                     'extid': self.tr('Land-use ID'),
+                                 })
         dlg.show()
         result = dlg.exec()
         # See if OK was pressed
@@ -1267,8 +1277,12 @@ class IdrAgraTools():
         layList = self.getLayerList(geomTypeList=[QgsWkbTypes.PolygonGeometry])
         from .forms.import_vector_dialog import ImportVectorDialog
         dlg = ImportVectorDialog(self.iface.mainWindow(), layList=layList, fields=wsLay.fields(),
-                                 skipFields=['fid'], dateFld=[], settings=self.s,
-                                 title=self.tr('Import irrigation methods map'))
+                                 skipFields=['fid', 'name'], dateFld=[], settings=self.s,
+                                 title=self.tr('Import irrigation methods map'),
+                                 fieldLabels={
+                                     'id': self.tr('Polygon ID'),
+                                     'extid': self.tr('Irrigation method ID'),
+                                 })
         dlg.show()
         result = dlg.exec()
         # See if OK was pressed
