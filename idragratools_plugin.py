@@ -73,8 +73,8 @@ cmd_folder = os.path.split(inspect.getfile(inspect.currentframe()))[0]
 if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
 
-from qgis.core import QgsProcessingAlgorithm, QgsApplication, QgsProject, QgsVectorLayer, QgsGeometry, QgsFeature, \
-    QgsFeatureRequest, QgsExpression
+from qgis.core import QgsProcessingAlgorithm, QgsApplication, QgsProject, QgsProviderRegistry, QgsVectorLayer, \
+    QgsGeometry, QgsFeature, QgsFeatureRequest, QgsExpression
 from qgis.PyQt.QtCore import QVariant, QUrl
 
 from qgis.PyQt.QtCore import qVersion, QCoreApplication, QLocale, QSettings, QTranslator, QThread, Qt, QTimer
@@ -949,22 +949,59 @@ class IdrAgraTools():
         QgsPathResolver.removePathPreprocessor(idProc)
 
     def loadLayer(self):
-        lyrSourcesList = [layer.source().replace('\\','/') for layer in QgsProject.instance().mapLayers().values()]
+        project = QgsProject.instance()
+        dbPath = os.path.normcase(os.path.abspath(self.DBM.DBName))
+
+        def sourceIdentity(layer):
+            if layer.providerType() != 'ogr':
+                return None
+            decoded = QgsProviderRegistry.instance().decodeUri('ogr', layer.source())
+            path = decoded.get('path', '')
+            tableName = decoded.get('layerName', '')
+            if not path or not tableName:
+                sourceParts = layer.source().replace('\\', '/').split('|')
+                path = path or sourceParts[0]
+                for part in sourceParts[1:]:
+                    if part.casefold().startswith('layername='):
+                        tableName = part.split('=', 1)[1]
+                        break
+            if not path or not tableName:
+                return None
+            path = project.readPath(path)
+            return os.path.normcase(os.path.abspath(path)), tableName.casefold()
+
+        existingLayers = {}
+        for layer in project.mapLayers().values():
+            identity = sourceIdentity(layer)
+            if identity and identity[0] == dbPath:
+                existingLayers.setdefault(identity[1], []).append(layer)
+
         for n, a in self.LYRNAME.items():
+            matches = existingLayers.get(n.casefold(), [])
+            validMatches = [layer for layer in matches if layer.isValid()]
+            if validMatches:
+                keepLayer = validMatches[0]
+                for duplicate in matches:
+                    if duplicate.id() != keepLayer.id():
+                        project.removeMapLayer(duplicate.id())
+                continue
+
+            for brokenLayer in matches:
+                project.removeMapLayer(brokenLayer.id())
+
             gpkg_layer = self.DBM.DBName + '|layername=' + n
             gpkg_layer = gpkg_layer.replace('\\', '/')
-            if not gpkg_layer in lyrSourcesList:
-                vlayer = QgsVectorLayer(gpkg_layer, a, "ogr")
-                if not vlayer.isValid():
-                    print("Failed to load layer %s"%a)  # TODO
-                else:
-                    groupIndex, mygroup = self.getGroupIndex(self.LYRGRPNAME[n])
-                    print(os.path.join(self.plugin_dir, 'styles', n + '.qml'))
-                    vlayer.loadNamedStyle(os.path.join(self.plugin_dir, 'styles', n + '.qml'))
-                    QgsProject.instance().addMapLayer(vlayer, False)
-                    mygroup.insertChildNode(groupIndex, QgsLayerTreeLayer(vlayer))
+            vlayer = QgsVectorLayer(gpkg_layer, a, "ogr")
+            if not vlayer.isValid():
+                print("Failed to load layer %s"%a)  # TODO
+            else:
+                groupIndex, mygroup = self.getGroupIndex(self.LYRGRPNAME[n])
+                print(os.path.join(self.plugin_dir, 'styles', n + '.qml'))
+                vlayer.loadNamedStyle(os.path.join(self.plugin_dir, 'styles', n + '.qml'))
+                project.addMapLayer(vlayer, False)
+                mygroup.insertChildNode(groupIndex, QgsLayerTreeLayer(vlayer))
 
-                # set up layer field
+            # set up layer field
 
         # load rasters
         for n,s in self.SIMDIC['ELEVMAP'].items():
