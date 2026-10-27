@@ -477,6 +477,7 @@ class IdrAgraTools():
         #s.setValue('qgis/attributeTableView', 1)
 
         self.DBM = None
+        self._openingDB = False
 
         # force activation state for specific names
         # None means always set as initialization
@@ -667,6 +668,13 @@ class IdrAgraTools():
                 if MENU: MENU.setEnabled(not MENU.isEnabled())
 
     def unload(self):
+        for signal, slot in (
+                (self.iface.projectRead, self.loadFromProject),
+                (self.iface.newProjectCreated, self.resetMenuItemState)):
+            try:
+                signal.disconnect(slot)
+            except (TypeError, RuntimeError):
+                pass
         self.mainMenu.deleteLater()
         # remove processing provider
         QgsApplication.processingRegistry().removeProvider(self.provider)
@@ -918,7 +926,11 @@ class IdrAgraTools():
 
         proj = QgsProject.instance()
         uri = 'geopackage:' + dbpath + '?projectName=' + self.PRJNAME
-        proj.read(uri)
+        self._openingDB = True
+        try:
+            proj.read(uri)
+        finally:
+            self._openingDB = False
 
         # load parameters without removing defaults if exist
         tempSimDic = eval(proj.readEntry('IdrAgraTools', 'simsettings')[0])
@@ -3416,6 +3428,9 @@ class IdrAgraTools():
 
 
     def loadFromProject(self):
+        if self._openingDB:
+            return
+
         proj = QgsProject.instance()
         dbpath = ''
         try:
@@ -3425,6 +3440,10 @@ class IdrAgraTools():
             for k,v in tempDic.items():
                 if k in usedKeys: # to prevent bugs
                     self.SIMDIC[k]=v
+            for rasterKey in ('WATERTABLEMAP', 'ELEVMAP', 'LANDUSEMAP', 'IRRMETHMAP'):
+                rasterMap = self.SIMDIC.get(rasterKey, {})
+                if isinstance(rasterMap, dict):
+                    self.SIMDIC[rasterKey] = {name: source for name, source in rasterMap.items() if name}
 
             dbpath = self.SIMDIC['DBFILE']
 
@@ -3438,7 +3457,7 @@ class IdrAgraTools():
         # TODO: remove dbname, modify DBFILE
         if os.path.isfile(dbpath):
             #if (value is not None):
-            self.openDB(dbpath=dbpath)
+            self.updateProj(dbpath)
         else:
             print('dbpath is not a file:', dbpath)
             if dbpath not in ['','.']:
