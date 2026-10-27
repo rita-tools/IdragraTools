@@ -95,7 +95,8 @@ class ManageRastersDialog(QMainWindow):
 		newDict = {}
 		#print('kList',kList,'vList',vList)
 		for k,v in zip(kList,vList):
-			newDict[k]=v
+			if k:
+				newDict[k]=v
 
 		return newDict
 

@@ -804,6 +804,8 @@ class IdrAgraTools():
             self.SIMDIC['DBFILE'] = res['dbFile']
             self.SIMDIC['SOURCE_DB'] = res['sourceFile']
             self.SIMDIC['CRS'] = res['crs']
+            for rasterKey in ('WATERTABLEMAP', 'ELEVMAP', 'LANDUSEMAP', 'IRRMETHMAP'):
+                self.SIMDIC[rasterKey] = {}
             rootName = os.path.basename(res['dbFile'])
             rootName = rootName[:-5]
             rootPath = os.path.dirname(res['dbFile'])
@@ -922,6 +924,10 @@ class IdrAgraTools():
         tempSimDic = eval(proj.readEntry('IdrAgraTools', 'simsettings')[0])
         for k,v in tempSimDic.items():
             self.SIMDIC[k]=v
+        for rasterKey in ('WATERTABLEMAP', 'ELEVMAP', 'LANDUSEMAP', 'IRRMETHMAP'):
+            rasterMap = self.SIMDIC.get(rasterKey, {})
+            if isinstance(rasterMap, dict):
+                self.SIMDIC[rasterKey] = {name: source for name, source in rasterMap.items() if name}
 
         # TODO: INIT DB
         self.updateProj(dbpath)
@@ -1423,9 +1429,18 @@ class IdrAgraTools():
                                           QgsWkbTypes.PolygonGeometry,QgsWkbTypes.UnknownGeometry,
                                           QgsWkbTypes.NullGeometry]):
         res = {}
+        dbPath = getattr(getattr(self, 'DBM', None), 'DBName', '')
+        dbPath = dbPath.replace('\\', '/').casefold()
+        managedSources = {
+            '%s|layername=%s' % (dbPath, tableName.casefold())
+            for tableName in self.LYRNAME
+        } if dbPath else set()
 
         for layer in QgsProject.instance().mapLayers().values():
             if layer.type() == QgsMapLayer.VectorLayer:
+                source = layer.source().replace('\\', '/').casefold()
+                if any(source == managed or source.startswith(managed + '|') for managed in managedSources):
+                    continue
                 vector_type = layer.geometryType()
                 if vector_type in geomTypeList:
                     res[layer.name()]=layer
@@ -3489,16 +3504,14 @@ class IdrAgraTools():
     def loadRaster(self,rasterPath, rasterName, layGroup):
         proj = QgsProject.instance()
 
-        # if rasterPath[0]=='.':
-        #     rasterPath = os.path.join(proj.absolutePath(),rasterPath[2:])
-        #
-        # if not os.path.exists(rasterPath):
-        #     rasterPath = 'GPKG:' + os.path.join(proj.absolutePath(),rasterPath)
-        rasterPath = 'GPKG:' + self.DBM.DBName+':'+rasterName
-        # load in project if not in the list
-        #print('outDtmFile',outDtmFile)
-        #rlayer =  self.getRasterLayerBySource(outDtmFile)
+        if not rasterName:
+            return
+
         oldlayer = self.getLayerByName(rasterName)
+        if oldlayer and oldlayer.type() == QgsMapLayer.RasterLayer and oldlayer.isValid():
+            return
+
+        rasterPath = 'GPKG:' + self.DBM.DBName+':'+rasterName
         rlayer = QgsRasterLayer(rasterPath, rasterName, 'gdal')
 
         if rlayer.isValid():

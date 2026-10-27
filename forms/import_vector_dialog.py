@@ -127,10 +127,18 @@ class ImportVectorDialog(QDialog):
 
     def updateFieldWidgets(self,lay):
         #print('laydict:',self.LAYLIST)
+        if not lay:
+            for fldWG in self.FLDLIST:
+                if isinstance(fldWG, FieldInput):
+                    fldWG.updateFieldList()
+            return
+
         if os.path.exists(lay):
             layPath = lay
-        else:
+        elif lay in self.LAYLIST:
             layPath = self.LAYLIST[lay].source()
+        else:
+            return
 
 
         for fldWG in self.FLDLIST:
