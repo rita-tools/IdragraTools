@@ -256,6 +256,7 @@ class ExportGeodataVector(QObject):
         # save output to file
         final_file = os.path.join(outPath, 'domain.gpkg')
         final_url = 'ogr:dbname=\'%s\' table="%s" (geom)'%(final_file,'domain')
+        #print('test1: %s'%self.algResults['OUTPUT'])
         self.algResults = processing.run("native:joinattributestable", {
             'INPUT': self.algResults['OUTPUT'],
             'FIELD': 'soil_id', 'INPUT_2': self.algResults2['OUT_TABLE'],
@@ -443,7 +444,7 @@ class ExportGeodataVector(QObject):
                         'CP_LAY': controlPointMap, 'ID_COL': 'id',
                         'DEST_FILE': cellListFile})
 
-        self.feedback.setPercentage(100.0)
+        self.feedback.setProgress(100.0)
         
     def assignHydrGroup(self,max_depth,wt_depth,min_ksat50,min_ksat100):
         # conversion factors
