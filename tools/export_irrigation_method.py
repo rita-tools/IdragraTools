@@ -30,6 +30,8 @@ __revision__ = '$Format:%H$'
 
 import os
 
+from openpyxl.comments.shape_writer import excelns
+
 from .check_value import checkValue
 from .speaking_name import speakingName
 from .write_pars_to_template import writeParsToTemplate
@@ -41,7 +43,14 @@ def checkIrrMethodPars(irrmeth,feedback,tr):
 	checkValue('irr_eff', irrmeth['irr_eff'], [0.,1.], '>=<=', tr, feedback)
 	if 'fw' in list(irrmeth.keys()):
 		# TODO: empty value are showed as 0 in QGIS print('fw =',irrmeth['fw'])
-		checkValue('fw', irrmeth['fw'], [0.,1.], '>=<=', tr, feedback)
+		try:
+			checkValue('fw', irrmeth['fw'],
+					   [0.,1.], '>=<=',
+					   tr, feedback)
+		except Exception as e:
+			feedback.reportError('fw value: %s'%irrmeth['fw'])
+			feedback.reportError(str(e))
+
 
 	# TODO: check comparison
 	# min_a,max_a,min_b,max_b ?

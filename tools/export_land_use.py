@@ -77,7 +77,7 @@ def checkCropPars(crop,feedback,tr):
 		checkValue(k, crop[k], 0., '>=', tr, feedback)
 
 	# cl_cn [1,2,3,4,5]
-	checkValue('cl_cn', crop['cl_cn'], [1,2,3,4,5,6], 'in', tr, feedback)
+	checkValue('cl_cn', crop['cl_cn'], [1,2,3,4,5,6,7,8,9,10], 'in', tr, feedback)
 	# irrigation [0,1]
 	checkValue('irrigation', crop['irrigation'], [0,1], 'in', tr, feedback)
 	# gdd %ASC&
@@ -226,7 +226,7 @@ def exportLandUse(DBM,outPath, feedback = None,tr=None):
 
 	#print('in export_land_use, maxSoilUseId:', maxSoilUseId)
 	if maxSoilUseId is None:
-		feedback.reportError('No aoil uses to be processed. Exiting...', True)
+		feedback.reportError('No soil uses to be processed. Exiting...', True)
 
 	#soiluseList = DBM.getRecord(tableName = 'idr_soiluses',fieldsList='',filterFld='', filterValue=None, orderBy='id')
 
