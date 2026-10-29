@@ -415,9 +415,9 @@ class AnnualTotalsReportBuilder(OverviewReportBuilder):
             for n in range(nRows):
                 row = dataToPlot.iloc[[n]]
                 #print('row val',float(row[label+'_mean']))
-                signed_val = float(row[label + '_average']) * sign
+                signed_val = float(row[label + '_average'].iloc[0]) * sign
                 flows.append(signed_val) #float(ser.iloc[0])
-                time_step.append(str(int(row[timeFld])))
+                time_step.append(str(int(row[timeFld].iloc[0])))
 
             if sign>0:
                 bar = ax.bar(range(nRows), flows, bar_w, bottom=pos_flows, label=alias)
@@ -473,7 +473,8 @@ class AnnualTotalsReportBuilder(OverviewReportBuilder):
 
     def makeReport(self,simFolder,outfile):
         #set default folder
-        outImageFolder = self.makeImgFolder(outfile)
+        outImageFolder = self.makeSubFolder(outfile, suffix='_img')
+        outStatFolder = self.makeSubFolder(outfile, suffix='_stat')
 
         # read idragra file
         idragraFile = os.path.join(simFolder, 'idragra_parameters.txt')
@@ -540,6 +541,9 @@ class AnnualTotalsReportBuilder(OverviewReportBuilder):
                                                domainFile,
                                                1,
                                                areaFile)
+
+        out_stat_path = os.path.join(outStatFolder, 'water_flux.xlsx')
+        waterFlux_table.to_excel(out_stat_path, index=False)
 
         temp_png = os.path.join(outImageFolder, 'wat_fluxes.png')
         self.makeFluxPlot(temp_png, waterFlux_table, list(waterFlux.values()),['P','E','T','I','L','R','N'],
@@ -629,6 +633,11 @@ class AnnualTotalsReportBuilder(OverviewReportBuilder):
                                               domainFile,
                                               1,
                                               areaFile)
+
+
+        out_stat_path = os.path.join(outStatFolder, 'water_productivity.xlsx')
+        waterProd_table.to_excel(out_stat_path, index=False)
+
         waterProd_table = self.dataframeToHtml(waterProd_table.loc[:,~waterProd_table.columns.isin(['area','irr_vol_m3'])].values.tolist(),
                                               ['year'] + list(waterProd.values()),
                                               statLabel,
@@ -645,21 +654,66 @@ class AnnualTotalsReportBuilder(OverviewReportBuilder):
             'irr_nr':self.tr('Number of irrigation application (-)'),
             'eff_tot': self.tr('Irrigation efficiency (-)')
         }
-        waterMan_table = self.makeAnnualStats(outputPath,
+        waterMan_df = self.makeAnnualStats(outputPath,
                                               ['????_'+x for x in  list(waterMan.keys())],
                                               list(waterMan.values()),
                                               statLabel,
                                               domainFile,
                                               1,
                                               areaFile)
-        waterMan_table = self.dataframeToHtml(waterMan_table.loc[:,~waterMan_table.columns.isin(['area','irr_vol_m3'])].values.tolist(),
+
+        out_stat_path = os.path.join(outStatFolder, 'water_management.xlsx')
+        waterMan_df.to_excel(out_stat_path, index=False)
+
+        waterMan_table = self.dataframeToHtml(waterMan_df.loc[:,~waterMan_df.columns.isin(['area','irr_vol_m3'])].values.tolist(),
                                                ['year'] + list(waterMan.values()),
                                                statLabel,
                                                ['{:.0f}'] + ['{:.0f}'] * (
-                                                       len(list(waterMan_table.columns)) - 2-4)
+                                                       len(list(waterMan_df.columns)) - 2-4)
                                                   +['{:.2f}']*4)
 
+        # create water requirements maps
+        watreq_image = os.path.join(outImageFolder, 'watreq_by_year_map.png')
 
+        irr_max = waterMan_df['Cumulative irrigation (mm)_average'].max()
+        irr_max = 100*round(irr_max/100,0)
+        step = irr_max/5
+        values = [0.0]+list(np.linspace(step, irr_max, num=5))
+        colors = ['white','#d7898b','#fdbf86','#ffffbf','#baddb4','#6499ba']
+
+        outFileList = glob.glob(os.path.join(outputPath, '????_irr_tot.asc'))
+        outFileList.sort()
+
+        #fig = plt.figure(figsize=(10, 3), constrained_layout=True)
+        #fig, axs = plt.subplots(len(outFileList), 1,figsize=(10, 3*len(outFileList)), constrained_layout=True)
+        nPlot = len(outFileList)
+        nRows = math.ceil(nPlot / 2)
+        nCols = 2
+        if nPlot == 1: nCols = 1
+        # print('nPlot',nPlot,'nRows',nRows,'nCols',nCols)
+        fig, axs = plt.subplots(nRows, nCols, figsize=(10, 3.5 * nRows), constrained_layout=True)
+
+        #axs = fig.add_subplot(len(outFileList),1,1)
+        f = False
+        for i,outFile in enumerate(outFileList):
+            basename = os.path.basename(outFile)
+            y = basename[0:4]
+            valRL = self.loadASC(outFile, float)
+            valRL['data'] = np.where(valRL['data'] == valRL['nodata_value'], np.nan, valRL['data'])
+            if (i == 0):
+                #extent = self.maskExtent(valRL['data'])
+                extent = (0,valRL['ncols'],0,valRL['nrows'])
+                extent = self.calcExtent(extent[0], extent[1], extent[2], extent[3], valRL['xllcorner'],
+                                         valRL['yllcorner'],
+                                         valRL['cellsize'])
+            # add map
+            if i == nPlot-1: f = True
+            self.addRasterMapToPlotLinear(axs[i], valRL['data'], extent, values, colors, offset=0.1, add_colorbar=f)
+            axs[i].set_title(str(y))
+
+        # save to file
+        fig.savefig(watreq_image, format='png')
+        watreq_image = os.path.relpath(watreq_image, os.path.dirname(outfile))
 
         self.FEEDBACK.setProgress(60.)
 
@@ -679,11 +733,43 @@ class AnnualTotalsReportBuilder(OverviewReportBuilder):
                                                 domainFile,
                                                 1,
                                                 areaFile)
+
+        out_stat_path = os.path.join(outStatFolder, 'production_1st.xlsx')
+        first_prod_table.to_excel(out_stat_path, index=False)
+
         first_prod_table = self.dataframeToHtml(first_prod_table.loc[:,~first_prod_table.columns.isin(['area','irr_vol_m3'])].values.tolist(),
                                               ['year'] + list(production1Vars.values()),
                                               statLabel,
                                               ['{:.0f}'] + ['{:.2f}'] * (
                                                       len(list(first_prod_table.columns)) - 2))
+
+        ### ADD PRODUCTION STATISTICS ###
+        self.FEEDBACK.pushInfo(self.tr('Second crop production processing ...'))
+
+        production2Vars = {
+            'biomass_pot_2': self.tr('Potential biomass for the second crop (t/ha)'),
+            'yield_act_2': self.tr('Actual yield for the second crop (t/ha)'),
+            'yield_pot_2': self.tr('Potential yield for the second crop (t/ha)')
+        }
+
+        sec_prod_table = self.makeAnnualStats(outputPath,
+                                              ['????_'+x for x in  list(production2Vars.keys())],
+                                              list(production2Vars.values()),
+                                              statLabel,
+                                              domainFile,
+                                              1,
+                                              areaFile)
+
+        out_stat_path = os.path.join(outStatFolder, 'production_2nd.xlsx')
+        sec_prod_table.to_excel(out_stat_path, index=False)
+
+        sec_prod_table = self.dataframeToHtml(sec_prod_table.loc[:,~sec_prod_table.columns.isin(['area','irr_vol_m3'])].values.tolist(),
+                                          ['year'] + list(production2Vars.values()),
+                                          statLabel,
+                                          ['{:.0f}'] + ['{:.2f}'] * (
+                                                  len(list(sec_prod_table.columns)) - 2))
+
+
 
         ### ADD VOLUME STATISTICS BY SOIL TYPES AND LAND USES ###
 
@@ -812,7 +898,12 @@ class AnnualTotalsReportBuilder(OverviewReportBuilder):
         irrmeth_stat_table['id'] = irrmeth_stat_table.index
 
         # merge soil name
-
+        out_stat_path = os.path.join(outStatFolder, 'soil_stat.xlsx')
+        soil_stat_table.to_excel(out_stat_path, index=False)
+        out_stat_path = os.path.join(outStatFolder, 'use_stat.xlsx')
+        use_stat_table.to_excel(out_stat_path, index=False)
+        out_stat_path = os.path.join(outStatFolder, 'irrmeth_stat.xlsx')
+        irrmeth_stat_table.to_excel(out_stat_path, index=False)
 
         soil_stat_table = self.dataframeToHtml(soil_stat_table.values.tolist(),
                                                   list(soil_stat_table.columns),
@@ -849,28 +940,6 @@ class AnnualTotalsReportBuilder(OverviewReportBuilder):
                                           ['{:.0f}','{:}'] + ['{:.2f}'] * (
                                                   len(list(irrmeth_stat_table.columns)) - 2))
 
-        ### ADD PRODUCTION STATISTICS ###
-        self.FEEDBACK.pushInfo(self.tr('Second crop production processing ...'))
-
-        production2Vars = {
-            'biomass_pot_2': self.tr('Potential biomass for the second crop (t/ha)'),
-            'yield_act_2': self.tr('Actual yield for the second crop (t/ha)'),
-            'yield_pot_2': self.tr('Potential yield for the second crop (t/ha)')
-        }
-
-        sec_prod_table = self.makeAnnualStats(outputPath,
-                                              ['????_'+x for x in  list(production2Vars.keys())],
-                                              list(production2Vars.values()),
-                                              statLabel,
-                                              domainFile,
-                                              1,
-                                              areaFile)
-        sec_prod_table = self.dataframeToHtml(sec_prod_table.loc[:,~sec_prod_table.columns.isin(['area','irr_vol_m3'])].values.tolist(),
-                                          ['year'] + list(production2Vars.values()),
-                                          statLabel,
-                                          ['{:.0f}'] + ['{:.2f}'] * (
-                                                  len(list(sec_prod_table.columns)) - 2))
-
 
         self.FEEDBACK.setProgress(90.)
 
@@ -879,12 +948,13 @@ class AnnualTotalsReportBuilder(OverviewReportBuilder):
                                                           'wbf_table_outcome': waterFlux_outcome_table,
                                                           'wp_table': waterProd_table,
                                                           'wm_table':waterMan_table,
+                                                          'wr_map':watreq_image,
                                                           'soil_stat_table':soil_stat_table,
                                                           'soil_vol_bxp':soil_vol_bxp,
+                                                          'use_stat_table': use_stat_table,
                                                           'use_vol_bxp':use_vol_bxp,
-                                                          'irrmeth_vol_bxp':irrmeth_vol_bxp,
-                                                          'use_stat_table':use_stat_table,
                                                           'irrmeth_stat_table':irrmeth_stat_table,
+                                                          'irrmeth_vol_bxp': irrmeth_vol_bxp,
                                                           'fcp_table':first_prod_table,
                                                           'scp_table':sec_prod_table},
                                                     self.annual_template)
@@ -910,7 +980,11 @@ class AnnualTotalsReportBuilder(OverviewReportBuilder):
 
 
 if __name__ == '__main__':
-    from test_conf import * # should contain "simFolder","outputFile" and other useful variable
+    from test_conf import *  # should contain "simFolder = 'some/path/to/simulation'"
+    import os
+    outpath = os.path.join(simFolder,'reports')
+    if not os.path.exists(outpath): os.makedirs(outpath)
+    outputFile = os.path.join(outpath,'annual_totals.html')
     RB = AnnualTotalsReportBuilder()
     outfile = RB.makeReport(simFolder,outputFile)
     print(outfile)

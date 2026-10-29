@@ -374,13 +374,16 @@ class OverviewReportBuilder(ReportBuilder):
             map_rl = self.loadASC(mapFile, val_type=int)
             if not map_rl: return # exit if file not loaded
             map_data = map_rl['data']
+            #print('debug map_data:',np.unique(map_data))
 
             domain_rl = self.loadASC(domainFile, val_type=int)
             if not domain_rl: return  # exit if file not loaded
             domain_data = domain_rl['data']
+            #print('debug domain_data:', np.unique(map_data))
 
             map_data = np.where(domain_data != 1, map_rl['nodata_value'], map_data) # apply domain mask
             values = np.unique(map_data.ravel()).tolist()
+            values = [int(x) for x in values ]
             im_values = range(len(values))
             #values = values[~np.isnan(values)] # remove nan from list
             if (map_rl['nodata_value'] in values): values.remove(map_rl['nodata_value'])
@@ -393,7 +396,7 @@ class OverviewReportBuilder(ReportBuilder):
 
             map_data = self.replace_values_by_list(map_data,values,im_values)
 
-            handles, labels, colors = self.addRasterMapToPlot(ax1, map_data, map_rl['extent'], values,offset)
+            handles, labels, colors = self.addRasterMapToPlot(ax1, map_data, map_rl['extent'], im_values,values,offset)
         else:
             # make a map based on geometries
             map_rl = self.loadASC(mapFile, val_type=int)
@@ -421,8 +424,8 @@ class OverviewReportBuilder(ReportBuilder):
 
         # add pie chart
         mapStat = self.rasterStat(mapFile, domainFile,areaFile)
-        print('mapFile:',mapFile)
-        print('mapStat:',mapStat)
+        #print('mapFile:',mapFile)
+        #print('mapStat:',mapStat)
         ax2 = fig.add_subplot(gs[0, 2])
         ax2.axis('off')
         ax2.pie(mapStat['perc'], labels=None, colors=colors)
@@ -615,7 +618,8 @@ class OverviewReportBuilder(ReportBuilder):
 
     def makeReport(self,simFolder,outfile):
         #set default folder
-        outImageFolder = self.makeImgFolder(outfile)
+        outImageFolder = self.makeSubFolder(outfile,suffix='_img')
+        outStatFolder = self.makeSubFolder(outfile,suffix='_stat')
 
         # read idragra file
         idragraFile = os.path.join(simFolder, 'idragra_parameters.txt')
@@ -711,6 +715,8 @@ class OverviewReportBuilder(ReportBuilder):
                 cropsTable['max_hc'].append(cropPars[crop]['table']['Hc'].max())
 
         cropsTable = pd.DataFrame(cropsTable)
+        out_stat_path = os.path.join(outStatFolder, 'crops_table.xlsx')
+        cropsTable.to_excel(out_stat_path, index=False)
         crop_list_table = self.dataframeToHtml(cropsTable.values.tolist(),
                                           ['name','LAI (m^2/m^2)','Kcb (-)','root depth (m)','plant height (m)'],
                                           None,
@@ -723,6 +729,10 @@ class OverviewReportBuilder(ReportBuilder):
 
         res['cr1'] = res['cr1'].map(cropMaptable)
         res['cr2'] = res['cr2'].map(cropMaptable)
+
+
+        out_stat_path = os.path.join(outStatFolder, 'lu_list_table.xlsx')
+        res.to_excel(out_stat_path, index=False)
 
         lu_list_table = self.dataframeToHtml(res.values.tolist(),
                                         ['id', 'first crop', 'second crop', 'name'],
@@ -754,6 +764,9 @@ class OverviewReportBuilder(ReportBuilder):
             temp_png_rel = os.path.relpath(temp_png, os.path.dirname(outfile))
 
             # print('res',res)
+            out_stat_path = os.path.join(outStatFolder, 'lu_table_%s.xlsx'%y)
+            res.to_excel(out_stat_path, index=False)
+
             lu_table = self.dataframeToHtml(res.values.tolist(), ['id', 'num. of cells', 'area (map units)', 'percentage'],
                                        None,
                                        ['{:.0f}', '{:.0f}', '{:.0f}', '{:.0f}'])
@@ -792,6 +805,9 @@ class OverviewReportBuilder(ReportBuilder):
         irrmethTable = pd.DataFrame(irrmethTable)
         irrmethTable.sort_values(by='id', inplace = True)
 
+        out_stat_path = os.path.join(outStatFolder, 'irrmeth_table.xlsx')
+        irrmethTable.to_excel(out_stat_path, index=False)
+
         irrmethTable = self.dataframeToHtml(irrmethTable.values.tolist(),
                                        [self.tr('id'), self.tr('name'), self.tr('irrigation efficiency'),self.tr('fixed irr. volume (mm)'),
                                         self.tr('k stress (collective)'), self.tr('k stress (private)')],
@@ -822,6 +838,9 @@ class OverviewReportBuilder(ReportBuilder):
             temp_png_rel = os.path.relpath(temp_png, os.path.dirname(outfile))
 
             # print('res',res)
+            out_stat_path = os.path.join(outStatFolder, 'im_table_%s.xlsx'%y)
+            res.to_excel(out_stat_path, index=False)
+
             im_table = self.dataframeToHtml(res.values.tolist(), ['id', 'num. of cells', 'area (map units)', 'percentage'],
                                        None,
                                        ['{:.0f}', '{:.0f}', '{:.0f}', '{:.0f}'])
@@ -844,12 +863,16 @@ class OverviewReportBuilder(ReportBuilder):
         statLabel = ['min', 'mean', 'max']
 
         first_soil_par_table = self.makeGroupedStats(geodataPath,soilPar1FNList,soilParName,statLabel)
+        out_stat_path = os.path.join(outStatFolder, 'soil_table_1st.xlsx')
+        first_soil_par_table.to_excel(out_stat_path, index=False)
         first_soil_par_table = self.dataframeToHtml(first_soil_par_table.values.tolist(),
                                           ['soil id']+soilParName,
                                           statLabel,
                                           ['{:.0f}']+['{:.2f}']*(len(list(first_soil_par_table.columns))-1))
 
         sec_soil_par_table = self.makeGroupedStats(geodataPath, soilPar2FNList, soilParName, statLabel)
+        out_stat_path = os.path.join(outStatFolder, 'soil_table_2nd.xlsx')
+        sec_soil_par_table.to_excel(out_stat_path, index=False)
         sec_soil_par_table = self.dataframeToHtml(sec_soil_par_table.values.tolist(),
                                                ['soil id'] + soilParName,
                                                statLabel,
@@ -873,6 +896,8 @@ class OverviewReportBuilder(ReportBuilder):
         statLabel = ['min', 'mean', 'max']
 
         other_soil_par_table = self.makeGroupedStats(geodataPath, soilPar4FNList, soilParName, statLabel)
+        out_stat_path = os.path.join(outStatFolder, 'soil_table_other.xlsx')
+        other_soil_par_table.to_excel(out_stat_path, index=False)
         other_soil_par_table = self.dataframeToHtml(other_soil_par_table.values.tolist(),
                                              ['soil id'] + soilParName,
                                              statLabel,
@@ -885,6 +910,9 @@ class OverviewReportBuilder(ReportBuilder):
 
         soil_stat_tbl = self.rasterStat(os.path.join(geodataPath,'soilid.asc'), domainFile, areaFile)
         soil_stat_tbl.sort_values(by='id', inplace = True)
+
+        out_stat_path = os.path.join(outStatFolder, 'soilmap_table.xlsx')
+        soil_stat_tbl.to_excel(out_stat_path, index=False)
 
         soil_stat_tbl = self.dataframeToHtml(soil_stat_tbl.values.tolist(),
                                              ['id', 'num. of cells', 'area (map units)', 'percentage'],
@@ -937,7 +965,11 @@ class OverviewReportBuilder(ReportBuilder):
 
 
 if __name__ == '__main__':
-    from test_conf import *  # should contain "simFolder","outputFile" and other useful variable
+    from test_conf import *  # should contain "simFolder = 'some/path/to/simulation'"
+    import os
+    outpath = os.path.join(simFolder,'reports')
+    if not os.path.exists(outpath): os.makedirs(outpath)
+    outputFile = os.path.join(outpath,'sim_overview.html')
     RB = OverviewReportBuilder()
     outfile = RB.makeReport(simFolder,outputFile)
     print(outfile)

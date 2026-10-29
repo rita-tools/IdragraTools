@@ -80,14 +80,16 @@ class IrrunitTotalsReportBuilder(AnnualTotalsReportBuilder):
         #print('baseFileList',baseFileList)
         baseFileList.sort()
         numOfFile = len(baseFileList)
-        nPlot = math.ceil((numOfFile) / 2)
         nplot_col = 2
-        # TODO: make better position of legend
+        nPlot = nplot_col*math.ceil((numOfFile) / nplot_col)
+        if nPlot==numOfFile: nPlot=nPlot+1 # give space for legend
+        nplot_row = math.ceil(nPlot/nplot_col)
+
         # always add one-axes for legend
-        if nPlot==1: nplot_col = 3
-        else: nPlot = nPlot+1
+        #if nPlot==1: nplot_col = 3
+        #else: nPlot = nPlot+1
         #print('numOfFile',numOfFile,'nPlot',nPlot)
-        fig, axs = plt.subplots(nPlot, nplot_col, figsize=(10, 3 * nPlot), constrained_layout=True)
+        fig, axs = plt.subplots(nplot_row, nplot_col, figsize=(10, 3 * nPlot/nplot_col), constrained_layout=True)
         #print('axs',axs)
 
         tableList = []
@@ -144,13 +146,25 @@ class IrrunitTotalsReportBuilder(AnnualTotalsReportBuilder):
                 # add map to the figure
                 #handles, labels = self.addMapToPlot(ax, filtered_data, extent,values)
                 if not featFile:
+                    values = np.unique(masked_data.ravel()).tolist()
+                    values = [int(x) for x in values if not np.isnan(x)]
+                    #print('debug values:',values)
+                    im_values = range(len(values))
+                    # values = values[~np.isnan(values)] # remove nan from list
+                    if (base_rl['nodata_value'] in values): values.remove(base_rl['nodata_value'])
+
+                    # save to file
+
+                    # labels = ['{:.0f}'.format(x) for x in values]
+                    masked_data = self.replace_values_by_list(masked_data, values, im_values)
+
                     #print('not featFile', ax)
                     if (i==0):
                         extent = self.maskExtent(mask_data)
                         extent = self.calcExtent(extent[0], extent[1], extent[2], extent[3], mask_rl['xllcorner'],
                                                  mask_rl['yllcorner'],
                                                  mask_rl['cellsize'])
-                    handles, labels, colors = self.addRasterMapToPlot(ax, masked_data, extent, values)
+                    handles, labels, colors = self.addRasterMapToPlot(ax, masked_data, extent, im_values,values)
                 else:
                     # load geometries vector file
                     inDataSource = ogr.Open(featFile)
@@ -174,7 +188,7 @@ class IrrunitTotalsReportBuilder(AnnualTotalsReportBuilder):
 
         n_items = len(handles)
         n_cols = math.ceil(n_items / 10)
-        ax.legend(handles, labels,ncol=n_cols)# loc=7,
+        ax.legend(handles, labels,ncol=n_cols, loc='center')# loc=7,
 
         # join dataframe to only one
         newDf = pd.concat(tableList, axis=1)
@@ -191,7 +205,7 @@ class IrrunitTotalsReportBuilder(AnnualTotalsReportBuilder):
 
     def makeReport(self,simFolder,outfile):
         #set default folder
-        outImageFolder = self.makeImgFolder(outfile)
+        outImageFolder = self.makeSubFolder(outfile)
 
         # read idragra file
         idragraFile = os.path.join(simFolder, 'idragra_parameters.txt')
@@ -395,6 +409,25 @@ class IrrunitTotalsReportBuilder(AnnualTotalsReportBuilder):
                                                         statLabel,
                                                         ['{:.0f}'] + ['{:.2f}'] * (
                                                                     len(list(other_soil_par_table.columns)) - 1))
+
+            ### MAKE INTERNAL NETWORK EFFICIENCY STATISTICS
+            effFNList = ['conv_eff.asc']
+
+            effParName = ['Network Efficiency']
+            statLabel = ['min', 'mean', 'average', 'max']
+
+            net_eff_par_df = self.makeGroupedStats(geodataPath,
+                                                         effFNList,
+                                                         effParName,
+                                                         statLabel,
+                                                         irrunitsFile,
+                                                         [iu],
+                                                         areaFile)
+            net_eff_par_table = self.dataframeToHtml(net_eff_par_df.values.tolist(),
+                                                        ['id'] + effParName,
+                                                        statLabel,
+                                                        ['{:.0f}'] + ['{:.2f}'] * (
+                                                                len(list(net_eff_par_df.columns)) - 1))
 
             ### MAKE IRRIGATION METHOD STATISTICS
             im_image = os.path.join(outImageFolder, 'im_by_year_map_%s.png'%(iu))
@@ -617,6 +650,9 @@ class IrrunitTotalsReportBuilder(AnnualTotalsReportBuilder):
             # get only volumes
             stepIrrEstVol_table = stepWaterFlux_table.loc[:, ['year', stepname, 'irr_vol_m3']]
 
+            # consider internal distribution efficiency
+            stepIrrEstVol_table['irr_vol_m3'] = stepIrrEstVol_table['irr_vol_m3']/net_eff_par_df.loc[0,'Network Efficiency_average']
+
             stepWaterFlux_table = self.dataframeToHtml(
                 stepWaterFlux_table.loc[:,~stepWaterFlux_table.columns.isin(['area','irr_vol_m3'])].values.tolist(),
                                                   ['year',stepname] + list(stepWaterFlux.values()),
@@ -783,7 +819,7 @@ class IrrunitTotalsReportBuilder(AnnualTotalsReportBuilder):
         #mainToc = mainItem.to_html()
         mainToc = self.makeToc(report_contents)
 
-        # UNPADE NUMBERING FOR FIGURES AND TABLES
+        # UPDADE NUMBERING FOR FIGURES AND TABLES
         report_contents = self.update_refnum(report_contents,'[%tbl_num%]')
         report_contents = self.update_refnum(report_contents, '[%img_num%]')
 
@@ -801,7 +837,11 @@ class IrrunitTotalsReportBuilder(AnnualTotalsReportBuilder):
 
 
 if __name__ == '__main__':
-    from test_conf import *  # should contain "simFolder","outputFile" and other useful variable
+    from test_conf import *  # should contain "simFolder = 'some/path/to/simulation'"
+    import os
+    outpath = os.path.join(simFolder,'reports')
+    if not os.path.exists(outpath): os.makedirs(outpath)
+    outputFile = os.path.join(outpath,'irrunit_totals.html')
     RB = IrrunitTotalsReportBuilder()
     outfile = RB.makeReport(simFolder,outputFile)
     print(outfile)

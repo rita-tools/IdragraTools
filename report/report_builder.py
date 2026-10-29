@@ -1,13 +1,15 @@
 import copy
 import glob
+import math
 import os
+import random
 
 import numpy as np
 import pandas as pd
 import re
 
 import matplotlib
-from matplotlib.colors import Normalize
+from matplotlib.colors import Normalize, LinearSegmentedColormap
 from matplotlib.pyplot import cm
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
@@ -131,6 +133,157 @@ class ReportBuilder():
             labels = new_labels
 
         return labels
+
+    def monthFromDoy(self,doy,year):
+        # find the month the doy belongs to
+        doy_by_month = [0,31,59,90,120,151,181,212,243,273,304,334,365]
+        if divmod(year,4)==0: doy_by_month = [0,31,60,91,121,152,182,213,244,274,305,335,366]
+        month = -1 # negative means out of range
+        for i in range(0,12):
+            l_doy = doy_by_month[i]
+            h_doy = doy_by_month[i+1]
+            if (doy>l_doy) and (doy<=h_doy):
+                month =i+1 # one-based list
+                break
+
+        return month
+
+
+    def stepFromDoy(self, doy, start_doy, step_size):
+        # find the step the doy belongs to
+        # make a list of doy limits
+        step = -1
+        doy_by_step = []
+        i_step = start_doy
+        while (i_step<=366):
+            doy_by_step.append(i_step)
+            i_step=i_step+step_size
+
+        #TODO: select step
+        for i in range(0,len(doy_by_step)-1):
+            l_doy = doy_by_step[i]
+            h_doy = doy_by_step[i+1]
+            if (doy>l_doy) and (doy<=h_doy):
+                step =i+1 # one-based list
+                break
+
+        return step
+
+    def makeAnnualStats(self,outFolder,parFNList,parName,
+                        statList=['min', 'mean', 'average','max'],
+                        maskIdFN = 'pathTo/domain.asc',maskId = 1,
+                        weightsFN = None,
+                        start_day = 1,
+                        end_day = 366,
+                        step_day = 366,
+                        start_doy = 1):
+
+        print('here')
+
+        if isinstance(maskIdFN,str):
+            maskRl = self.loadASC(maskIdFN)
+        else:
+            maskRl = maskIdFN
+
+        mask_data = np.where(maskRl['data'] == maskRl['nodata_value'], np.nan, maskRl['data'])
+        mask_data = np.where(mask_data[:] != maskId, np.nan, mask_data[:] * 0 + 1)
+
+        weights_data = mask_data
+
+        if weightsFN:
+            if isinstance(weightsFN, str):
+                weights = self.loadASC(weightsFN)
+                weights_data = weights['data']*mask_data
+            else:
+                weights_data = weightsFN*mask_data
+
+        # setup res table
+        res = {'year':[],'month':[],'step':[]}
+
+        for i in parName:
+            for s in statList: res['%s_%s'%(i,s)]= []
+
+        for i,parFN in enumerate(parFNList):
+            # match only if start with four characters
+            #print('processing:',parFN)
+            outFileList = glob.glob(os.path.join(outFolder, parFN + '.asc'))
+            if len(outFileList) == 0: continue
+            outFileList.sort()
+            # reset year list
+            res['year']=[]
+            res['month']=[]
+            res['step']=[]
+            #print('outFileList:', outFileList)
+            for outFile in outFileList:
+                month = 0  # months range from 1 to 12
+                step = 0  # always greater than 0
+
+                # get year
+                try:
+                    nums = re.findall(r'\d+', os.path.basename(outFile))
+                    y = int(nums[0])
+                    if '_month' in os.path.basename(outFile):
+                        month = int(nums[1])
+                        s = self.monthFromDoy(start_day, y)
+                        e = self.monthFromDoy(end_day, y)
+                        print('month s:', s, 'e:', e)
+                        if (month<s) or (month>e): continue
+
+                    if '_step' in os.path.basename(outFile):
+                        step = int(nums[1])
+                        s = self.stepFromDoy(start_day, start_doy, step_day)
+                        e = self.stepFromDoy(end_day, start_doy, step_day)
+                        print('step s:',s,'e:',e)
+                        if (step < s) or (step > e): continue
+                except Exception as e:
+                    self.FEEDBACK.reportError(self.tr('Bad-formatted landuse file name: %s')%outFile,False)
+                    print(e)
+
+                print(outFile,y,month,step)
+
+                res['year'].append(y)
+                res['month'].append(month)
+                res['step'].append(step)
+
+                # compute stats
+                parRl = self.loadASC(outFile, float)
+                par_data = np.where(parRl['data'] == parRl['nodata_value'], np.nan, parRl['data'])
+                filtered_weights_data = weights_data[~np.isnan(par_data)]
+                filtered_pars_data = par_data[~np.isnan(par_data)]
+
+                nan_flag = np.isnan(filtered_pars_data).all()
+                for stat in statList:
+                    aVal = np.nan
+                    if not nan_flag:
+                        if stat == 'average':
+                            # apply weights to calculate averages
+                            aVal = self.statFun[stat](filtered_pars_data,None,filtered_weights_data)
+                        else:
+                            aVal = self.statFun[stat](filtered_pars_data)
+
+                    res['%s_%s' % (parName[i], stat)].append(aVal)
+
+        #print(res)
+        # remove empty month and step
+        if len(res['month']) == 0:
+            del res['month']
+        elif max(res['month'])==0:
+            del res['month']
+        else:
+            pass
+        if len(res['step']) == 0:
+            del res['step']
+        elif max(res['step']) == 0:
+            del res['step']
+
+        #print('res',res)
+        n_tot = len(res['year'])
+        for k,v in res.items():
+            if len(v) == 0:
+                res[k] = n_tot*[np.nan]
+
+        return pd.DataFrame(res)
+
 
     def dataframeToHtml(self, df, header,
                         subHeader=None, formatList=None, tableClass='statistics', oddClass='odd',
@@ -395,7 +548,7 @@ class ReportBuilder():
         # add step codes
         step_doys = list(range(start_step, end_step, delta_step))+[end_step+1]
         for i in range(len(step_doys)-1):
-            mon_src_df['step'].loc[(mon_src_df['doy'] >= step_doys[i]) & (mon_src_df['doy'] < step_doys[i+1])] = i+1 # step ids start from 1
+            mon_src_df.loc[(mon_src_df['doy'] >= step_doys[i]) & (mon_src_df['doy'] < step_doys[i+1]),'step'] = i+1 # step ids start from 1
 
         wat_iu_df = mon_src_df.loc[:, ['year','month','doy','step']]
 
@@ -466,12 +619,12 @@ class ReportBuilder():
 
         return content
 
-    def makeImgFolder(self,outfile):
+    def makeSubFolder(self, outfile,suffix='_img'):
         """
         Set the image folder for html output
         """
         # set default folder
-        outImageFolder = outfile[:-5] + '_img'
+        outImageFolder = outfile[:-5] + suffix
         if not os.path.exists(outImageFolder):
             os.mkdir(outImageFolder)
         else:
@@ -501,7 +654,7 @@ class ReportBuilder():
         Make an html report file with tables and images
         It should be overloaded by inheriting class
         """
-        outImageFolder = self.makeImgFolder(outfile)
+        outImageFolder = self.makeSubFolder(outfile)
         # read idragra file
         ### WRITE TO FILE ###
         self.writeParsToTemplate(outfile, {'sub_title': self.tr(' - example'),
@@ -515,22 +668,136 @@ class ReportBuilder():
 
         return outfile
 
-    def addRasterMapToPlot(self, ax, map_data, extent, values, offset=0.1):
+    def add_output_map_by_year(self,outputPath,out_name,outImageFolder,outfile,
+                               max_val, min_val,palette='random'):
+        # create water requirements maps
+        watreq_image = os.path.join(outImageFolder, '%s_by_year_map.png'%out_name)
+
+        if max_val >100: max_val = 100 * round(max_val / 100, 0)
+        step = max_val / 5
+        values = [min_val] + list(np.linspace(step, max_val, num=5))
+        colors = [
+            "#{:06x}".format(random.randint(0, 0xFFFFFF))
+            for _ in range(6)
+        ]
+        if palette == 'yellowblue':
+            colors = ['#d6d84f', '#b9e28c', '#acc8aa', '#9eadc8', '#5b618a', '#5b507a']
+        if palette == 'grays':
+            colors = ['white','#e5d0cc', '#bfacb5', '#7f7b82', '#444554', '#172121']
+        if palette == 'greens':
+            colors = ['white', '#11270b', '#71b340', '#669d31', '#598b2c', '#3c5a14'] # greens
+        if palette == 'rainbow':
+            colors = ['white', '#d7898b', '#fdbf86', '#ffffbf', '#baddb4', '#6499ba']
+
+        outFileList = glob.glob(os.path.join(outputPath, '????_%s.asc'%out_name))
+        outFileList.sort()
+
+        # fig = plt.figure(figsize=(10, 3), constrained_layout=True)
+        # fig, axs = plt.subplots(len(outFileList), 1,figsize=(10, 3*len(outFileList)), constrained_layout=True)
+        nPlot = len(outFileList)
+        nRows = math.ceil(nPlot / 2)
+        nCols = 2
+        if nPlot == 1: nCols = 1
+        # print('nPlot',nPlot,'nRows',nRows,'nCols',nCols)
+        fig, axs = plt.subplots(nRows, nCols, figsize=(10, 3.5 * nRows), constrained_layout=True)
+
+        # axs = fig.add_subplot(len(outFileList),1,1)
+        f = False
+        for i, outFile in enumerate(outFileList):
+            basename = os.path.basename(outFile)
+            y = basename[0:4]
+            valRL = self.loadASC(outFile, float)
+            valRL['data'] = np.where(valRL['data'] == valRL['nodata_value'], np.nan, valRL['data'])
+            if (i == 0):
+                #extent = self.maskExtent(valRL['data'])
+                extent = (0, valRL['ncols'], 0, valRL['nrows'])
+
+                print('first',extent)
+                extent = self.calcExtent(extent[0], extent[1], extent[2], extent[3], valRL['xllcorner'],
+                                         valRL['yllcorner'],
+                                         valRL['cellsize'])
+                print('second',extent)
+            # add map
+            if i == nPlot - 1: f = True
+            self.addRasterMapToPlotLinear(axs[i], valRL['data'], extent, values, colors, offset=0.1, add_colorbar=f)
+            axs[i].set_title(str(y))
+
+        # save to file
+        fig.savefig(watreq_image, format='png')
+        return os.path.relpath(watreq_image, os.path.dirname(outfile))
+
+    def addRasterMapToPlotLinear(self, ax, map_data, extent, values,colors, offset=0.1, add_colorbar = True):
+
+        thresholds = np.array(values, dtype=float)
+
+        vmin = thresholds.min()
+        vmax = thresholds.max()
+
+        # normalize between 0 and 1
+        norm_positions = (thresholds - vmin) / (vmax - vmin)
+        # force exactly between 0 and 1
+        norm_positions[0] = 0.0
+        norm_positions[-1] = 1.0
+
+        # create interpolated colormap
+        cmap = LinearSegmentedColormap.from_list(
+            "custom_interp_cmap",
+            list(zip(norm_positions, colors))
+        )
+
+        norm = Normalize(vmin=vmin, vmax=vmax)
+
+        # plot
+        im = ax.imshow(map_data, extent=extent, cmap=cmap, norm=norm)
+
+        if add_colorbar:
+            # add colorbar
+            cbar = plt.colorbar(im, ax=ax, fraction=0.05, pad=0.04)
+            cbar.set_ticks(thresholds)
+
+        # set axes extent
+        xmin = round(extent[0] - offset * (extent[1] - extent[0]))
+        xmax = round(extent[1] + offset * (extent[1] - extent[0]))
+        ymin = round(extent[2] - offset * (extent[3] - extent[2]))
+        ymax = round(extent[3] + offset * (extent[3] - extent[2]))
+
+        # ax.set_xticks(np.arange(xmin, xmax, step=1000))
+        # ax.set_yticks(np.arange(ymin, ymax, step=1000))
+        ax.set_aspect(1.0)
+
+        # ax.axis('equal')
+        # print(xmin,xmax,ymin,ymax)
+        ax.set_xlim([xmin, xmax])
+        ax.set_ylim([ymin, ymax])
+
+        ax.ticklabel_format(axis='both', style='sci', scilimits=(0, 0))
+
+        return im
+
+    def addRasterMapToPlot(self, ax, map_data, extent, values,lbl_values, offset=0.1):
         handles = []
         labels = []
         colors = []
         if len(values)>0:
+            #print('debug values:', min(values),'-',max(values))
+            #print(map_data.dtype)
+            #print(np.unique(map_data))
+
             im = ax.imshow(map_data, extent=extent, interpolation='nearest', cmap='tab20',
                            norm=Normalize(min(values), max(values)))
+                           #norm=Normalize(0, len(values))) not working
+
 
             # credits: https://stackoverflow.com/questions/25482876/how-to-add-legend-to-imshow-in-matplotlib
+            #print('debug values:',values)
             # colormap used by imshow
             colors = [im.cmap(im.norm(value)) for value in values]
+            #print('debug colors:', colors)
             # create a patch (proxy artist) for every color
             patches = [mpatches.Patch(color=colors[i]) for i in range(len(values))]
 
             handles = patches
-            labels = values
+            labels = lbl_values
 
             # set axes extent
             xmin = round(extent[0] - offset * (extent[1]-extent[0]))

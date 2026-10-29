@@ -93,7 +93,7 @@ class CheckDatabaseBuilder(ReportBuilder):
 
     def makeReport(self,simFolder,outfile):
         #set default folder
-        outImageFolder = self.makeImgFolder(outfile)
+        outImageFolder = self.makeSubFolder(outfile)
 
         if not self.conn: self.startConnection()
 
