@@ -34,6 +34,7 @@ from qgis.core import QgsProcessingProvider
 
 from PyQt5.QtGui import QIcon
 
+from .algs.idragra_export_geodata import IdragraExportGeodata
 from .algs.idragra_create_elev_to_field import IdragraCreateElevToField
 from .algs.idragra_clean_overlap import IdragraCleanOverlap
 from .algs.idragra_multi_join import IdragraMultiJoin
@@ -116,7 +117,8 @@ class IdrAgraToolsProvider(QgsProcessingProvider):
 						IdragraResultsMap(),
 						IdragraMultiJoin(),
 						IdragraCleanOverlap(),
-						IdragraCreateElevToField()
+						IdragraCreateElevToField(),
+						IdragraExportGeodata()
 						]
 
 	def unload(self):
@@ -130,9 +132,11 @@ class IdrAgraToolsProvider(QgsProcessingProvider):
 		"""
 		Loads all algorithms belonging to this provider.
 		"""
+		print('before loading algs')
 		for alg in self.alglist:
 			self.addAlgorithm( alg )
 
+		print('OK load provider')
 	def id(self):
 		"""
 		Returns the unique provider id, used for identifying the provider. This

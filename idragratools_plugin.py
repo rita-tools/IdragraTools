@@ -48,7 +48,8 @@ from PyQt5 import QtSql
 from PyQt5.QtXml import QDomDocument
 from qgis import processing
 
-from tools.export_geodata_vector import ExportGeodataVector
+from .tools.create_scheduled_irrigations import createScheduledIrrigations
+from .tools.export_geodata_vector import ExportGeodataVector
 from .forms.report_view import ReportDialog
 from .tools.show_message import showInfoMessageBox, showCriticalMessageBox
 from .tools.network_analyst import NetworkAnalyst
@@ -141,8 +142,15 @@ class Feedback():
 class IdrAgraTools():
 
     def __init__(self, iface):
-        self.iface = iface
-        self.canvas = iface.mapCanvas()
+        if iface:
+            self.iface = iface
+        else:
+            import qgis.utils
+            self.iface = qgis.utils.iface
+
+        self.canvas = None
+        if self.iface:
+            self.canvas = self.iface.mapCanvas()
 
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
@@ -159,7 +167,7 @@ class IdrAgraTools():
 
         # add processing provider
         self.provider = IdrAgraToolsProvider()
-
+        print('after provider')
         # TODO: check the latest version of idragra and cropcoef
         self.s = QSettings('UNIMI-DISAA', 'IdrAgraTools')
         if self.s.value('idragraPath','')=='': self.s.setValue('idragraPath', os.path.join(self.plugin_dir,'bin','idragra.exe'))
@@ -396,7 +404,7 @@ class IdrAgraTools():
                         '1':'Consumptions',
                         '2':'Field capacity needs satisfaction',
                         '3':'Fixed volumes',
-                        '4':'Scheduled irrigation [NOT AVAILABLE]'
+                        '4':'Scheduled irrigation [TESTING]'
                         }
 
         self.SIMDIC = {'DBFILE':'',
@@ -468,6 +476,7 @@ class IdrAgraTools():
                             'irrunits_totals': self.tr('Irrigation units totals')
                             }
 
+        print('before settings')
         # enable macro for this session
         s = QgsSettings()
         self.MACROPOLICY = s.value('qgis/enableMacros')
@@ -483,9 +492,10 @@ class IdrAgraTools():
         self.actionState = [None,None,None,None]
 
         self.mainMenu = None
-        self.iface.projectRead.connect(self.loadFromProject)
-        self.iface.newProjectCreated.connect(self.resetMenuItemState)
-
+        if self.iface:
+            self.iface.projectRead.connect(self.loadFromProject)
+            self.iface.newProjectCreated.connect(self.resetMenuItemState)
+        print('before end')
         # reload if project is already loaded
         #if QgsProject.instance():
         #    self.loadFromProject()
@@ -496,6 +506,7 @@ class IdrAgraTools():
                                     self.tr('Really so sorry ...'))
 
     def initGui(self):
+        print('start init_gui')
         # add Main Menu
         self.mainMenu = self._addmenu(self.iface.mainWindow().menuBar(), 'IdrAgraTools', 'IdrAgraTools')
         self.dbMenu = self._addmenu(self.mainMenu, 'Database', self.tr('Start'),True)
@@ -916,12 +927,18 @@ class IdrAgraTools():
         proj.read(uri)
 
         # load parameters without removing defaults if exist
-        tempSimDic = eval(proj.readEntry('IdrAgraTools', 'simsettings')[0])
-        for k,v in tempSimDic.items():
-            self.SIMDIC[k]=v
+        try:
+            tempSimDic = eval(proj.readEntry('IdrAgraTools', 'simsettings')[0])
+            for k,v in tempSimDic.items():
+                self.SIMDIC[k]=v
+        except Exception as e:
+            print(e)
 
         # TODO: INIT DB
-        self.updateProj(dbpath)
+        try:
+            self.updateProj(dbpath)
+        except Exception as e:
+            print(e)
 
         # TODO: check path to raster
         # self.DBM = SQLiteDriver(dbpath, False,None,None,self.tr, QgsProject.instance())
@@ -941,7 +958,9 @@ class IdrAgraTools():
 
     def loadLayer(self):
         lyrSourcesList = [layer.source().replace('\\','/') for layer in QgsProject.instance().mapLayers().values()]
+        print(lyrSourcesList)
         for n, a in self.LYRNAME.items():
+            print('Loading',n,'-',a)
             gpkg_layer = self.DBM.DBName + '|layername=' + n
             gpkg_layer = gpkg_layer.replace('\\', '/')
             if not gpkg_layer in lyrSourcesList:
@@ -952,10 +971,13 @@ class IdrAgraTools():
                     groupIndex, mygroup = self.getGroupIndex(self.LYRGRPNAME[n])
                     print(os.path.join(self.plugin_dir, 'styles', n + '.qml'))
                     vlayer.loadNamedStyle(os.path.join(self.plugin_dir, 'styles', n + '.qml'))
+                    print('OK1')
                     QgsProject.instance().addMapLayer(vlayer, False)
+                    print('OK2')
                     mygroup.insertChildNode(groupIndex, QgsLayerTreeLayer(vlayer))
-
-                # set up layer field
+                    print('OK3')
+            print('OK')
+            # set up layer field
 
         # load rasters
         for n,s in self.SIMDIC['ELEVMAP'].items():
@@ -1866,6 +1888,10 @@ class IdrAgraTools():
         self.SIMDIC['NTAILWAT'] = res['noftwostage']
         self.SIMDIC['NPUBWELL'] = res['npubwell']
 
+        # create also scheduled irrigation file
+        res = createScheduledIrrigations(self.DBM, path2WSources, self.SIMDIC['YEARS'],-1, progress,
+                                 self.tr)
+
         progress.setPercentage(100.)
 
     def exportSimProj(self, progress):
@@ -1967,14 +1993,21 @@ class IdrAgraTools():
         except ImportError:
             from queue import Queue, Empty  # python 3.x
 
-        def enqueue_output(out, err, queue):
-            for line in iter(out.readline, b''):
-                queue.put(line)
-            out.close()
+        # === new ===
+        def enqueue_output(stream, queue, tag):
+            for line in iter(stream.readline, b''):
+                queue.put((tag, line))
+            stream.close()
 
-            for e in iter(err.readline, b''):
-                queue.put(e)
-            err.close()
+        # === legacy ===
+        # def enqueue_output(out, err, queue):
+        #     for line in iter(out.readline, b''):
+        #         queue.put(line)
+        #     out.close()
+        #
+        #     for e in iter(err.readline, b''):
+        #         queue.put(e)
+        #     err.close()
 
         if progress: progress.setPercentage(0.0)
 
@@ -2019,27 +2052,34 @@ class IdrAgraTools():
             # ~ stack_size(200 * 1024 * 1024)
             # ~ print('stacksize2',stack_size())
 
-            t = Thread(target=enqueue_output, args=(proc.stdout, proc.stderr, q))
+            # === new ===
+            t_stdout = Thread(target=enqueue_output, args=(proc.stdout, q, 'out'))
+            t_stderr = Thread(target=enqueue_output, args=(proc.stderr, q, 'err'))
 
-            t.daemon = True  # thread dies with the program
-            t.start()
-            # t.join()
+            t_stdout.daemon = True
+            t_stderr.daemon = True
+
+            t_stdout.start()
+            t_stderr.start()
 
             perc = 0.0
             currentYear = -1
             year = -1
 
-            while checkTread(t):
+            while proc.poll() is None or not q.empty():
                 try:
-                    line = q.get(timeout=.1)  # q.get_nowait() # or #TODO_check performance
-                    #line = q.get_nowait()
-                    line = line.decode('utf-8','ignore')
-                    line = line.strip()
+                    tag, line = q.get(timeout=0.1)
+                    line = line.decode('utf-8', 'ignore').strip()
                 except Empty:
-                    # do nothing
-                    pass
-                else:  # got line
-                    # ... do something with line
+                    continue
+
+                if line == '':
+                    continue
+
+                if tag == 'err':
+                    if progress:
+                        progress.setInfo('Error: %s' % line, True)
+                else:
                     if line.startswith('print'):
                         line = ''
                     elif line.startswith('Simulation day'):
@@ -2070,6 +2110,61 @@ class IdrAgraTools():
                         if year != currentYear:
                             currentYear = year
                             progress.setText(self.tr('Current year: %s')%currentYear)
+
+            t_stdout.join(timeout=1)
+            t_stderr.join(timeout=1)
+
+            # === legacy ===
+            # t = Thread(target=enqueue_output, args=(proc.stdout, proc.stderr, q))
+            # t.daemon = True  # thread dies with the program
+            # t.start()
+            # # t.join()
+            #
+            # perc = 0.0
+            # currentYear = -1
+            # year = -1
+            #
+            # while checkTread(t):
+            #     try:
+            #         line = q.get(timeout=.1)  # q.get_nowait() # or #TODO_check performance
+            #         #line = q.get_nowait()
+            #         line = line.decode('utf-8','ignore')
+            #         line = line.strip()
+            #     except Empty:
+            #         # do nothing
+            #         pass
+            #     else:  # got line
+            #         # ... do something with line
+            #         if line.startswith('print'):
+            #             line = ''
+            #         elif line.startswith('Simulation day'):
+            #             toks = line.split()
+            #             try:
+            #                 perc = float(toks[2]) / 366
+            #                 year = int(toks[4])
+            #             except:
+            #                 pass
+            #             line = ''
+            #         elif line.startswith('progress'):
+            #             toks = line.split()
+            #             try:
+            #                 perc = float(toks[1]) / 100
+            #             except:
+            #                 pass
+            #             line = ''
+            #         else:
+            #             line = line
+            #
+            #         if progress:
+            #             # print('perc',perc)
+            #             progress.setPercentage(100 * perc)
+            #             if line != '':
+            #                 # print('line',line)
+            #                 progress.setText(line)
+            #
+            #             if year != currentYear:
+            #                 currentYear = year
+            #                 progress.setText(self.tr('Current year: %s')%currentYear)
 
 
         except Exception as e:
@@ -2194,7 +2289,7 @@ class IdrAgraTools():
         with open(cells_fn) as f:
             for line in f:
                 if line.startswith(str(cp_id)+'\t'):
-                    id,r,c = line.split('\t')
+                    id,r,c, *rest = line.split('\t')
                     break
 
         return int(r), int(c)

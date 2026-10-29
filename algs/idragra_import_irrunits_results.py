@@ -334,7 +334,7 @@ class IdragraImportIrrUnitsResults(QgsProcessingAlgorithm):
 					# mask where there are valid values for the selected district
 					mask = np.where(np.logical_and(baseData == i, varData != nodata))
 					# make the products for mean value calculation
-					prodData = areaData * varData # volume in liters beacuse m2*mm = 0.001 m3 = l
+					prodData = areaData * varData # volume in liters because m2*mm = 0.001 m3 = l
 					if returnVolume:
 						calcVal = np.sum(prodData[mask])/1000
 					else:

@@ -1,0 +1,3 @@
+[%NUMOFROW%]
+irrigation_unit_id year doy water_depth
+[%RULELIST%]
