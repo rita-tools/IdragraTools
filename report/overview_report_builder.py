@@ -475,11 +475,13 @@ class OverviewReportBuilder(ReportBuilder):
         maskData = maskRaster['data']
         areaData = maskRaster['data']*0.+(baseRaster['cellsize']*baseRaster['cellsize'])
 
-        try:
-            areaRaster = self.loadASC(areaMapFN, int)
-            areaData = areaRaster['data']
-        except:
-            self.FEEDBACK.reportError(self.tr('Unable to open %s')%areaMapFN,False)
+        if areaMapFN:
+            try:
+                areaRaster = self.loadASC(areaMapFN, float)
+                areaData = areaRaster['data']
+            except Exception as e:
+                self.FEEDBACK.reportError(
+                    self.tr('Unable to read area map %s: %s. Using square-cell areas.') % (areaMapFN, str(e)), False)
 
         baseList = list(np.unique(baseData))
         if baseRaster['nodata_value'] in baseList: baseList.remove(baseRaster['nodata_value'])
@@ -575,7 +577,7 @@ class OverviewReportBuilder(ReportBuilder):
 
         if weightsFN:
             if isinstance(weightsFN, str):
-                weights = self.loadASC(weightsFN)
+                weights = self.loadASC(weightsFN, float)
                 weights_data = weights['data'] * weights_data
             else:
                 weights_data = weightsFN * weights_data

@@ -105,7 +105,7 @@ class AnnualTotalsReportBuilder(OverviewReportBuilder):
 
         if weightsFN:
             if isinstance(weightsFN, str):
-                weights = self.loadASC(weightsFN)
+                weights = self.loadASC(weightsFN, float)
                 weights_data = weights['data']*mask_data
             else:
                 weights_data = weightsFN*mask_data

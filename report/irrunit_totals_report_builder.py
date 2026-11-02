@@ -114,7 +114,7 @@ class IrrunitTotalsReportBuilder(AnnualTotalsReportBuilder):
                     area_data = mask_data * base_rl['cellsize'] * base_rl['cellsize']
                     if areaFile:
                         #print('areaFile:',areaFile)
-                        area_rl = self.loadASC(areaFile, int)
+                        area_rl = self.loadASC(areaFile, float)
                         area_data = np.where(area_rl['data'] == area_rl['nodata_value'], np.nan, area_rl['data'])
 
                 masked_data = base_data*mask_data
