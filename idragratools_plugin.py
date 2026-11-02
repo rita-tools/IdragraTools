@@ -73,7 +73,7 @@ cmd_folder = os.path.split(inspect.getfile(inspect.currentframe()))[0]
 if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
 
-from qgis.core import QgsProcessingAlgorithm, QgsApplication, QgsProject, QgsProviderRegistry, QgsVectorLayer, \
+from qgis.core import Qgis, QgsProcessingAlgorithm, QgsApplication, QgsProject, QgsProviderRegistry, QgsVectorLayer, \
     QgsGeometry, QgsFeature, QgsFeatureRequest, QgsExpression
 from qgis.PyQt.QtCore import QVariant, QUrl
 
@@ -469,15 +469,9 @@ class IdrAgraTools():
                             'irrunits_totals': self.tr('Irrigation units totals')
                             }
 
-        # enable macro for this session
-        s = QgsSettings()
-        self.MACROPOLICY = s.value('qgis/enableMacros')
-        #self.TABLEPOLICY = s.value('qgis/attributeTableView')
-        s.setValue('qgis/enableMacros', 'SessionOnly')
-        #s.setValue('qgis/attributeTableView', 1)
-
         self.DBM = None
         self._openingDB = False
+        self._pythonPermissionOffered = False
 
         # force activation state for specific names
         # None means always set as initialization
@@ -678,10 +672,6 @@ class IdrAgraTools():
         self.mainMenu.deleteLater()
         # remove processing provider
         QgsApplication.processingRegistry().removeProvider(self.provider)
-        # restore macro policy
-        s = QgsSettings()
-        s.setValue('qgis/enableMacros', self.MACROPOLICY)
-        #s.setValue('qgis/attributeTableView', self.TABLEPOLICY)
 
     def _addmenuitem(self, parent, name, text, function, activate=True):
         if name not in self.actionList:
@@ -836,6 +826,31 @@ class IdrAgraTools():
         self.loadLayer()
         self.setupAllLayers()
         self.updatePars()
+        self.offerPythonSessionPermission()
+
+    def offerPythonSessionPermission(self):
+        if self._pythonPermissionOffered:
+            return
+
+        settings = QgsSettings()
+        mode = settings.enumValue('qgis/enablePythonEmbedded', Qgis.PythonEmbeddedMode.Ask)
+        if mode != Qgis.PythonEmbeddedMode.Ask:
+            return
+
+        self._pythonPermissionOffered = True
+        prompt = QMessageBox(self.iface.mainWindow())
+        prompt.setWindowTitle(self.tr('IdrAgraTools'))
+        prompt.setText(self.tr('Allow Python scripts for this QGIS session?'))
+        prompt.setInformativeText(self.tr(
+            'IdrAgraTools uses scripts in its attribute tables and forms. '
+            'You can allow them here to avoid repeated confirmations until QGIS restarts.'))
+        allowButton = prompt.addButton(self.tr('Allow for this session'), QMessageBox.AcceptRole)
+        keepButton = prompt.addButton(self.tr('Keep asking'), QMessageBox.RejectRole)
+        prompt.setDefaultButton(keepButton)
+        prompt.setEscapeButton(keepButton)
+        prompt.exec()
+        if prompt.clickedButton() is allowButton:
+            settings.setEnumValue('qgis/enablePythonEmbedded', Qgis.PythonEmbeddedMode.SessionOnly)
 
     def updatePars(self):
         proj = QgsProject.instance()
