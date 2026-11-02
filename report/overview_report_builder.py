@@ -10,7 +10,6 @@ from qgis.core import QgsVectorLayer
 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from matplotlib import cm
 import matplotlib.patches as mpatches
 import matplotlib.patheffects as pe
 from matplotlib.gridspec import GridSpec
@@ -319,7 +318,7 @@ class OverviewReportBuilder(ReportBuilder):
 
                 colNum = len(colNames)
                 # prepare a graduated color list
-                colList = cm.get_cmap('gray', colNum + 2)  # +2 to avoid white
+                colList = plt.get_cmap('gray', colNum + 2)  # +2 to avoid white
                 handles = []
                 j = 0
                 for col in colNames:

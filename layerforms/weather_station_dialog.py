@@ -322,7 +322,7 @@ def plotPheno(wsId,varIdx):
 	cw.setAxis(pos=111, secondAxis=False, label=['main chart'])
 	timestamp = phenos['timestamp'].values
 	nOfSeries = len(list(phenos.keys()))
-	colList = plt.cm.get_cmap('tab20', nOfSeries)
+	colList = plt.get_cmap('tab20', nOfSeries)
 	for i,landuse in enumerate(list(phenos.keys())):
 		if landuse != 'timestamp':
 			cw.addTimeSerie(timestamp, phenos[landuse].values,'-',colList(i/nOfSeries),landuse,1,False)
