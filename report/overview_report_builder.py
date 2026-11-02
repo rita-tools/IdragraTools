@@ -740,17 +740,12 @@ class OverviewReportBuilder(ReportBuilder):
             # parse year from soiluse_2005.asc
             fname = os.path.basename(luFile)
             # extract date time
-            y = 'general'
-            # print(fname)
-            try:
-                nums = re.findall(r'\d+', fname)
-                y = int(nums[0])
-            except Exception as e:
-                self.FEEDBACK.reportError(self.tr('Skip landuse file name: %s [%s]')%(fname,str(e)),False)
+            nums = re.findall(r'\d+', fname)
+            y = int(nums[0]) if nums else None
 
             res = self.rasterStat(luFile, domainFile,areaFile)
             # make pie plot
-            temp_png = os.path.join(outImageFolder, 'lu_pie_%s.png' % y)
+            temp_png = os.path.join(outImageFolder, 'lu_pie_%s.png' % (y if y is not None else 'general'))
             self.plotCatMap(temp_png, luFile, domainFile,areaFile,featFile)
             temp_png_rel = os.path.relpath(temp_png, os.path.dirname(outfile))
 
@@ -808,17 +803,12 @@ class OverviewReportBuilder(ReportBuilder):
             # parse year from soiluse_2005.asc
             fname = os.path.basename(imFile)
             # extract date time
-            y = 'general'
-            # print(fname)
-            try:
-                nums = re.findall(r'\d+', fname)
-                y = int(nums[0])
-            except:
-                self.FEEDBACK.reportError(self.tr('Skip irrigation method map file name: %s')%fname,False)
+            nums = re.findall(r'\d+', fname)
+            y = int(nums[0]) if nums else None
 
             res = self.rasterStat(imFile, domainFile,areaFile)
             # make pie plot
-            temp_png = os.path.join(outImageFolder, 'im_pie_%s.png' % y)
+            temp_png = os.path.join(outImageFolder, 'im_pie_%s.png' % (y if y is not None else 'general'))
             self.plotCatMap(temp_png, imFile, domainFile,areaFile,featFile)
             temp_png_rel = os.path.relpath(temp_png, os.path.dirname(outfile))
 
