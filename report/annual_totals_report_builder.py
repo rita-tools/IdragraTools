@@ -389,7 +389,7 @@ class AnnualTotalsReportBuilder(OverviewReportBuilder):
         for n in range(nRows * nCols):
             if n<nPlot:
                 flows = []
-                row = dataToPlot.iloc[[n]]
+                row = dataToPlot.iloc[n]
                 for label,sign in zip(labels,signs):
                     #print('row val',float(row[label+'_mean']))
                     flows.append(float(row[label+'_average'])*sign)
@@ -413,7 +413,7 @@ class AnnualTotalsReportBuilder(OverviewReportBuilder):
             flows = []
             time_step = []
             for n in range(nRows):
-                row = dataToPlot.iloc[[n]]
+                row = dataToPlot.iloc[n]
                 #print('row val',float(row[label+'_mean']))
                 signed_val = float(row[label + '_average']) * sign
                 flows.append(signed_val) #float(ser.iloc[0])

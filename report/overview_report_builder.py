@@ -50,7 +50,7 @@ class OverviewReportBuilder(ReportBuilder):
         res = {}
         for index, row in df.iterrows():
             # print(row)
-            res[row['sar.dat']] = {'ws_x': row[1], 'ws_y': row[2]}
+            res[row['sar.dat']] = {'ws_x': row.iloc[1], 'ws_y': row.iloc[2]}
 
         return res
 

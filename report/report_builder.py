@@ -395,7 +395,7 @@ class ReportBuilder():
         # add step codes
         step_doys = list(range(start_step, end_step, delta_step))+[end_step+1]
         for i in range(len(step_doys)-1):
-            mon_src_df['step'].loc[(mon_src_df['doy'] >= step_doys[i]) & (mon_src_df['doy'] < step_doys[i+1])] = i+1 # step ids start from 1
+            mon_src_df.loc[(mon_src_df['doy'] >= step_doys[i]) & (mon_src_df['doy'] < step_doys[i+1]), 'step'] = i+1 # step ids start from 1
 
         wat_iu_df = mon_src_df.loc[:, ['year','month','doy','step']]
 
