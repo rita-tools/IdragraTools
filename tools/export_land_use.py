@@ -32,7 +32,7 @@ import os
 import shutil
 
 from .check_value import checkValue
-from .speaking_name import speakingName
+from .landuse_library import crop_filename
 from .write_pars_to_template import writeParsToTemplate
 
 def checkCropPars(crop,feedback,tr):
@@ -208,7 +208,7 @@ def exportLandUse(DBM,outPath, feedback = None,tr=None):
 			cropDict['ADV_OPTS'] = adv_opts
 
 		# prepare new file name
-		cropFileName = '%s_%s.tab' % (cropId, speakingName(cropDict['NAME']))
+		cropFileName = crop_filename(cropId, cropDict['NAME'])
 		if cropId ==0: fakeFileName = cropFileName
 
 		# loop in used crop and export

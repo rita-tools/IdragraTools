@@ -34,7 +34,7 @@ from qgis.PyQt.QtGui import *
 from qgis.PyQt import uic
 
 from qgis.PyQt.QtWidgets import QDialog, QToolBox, QWidget, QVBoxLayout, QFileDialog, QListWidgetItem, QDialogButtonBox, \
-	QTableWidgetItem
+	QTableWidgetItem, QComboBox
 
 # qgis import
 from qgis.core import *
@@ -56,7 +56,7 @@ class ImportVectorDialog(QDialog):
     closed = pyqtSignal()
 
     def __init__(self, parent=None, layList=[], fields=[], skipFields=[], dateFld=[], settings=None,
-                 title='Import vector dialog', fieldLabels=None, allowReplace=False):
+                 title='Import vector dialog', fieldLabels=None, allowReplace=False, landUseClasses=False):
         QDialog.__init__(self, parent)
         # Set up the user interface from Designer.
         uiFilePath = os.path.abspath(os.path.join(os.path.dirname(__file__), 'import_vector_dialog.ui'))
@@ -66,6 +66,11 @@ class ImportVectorDialog(QDialog):
 
         self.FLDLIST = []
         self.LAYLIST = layList
+        self.CLASSMODE_CB = None
+        if landUseClasses:
+            self.CLASSMODE_CB = QComboBox(self)
+            self.CLASSMODE_CB.addItems([self.tr('Identify classes by ID'), self.tr('Identify classes by name')])
+            self.layout().addWidget(self.CLASSMODE_CB)
         fieldLabels = fieldLabels or {}
         # populate station ids
         for l,v in layList.items():
@@ -85,7 +90,8 @@ class ImportVectorDialog(QDialog):
                 self.layout().addWidget(newFI)
                 self.FLDLIST.append(newFI)
 
-
+        if self.CLASSMODE_CB is not None:
+            self.CLASSMODE_CB.currentIndexChanged.connect(self.updateClassMode)
 
         self.updateFieldWidgets(self.SOURCE_CB.currentText())
 
@@ -131,6 +137,14 @@ class ImportVectorDialog(QDialog):
     def closeEvent(self, event):
         self.closed.emit()
 
+    def updateClassMode(self):
+        by_name = self.CLASSMODE_CB.currentIndex() == 1
+        for widget in self.FLDLIST:
+            if widget.objectName() == 'extid':
+                widget.setTitle(self.tr('Land-use class name') if by_name else self.tr('Land-use class ID'))
+            elif widget.objectName() == 'name':
+                widget.setVisible(not by_name)
+
     def setInputFile(self):
         res = QFileDialog.getOpenFileName(self, caption=self.tr('Import from:'), directory=self.s.value('lastPath'),
                                           filter=QgsProviderRegistry.instance().fileVectorFilters())
@@ -173,7 +187,8 @@ class ImportVectorDialog(QDialog):
         for fldWG in self.FLDLIST:
             if isinstance(fldWG, FieldInput):
                 #print('-',fldWG.objectName(),'-',fldWG.getValue()[0] )
-                if fldWG.getValue()[0] != '':
+                if fldWG.getValue()[0] != '' and not (self.CLASSMODE_CB is not None
+                        and self.CLASSMODE_CB.currentIndex() == 1 and fldWG.objectName() == 'name'):
                     fieldDict[fldWG.objectName()] = fldWG.getValue()[0]
             elif isinstance(fldWG, DateInput):
                 assignDate = fldWG.getValue()
@@ -183,4 +198,5 @@ class ImportVectorDialog(QDialog):
         saveEdit = self.SAVEEDIT_CB.getValue()
 
         return {'lay': lay, 'fieldDict': fieldDict,'assignDate':assignDate, 'saveEdit':saveEdit,
-                'replaceExisting': bool(self.REPLACE_CB and self.REPLACE_CB.getValue())}
+                'replaceExisting': bool(self.REPLACE_CB and self.REPLACE_CB.getValue()),
+                'classNames': self.CLASSMODE_CB is not None and self.CLASSMODE_CB.currentIndex() == 1}

@@ -521,6 +521,8 @@ class IdrAgraTools():
         self._addmenuitem(self.landuseMenu, 'ImportLandUseMap', self.tr('Import land use map [vector]'), self.importLandUseMap, False)
         self._addmenuitem(self.landuseMenu, 'SetLandUse', self.tr('Set/edit land use map [raster]'),
                           self.setRasterLanduse, False)
+        self._addmenuitem(self.landuseMenu, 'ConfigureLandUse', self.tr('Configure land-use classes'),
+                          self.configureLandUseClasses, False)
 
         #self._addmenuitem(self.landuseMenu, 'EditLandUseType', self.tr('Edit land use type'), self.printSome, False)
         self.mainMenu.addMenu(self.landuseMenu)
@@ -1239,7 +1241,7 @@ class IdrAgraTools():
                 progress=progress)
 
     def importVector(self,fromLay,toLay, fieldDict, assignDate = None, saveEdit = False, progress=None,
-                     generatePolygonIds=False, replaceExisting=False):
+                     generatePolygonIds=False, replaceExisting=False, featureOverrides=None):
         # reset counter
         self.DBM.resetCounter()
         # start ediding
@@ -1293,6 +1295,10 @@ class IdrAgraTools():
                 #print('-->',k,v)
                 idx = fieldNames.index(k)
                 newFeat.setAttribute(idx, feat[v])
+
+            if featureOverrides is not None:
+                for field, value in featureOverrides[feat.id()].items():
+                    newFeat.setAttribute(fieldNames.index(field), value)
 
             if assignDate:
                 idx = fieldNames.index('date')
@@ -1365,10 +1371,11 @@ class IdrAgraTools():
         layList = self.getLayerList(geomTypeList=[QgsWkbTypes.PolygonGeometry])
         from .forms.import_vector_dialog import ImportVectorDialog
         dlg = ImportVectorDialog(self.iface.mainWindow(), layList=layList, fields=wsLay.fields(),
-                                 skipFields=['fid', 'id', 'name'], dateFld=['date'], settings=self.s,
-                                 title=self.tr('Import land use map'), allowReplace=True,
+                                 skipFields=['fid', 'id'], dateFld=['date'], settings=self.s,
+                                 title=self.tr('Import land use map'), allowReplace=True, landUseClasses=True,
                                  fieldLabels={
-                                     'extid': self.tr('Land-use ID'),
+                                     'extid': self.tr('Land-use class ID'),
+                                     'name': self.tr('Class name (optional)'),
                                  })
         dlg.show()
         result = dlg.exec()
@@ -1376,11 +1383,68 @@ class IdrAgraTools():
         res = []
         if result == 1:
             res = dlg.getData()
+            try:
+                overrides = self.landUseClassOverrides(res['lay'], wsLay, res['fieldDict'], res['classNames'])
+            except Exception as error:
+                QMessageBox.warning(self.iface.mainWindow(), self.tr('Unable to import land use'), str(error))
+                return
             progress = IfaceProgress(self.iface)
             self.importVector(
                              fromLay=res['lay'], toLay=wsLay, fieldDict=res['fieldDict'], assignDate=res['assignDate'],
                              saveEdit=res['saveEdit'],
-                             progress=progress, generatePolygonIds=True, replaceExisting=res['replaceExisting'])
+                             progress=progress, generatePolygonIds=True, replaceExisting=res['replaceExisting'],
+                             featureOverrides=overrides)
+
+    def landUseClassOverrides(self, sourceLayer, destinationLayer, fieldDict, useNames):
+        from .tools.landuse_library import positive_id, read_library, resolve_classes
+        from qgis.core import QgsVariantUtils
+        if 'extid' not in fieldDict:
+            raise ValueError(self.tr('Select the source column identifying land-use classes.'))
+        classes, _ = read_library(self.DBM.DBName)
+        mapClasses = []
+        for feature in destinationLayer.getFeatures():
+            if not QgsVariantUtils.isNull(feature['extid']):
+                name = feature['name']
+                mapClasses.append((positive_id(feature['extid']),
+                                   '' if QgsVariantUtils.isNull(name) else str(name)))
+        features = list(sourceLayer.getSelectedFeatures() if sourceLayer.selectedFeatureCount()
+                        else sourceLayer.getFeatures())
+        values = []
+        for feature in features:
+            value = feature[fieldDict['extid']]
+            name = feature[fieldDict['name']] if 'name' in fieldDict else None
+            values.append((None if QgsVariantUtils.isNull(value) else value,
+                           None if QgsVariantUtils.isNull(name) else name))
+        resolved = resolve_classes(values, classes, mapClasses, use_names=useNames)
+        return {feature.id(): {'extid': class_id, 'name': name}
+                for feature, (class_id, name) in zip(features, resolved)}
+
+    def configureLandUseClasses(self):
+        from .forms.configure_landuse import ConfigureLandUse
+        from .tools.landuse_library import positive_id, raster_class_ids
+        from qgis.core import QgsVariantUtils
+        try:
+            mapClasses = {}
+            for feature in self.getVectorLayerByName('idr_usemap').getFeatures():
+                class_id = positive_id(feature['extid'])
+                name = feature['name']
+                name = '' if QgsVariantUtils.isNull(name) else str(name).strip()
+                if class_id not in mapClasses or not mapClasses[class_id]:
+                    mapClasses[class_id] = name
+            sources = [QgsProject.instance().readPath(source)
+                       for source in self.SIMDIC['LANDUSEMAP'].values() if source]
+            for class_id in raster_class_ids(sources):
+                mapClasses.setdefault(class_id, '')
+            if not mapClasses:
+                QMessageBox.information(self.iface.mainWindow(), self.tr('Land-use classes'),
+                                        self.tr('Import a vector or raster land-use map first.'))
+                return
+            layers = [self.getVectorLayerByName(name) for name in ('idr_soiluses', 'idr_crop_types')]
+            dialog = ConfigureLandUse(self.iface.mainWindow(), self.DBM.DBName, mapClasses,
+                                     layers, os.path.join(self.plugin_dir, 'sample', 'crop'), self.s)
+            dialog.exec()
+        except Exception as error:
+            QMessageBox.warning(self.iface.mainWindow(), self.tr('Land-use classes'), str(error))
 
     def importWaterDistrictMap(self):
         wsLay = self.getVectorLayerByName('idr_distrmap')

@@ -76,8 +76,7 @@ from datetime import datetime
 import os
 
 #from tools.add_features_from_csv import addFeaturesFromCSV
-from tools.parse_par_file import parseParFile
-from tools.sqlite_driver import SQLiteDriver
+from ..tools.landuse_library import import_crops, read_crop_file
 
 
 class IdragraImportCropPar(QgsProcessingAlgorithm):
@@ -100,6 +99,7 @@ class IdragraImportCropPar(QgsProcessingAlgorithm):
 	
 	DB_FILENAME= 'DB_FILENAME'
 	FILE_DIR = 'FILE_DIR'
+	REPLACE_LIBRARY = 'REPLACE_LIBRARY'
 	FEEDBACK = None
 	DBM = None
 
@@ -160,6 +160,8 @@ class IdragraImportCropPar(QgsProcessingAlgorithm):
 						Files directory: the path where crop parameters files are saved [FILE_DIR]<sup>1</sup>
 						<b>Note:</b>
 						[1] default is *.tab, the standard file format from IdrAgra.  
+						A filename such as 1_wheat.tab preserves crop ID 1. Files without an ID receive a project ID.
+						Import replaces the complete crop library and clears existing crop assignments.
 						"""
 		
 		return self.tr(helpStr)
@@ -180,6 +182,8 @@ class IdragraImportCropPar(QgsProcessingAlgorithm):
 
 		self.addParameter(QgsProcessingParameterFile(self.FILE_DIR, self.tr('Files directory'),
 													 QgsProcessingParameterFile.Behavior.Folder))
+		self.addParameter(QgsProcessingParameterBoolean(self.REPLACE_LIBRARY,
+			self.tr('Replace crop library and clear crop assignments'), False))
 
 	def processAlgorithm(self, parameters, context, feedback):
 		"""
@@ -189,61 +193,25 @@ class IdragraImportCropPar(QgsProcessingAlgorithm):
 		# get params
 		dbFilename = self.parameterAsFile(parameters,	self.DB_FILENAME,	context)
 		fileDir = self.parameterAsFile(parameters, self.FILE_DIR, context)
+		if not self.parameterAsBool(parameters, self.REPLACE_LIBRARY, context):
+			raise QgsProcessingException(self.tr('Confirm replacement of the crop library and clearing of crop assignments.'))
 
-		# open db connection
-		self.DBM = SQLiteDriver(dbFilename, False, None, self.FEEDBACK, self.tr, QgsProject.instance())
-
-		maxId = self.DBM.getMaxValue(tableName='idr_crop_types',colName='id')
-		if not maxId: maxId =0
-
-		# list all csv file in the source folder
-		fileList = os.listdir(fileDir)
-		nOfFile = len(fileList)
-		# for each file
-		c = 1 # counter of the added file
-		for i, f in enumerate(fileList):
-			self.FEEDBACK.setProgress(100. * i / nOfFile)
-			self.FEEDBACK.pushInfo(self.tr('INFO: processing %s' % f))
-			if f.endswith('.tab'):
-				try:
-					# read params from selected file
-					cropDict = parseParFile(filename=os.path.join(fileDir, f), parSep='=', colSep=' ',
-											feedback=self.FEEDBACK, tr=self.tr)
-					cropDict['id'] = maxId+c
-					cropDict['name'] = "'"+f.replace('.tab','')+"'"
-					# update table in db
-					# replace table with specific pars name GDD	Kcb	LAI	Hc	Sr
-					cropDict['gdd'] = "'"+' '.join(list(cropDict['table']['GDD']))+"'"
-					cropDict['kcb'] = "'"+' '.join(list(cropDict['table']['Kcb']))+"'"
-					cropDict['lai'] = "'"+' '.join(list(cropDict['table']['LAI']))+"'"
-					cropDict['hc'] = "'"+' '.join(list(cropDict['table']['Hc']))+"'"
-					cropDict['sr'] = "'"+' '.join(list(cropDict['table']['Sr']))+"'"
-
-					# delete table
-					del cropDict['table']
-
-					fieldNames = ','.join(list(cropDict.keys()))
-
-					# convert all values to string
-					for keys in cropDict:
-						cropDict[keys] = str(cropDict[keys])
-
-					fieldValues = ','.join(list(cropDict.values()))
-
-
-					# add to db table
-					sql = 'BEGIN; '
-					sql += 'INSERT INTO idr_crop_types (%s) VALUES (%s); ' % (fieldNames,fieldValues)
-					sql += 'COMMIT;'
-
-					msg = self.DBM.executeSQL(sql)
-					if msg != '':
-						self.FEEDBACK.pushInfo(self.tr('SQL error: %s' % msg))
-						self.FEEDBACK.pushInfo(self.tr('at: %s' % sql))
-					c += 1
-				except Exception as e:
-					self.FEEDBACK.reportError(self.tr('Unable to parse crop par file %s')%f,False)
-					continue
-
-
+		fileList = sorted(f for f in os.listdir(fileDir) if f.lower().endswith('.tab'))
+		if not fileList:
+			raise QgsProcessingException(self.tr('The folder contains no .tab crop files.'))
+		try:
+			parameters = []
+			for i, filename in enumerate(fileList):
+				if feedback.isCanceled():
+					return {}
+				feedback.setProgress(90. * i / len(fileList))
+				feedback.pushInfo(self.tr('Reading %s') % filename)
+				parameters.append(read_crop_file(os.path.join(fileDir, filename)))
+				if parameters[-1].get('id') == 0:
+					feedback.pushInfo(self.tr('Note: crop 0 is reserved for bare soil parameters. Make sure %s describes bare soil, not an actual crop.') % filename)
+			result = import_crops(dbFilename, parameters)
+			feedback.pushInfo(self.tr('Imported %s crops. Existing crop assignments were cleared.') % result['imported'])
+			feedback.setProgress(100.)
+		except Exception as error:
+			raise QgsProcessingException(str(error)) from error
 		return {self.DB_FILENAME:dbFilename}
