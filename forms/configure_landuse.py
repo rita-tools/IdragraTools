@@ -24,7 +24,15 @@ def reload_layers(layers):
         layer.triggerRepaint()
 
 
-class ImportCrops(QDialog):
+class ImportParameterLibrary(QDialog):
+    TITLE = 'Import crop parameters'
+    ITEM_LABEL = 'Crop'
+    FILE_SUFFIX = '.tab'
+    REPLACE_LABEL = 'Replace crop library'
+    FOLDER_LABEL = 'Crop parameter folder'
+    EXCLUDED_FILES = set()
+    read_record = staticmethod(read_crop_file)
+
     def __init__(self, parent, database_path, preset_folder, layers, settings):
         super().__init__(parent)
         self.database_path = database_path
@@ -32,11 +40,11 @@ class ImportCrops(QDialog):
         self.layers = layers
         self.settings = settings
         self.records = {}
-        self.setWindowTitle(self.tr('Import crop parameters'))
+        self.setWindowTitle(self.tr(self.TITLE))
         layout = QVBoxLayout(self)
         controls = QHBoxLayout()
         self.source = QComboBox(self)
-        self.source.addItems([self.tr('Bundled presets'), self.tr('Folder of .tab files')])
+        self.source.addItems([self.tr('Bundled presets'), self.tr('Folder of %s files') % self.FILE_SUFFIX])
         self.browse_button = QPushButton(self.tr('Choose folder…'), self)
         self.browse_button.setEnabled(False)
         controls.addWidget(self.source)
@@ -46,15 +54,13 @@ class ImportCrops(QDialog):
         self.path_label.setWordWrap(True)
         layout.addWidget(self.path_label)
         self.table = QTableWidget(0, 2, self)
-        self.table.setHorizontalHeaderLabels([self.tr('Crop'), self.tr('File')])
-        self.table.horizontalHeaderItem(1).setToolTip(self.tr(
-            'Use <ID>_<name>.tab to preserve the crop ID. Files without an ID receive a project ID.'))
+        self.table.setHorizontalHeaderLabels([self.tr(self.ITEM_LABEL), self.tr('File')])
         self.table.verticalHeader().hide()
         self.table.setColumnWidth(0, 270)
         self.table.horizontalHeader().setStretchLastSection(True)
         layout.addWidget(self.table)
         self.buttons = QDialogButtonBox(QDialogButtonBox.Close, self)
-        self.import_button = self.buttons.addButton(self.tr('Replace crop library'), QDialogButtonBox.ActionRole)
+        self.import_button = self.buttons.addButton(self.tr(self.REPLACE_LABEL), QDialogButtonBox.ActionRole)
         layout.addWidget(self.buttons)
         self.buttons.rejected.connect(self.reject)
         self.source.currentIndexChanged.connect(self.change_source)
@@ -76,7 +82,7 @@ class ImportCrops(QDialog):
             self.choose_folder()
 
     def choose_folder(self):
-        path = QFileDialog.getExistingDirectory(self, self.tr('Crop parameter folder'),
+        path = QFileDialog.getExistingDirectory(self, self.tr(self.FOLDER_LABEL),
             self.settings.value('lastPath') if self.settings else '')
         if path:
             if self.settings:
@@ -89,14 +95,15 @@ class ImportCrops(QDialog):
         self.table.setRowCount(0)
         self.path_label.setText(path)
         try:
-            suffix = '.txt' if self.source.currentIndex() == 0 else '.tab'
-            files = sorted(name for name in os.listdir(path) if name.lower().endswith(suffix))
+            suffix = '.txt' if self.source.currentIndex() == 0 else self.FILE_SUFFIX
+            files = sorted(name for name in os.listdir(path)
+                           if name.lower().endswith(suffix) and name.lower() not in self.EXCLUDED_FILES)
             for filename in files:
                 row = self.table.rowCount()
                 self.table.insertRow(row)
                 item = read_only_item(filename)
                 try:
-                    item.setText(read_crop_file(os.path.join(path, filename))['name'])
+                    item.setText(self.read_record(os.path.join(path, filename))['name'])
                 except Exception:
                     pass  # Report file errors on import, so it can still be unchecked.
                 item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
@@ -105,7 +112,7 @@ class ImportCrops(QDialog):
                 self.table.setItem(row, 0, item)
                 self.table.setItem(row, 1, read_only_item(filename))
         except Exception as error:
-            QMessageBox.warning(self, self.tr('Unable to list crop files'), str(error))
+            QMessageBox.warning(self, self.tr('Unable to list parameter files'), str(error))
         finally:
             self.table.blockSignals(False)
         self.update_button()
@@ -116,31 +123,45 @@ class ImportCrops(QDialog):
 
     def import_selected(self):
         if any(layer.isModified() for layer in self.layers):
-            QMessageBox.warning(self, self.tr('Pending edits'), self.tr('Save or discard crop and land-use edits first.'))
+            QMessageBox.warning(self, self.tr('Pending edits'), self.tr('Save or discard pending parameter edits first.'))
             return
         selected = [record for row, record in self.records.items()
                     if self.table.item(row, 0).checkState() == Qt.Checked]
         if not selected:
             return
         try:
-            parameters = [read_crop_file(filename) for filename in selected]
-            message = self.tr('Replace the crop library? Existing crop assignments will be cleared.')
-            zero_files = [os.path.basename(filename) for filename, record in zip(selected, parameters)
-                          if record.get('id') == 0]
-            if zero_files:
-                message += '\n\n' + self.tr(
-                    'Note: crop 0 is reserved for bare soil parameters. Make sure %s describes bare soil, not an actual crop.') % ', '.join(zero_files)
-            answer = QMessageBox.question(self, self.tr('Replace crop library'),
-                message,
+            parameters = [self.read_record(filename) for filename in selected]
+            parameters = self.prepare_records(parameters)
+            if parameters is None:
+                return
+            answer = QMessageBox.question(self, self.tr(self.REPLACE_LABEL),
+                self.confirmation_message(parameters, selected),
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if answer != QMessageBox.Yes:
                 return
-            import_crops(self.database_path, parameters)
+            self.replace_records(parameters)
         except Exception as error:
             QMessageBox.warning(self, self.tr('Import failed'), str(error))
             return
         reload_layers(self.layers)
         self.accept()
+
+    def prepare_records(self, parameters):
+        return parameters
+
+
+class ImportCrops(ImportParameterLibrary):
+    def confirmation_message(self, parameters, filenames):
+        message = self.tr('Replace the crop library? Existing crop assignments will be cleared.')
+        zero_files = [os.path.basename(filename) for filename, record in zip(filenames, parameters)
+                      if record.get('id') == 0]
+        if zero_files:
+            message += '\n\n' + self.tr(
+                'Note: crop 0 is reserved for bare soil parameters. Make sure %s describes bare soil, not an actual crop.') % ', '.join(zero_files)
+        return message
+
+    def replace_records(self, parameters):
+        import_crops(self.database_path, parameters)
 
 
 class ConfigureLandUse(QDialog):

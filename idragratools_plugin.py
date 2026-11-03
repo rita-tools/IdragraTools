@@ -532,6 +532,8 @@ class IdrAgraTools():
         self._addmenuitem(self.irrigationMenu, 'importIrrMethMap', self.tr('Import irrigation methods map [vector]'),
                           self.importIrrMethMap, False)
         self._addmenuitem(self.irrigationMenu, 'SetIrrMeth', self.tr('Set/edit irrigation map [raster]'), self.setRasterIrrmeth, False)
+        self._addmenuitem(self.irrigationMenu, 'ImportIrrigationMethods', self.tr('Import irrigation methods'),
+                          self.importIrrigationMethods, False)
 
         self._addmenuitem(self.irrigationMenu, 'ImportNodeMap', self.tr('Import node map'),  self.importNodes, False)
         self._addmenuitem(self.irrigationMenu, 'ImportLinkMap', self.tr('Import link map'), self.importLinks, False)
@@ -1463,6 +1465,29 @@ class IdrAgraTools():
                              fromLay=res['lay'], toLay=wsLay, fieldDict=res['fieldDict'], assignDate=None,
                              saveEdit=res['saveEdit'],
                              progress=progress)
+
+    def importIrrigationMethods(self):
+        from .forms.import_irrigation_methods import ImportIrrigationMethods
+        from .tools.landuse_library import crop_id, raster_class_ids
+        from qgis.core import QgsVariantUtils
+
+        def requiredIds():
+            identifiers = set()
+            for feature in self.getVectorLayerByName('idr_irrmap').getFeatures():
+                if not QgsVariantUtils.isNull(feature['extid']):
+                    identifiers.add(crop_id(feature['extid']))
+            sources = [QgsProject.instance().readPath(source)
+                       for source in self.SIMDIC['IRRMETHMAP'].values() if source]
+            identifiers.update(raster_class_ids(sources, allow_zero=True))
+            default = self.SIMDIC.get('DEFAULT_IM')
+            if default not in (None, '', 0, '0'):
+                identifiers.add(crop_id(default))
+            return identifiers - {0}
+
+        layers = [self.getVectorLayerByName('idr_irrmet_types')]
+        dialog = ImportIrrigationMethods(self.iface.mainWindow(), self.DBM.DBName,
+            os.path.join(self.plugin_dir, 'sample', 'irr_method'), layers, self.s, requiredIds)
+        dialog.exec()
 
     def importIrrMethMap(self):
         wsLay = self.getVectorLayerByName('idr_irrmap')

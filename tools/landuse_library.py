@@ -116,7 +116,7 @@ def save_assignments(path, assignments):
             raise
 
 
-def raster_class_ids(sources):
+def raster_class_ids(sources, allow_zero=False):
     """Collect exact class values in blocks, excluding each raster's mask/nodata."""
     import numpy as np
     from osgeo import gdal
@@ -132,7 +132,8 @@ def raster_class_ids(sources):
                 height = min(256, dataset.RasterYSize - y)
                 data = band.ReadAsArray(0, y, dataset.RasterXSize, height)
                 valid = mask.ReadAsArray(0, y, dataset.RasterXSize, height) != 0
-                ids.update(positive_id(value) for value in np.unique(data[valid & np.isfinite(data)]))
+                ids.update((crop_id(value) if allow_zero else positive_id(value))
+                           for value in np.unique(data[valid & np.isfinite(data)]))
         finally:
             band = mask = dataset = None
     return ids
