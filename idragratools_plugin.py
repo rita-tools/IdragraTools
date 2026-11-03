@@ -512,6 +512,7 @@ class IdrAgraTools():
 
         self.soilMenu = self._addmenu(self.mainMenu, 'Soil', self.tr('Soil'), False)
         self._addmenuitem(self.soilMenu, 'ImportSoilMap', self.tr('Import soil map'), self.importSoilMap, False)
+        self._addmenuitem(self.soilMenu, 'ImportSoilProfiles', self.tr('Import soil profiles'), self.importSoilProfiles, False)
         #self._addmenuitem(self.soilMenu, 'EditSoilType', self.tr('Edit soil type'), self.printSome, False)
 
         self.mainMenu.addMenu(self.soilMenu)
@@ -590,9 +591,11 @@ class IdrAgraTools():
         #                  lambda: self.runAsThread(self.importControlPointsResults), False)
 
         self._addmenuitem(self.analysisMenu, 'ImportDistrictData', self.tr('Import irrigation units results'),
-                          lambda: self.runAsThread(self.importWaterDistrictData), False)
+                          lambda: self.runAsThread(self.importWaterDistrictData,
+                                                  lambda: self.loadLayer(tableNames=set(self.STEPNAME))), False)
         self._addmenuitem(self.analysisMenu, 'DischargeToNode', self.tr('Node water demand'),
-                          lambda: self.runAsThread(self.computeNodeDischarge), False)
+                          lambda: self.runAsThread(self.computeNodeDischarge,
+                                                  lambda: self.loadLayer(tableNames=set(self.STEPNAME) | {'node_disc'})), False)
         self._addmenuitem(self.analysisMenu, 'GroupedStats', self.tr('Grouped statistics'),
                           self.makeGroupedStats, False)
         self._addmenuitem(self.analysisMenu, 'ImportResultsMap', self.tr('Import results map'),
@@ -975,7 +978,7 @@ class IdrAgraTools():
         # remove preprocessor
         QgsPathResolver.removePathPreprocessor(idProc)
 
-    def loadLayer(self):
+    def loadLayer(self, tableNames=None):
         project = QgsProject.instance()
         dbPath = os.path.normcase(os.path.abspath(self.DBM.DBName))
 
@@ -1003,14 +1006,23 @@ class IdrAgraTools():
             if identity and identity[0] == dbPath:
                 existingLayers.setdefault(identity[1], []).append(layer)
 
+        resultTables = set(self.STEPNAME) | {'node_disc'}
         for n, a in self.LYRNAME.items():
+            if tableNames is not None and n not in tableNames:
+                continue
             matches = existingLayers.get(n.casefold(), [])
+            if n in resultTables and self.DBM.getTableAsDF('SELECT 1 FROM "%s" LIMIT 1' % n).empty:
+                for emptyLayer in matches:
+                    project.removeMapLayer(emptyLayer.id())
+                continue
             validMatches = [layer for layer in matches if layer.isValid()]
             if validMatches:
                 keepLayer = validMatches[0]
                 for duplicate in matches:
                     if duplicate.id() != keepLayer.id():
                         project.removeMapLayer(duplicate.id())
+                if n in resultTables:
+                    keepLayer.dataProvider().reloadData()
                 continue
 
             for brokenLayer in matches:
@@ -1029,6 +1041,9 @@ class IdrAgraTools():
                 mygroup.insertChildNode(groupIndex, QgsLayerTreeLayer(vlayer))
 
             # set up layer field
+
+        if tableNames is not None:
+            return
 
         # load rasters
         for n,s in self.SIMDIC['ELEVMAP'].items():
@@ -1223,7 +1238,8 @@ class IdrAgraTools():
                 saveEdit=res['saveEdit'],
                 progress=progress)
 
-    def importVector(self,fromLay,toLay, fieldDict, assignDate = None, saveEdit = False, progress=None):
+    def importVector(self,fromLay,toLay, fieldDict, assignDate = None, saveEdit = False, progress=None,
+                     generatePolygonIds=False, replaceExisting=False):
         # reset counter
         self.DBM.resetCounter()
         # start ediding
@@ -1241,6 +1257,14 @@ class IdrAgraTools():
         pr = toLay.dataProvider()
         fieldNames = [field.name() for field in pr.fields()]
 
+        nextPolygonId = 1
+        if generatePolygonIds and not replaceExisting:
+            for existingFeature in toLay.getFeatures():
+                try:
+                    nextPolygonId = max(nextPolygonId, int(existingFeature['id']) + 1)
+                except (TypeError, ValueError):
+                    pass  # Existing features may have an unset ID.
+
         # loop in fromLay feature
         nOfFeat =  fromLay.selectedFeatureCount()
         if nOfFeat>0:
@@ -1248,6 +1272,16 @@ class IdrAgraTools():
         else:
             nOfFeat = fromLay.featureCount()
             featureList = fromLay.getFeatures()
+
+        if replaceExisting:
+            if nOfFeat == 0:
+                progress.reportError(self.tr('Source layer has no features; nothing replaced.'), False)
+                return
+            toLay.beginEditCommand(self.tr('Replace imported polygons'))
+            if not toLay.deleteFeatures([feature.id() for feature in toLay.getFeatures()]):
+                toLay.destroyEditCommand()
+                progress.reportError(self.tr('Unable to remove existing features.'), True)
+                return
 
         i=0
         progress.pushInfo(self.tr('Copying features ...'))
@@ -1264,16 +1298,28 @@ class IdrAgraTools():
                 idx = fieldNames.index('date')
                 newFeat.setAttribute(idx, assignDate)
 
-            toLay.addFeature(newFeat)
+            if generatePolygonIds:
+                newFeat.setAttribute(fieldNames.index('id'), nextPolygonId)
+                nextPolygonId += 1
+
+            if not toLay.addFeature(newFeat) and replaceExisting:
+                toLay.destroyEditCommand()
+                progress.reportError(self.tr('Import failed; existing features restored.'), True)
+                return
 
             i += 1
             if progress: progress.setPercentage(100 * i / nOfFeat)
 
+        if replaceExisting:
+            toLay.endEditCommand()
         progress.pushInfo(self.tr('Copying completed!'))
 
         if saveEdit:
-            toLay.commitChanges()
+            if not toLay.commitChanges():
+                progress.reportError(self.tr('Unable to save edits: %s') % '; '.join(toLay.commitErrors()), True)
+                return
             progress.pushInfo(self.tr('Edits saved'))
+        return True
 
     def importWeightMap(self):
         pass
@@ -1283,10 +1329,9 @@ class IdrAgraTools():
         layList = self.getLayerList(geomTypeList = [QgsWkbTypes.PolygonGeometry])
         from .forms.import_vector_dialog import ImportVectorDialog
         dlg = ImportVectorDialog(self.iface.mainWindow(), layList=layList, fields=wsLay.fields(),
-                                 skipFields=['fid', 'name', 'date'], dateFld=[], settings=self.s,
-                                 title=self.tr('Import soil map'),
+                                 skipFields=['fid', 'id', 'name', 'date'], dateFld=[], settings=self.s,
+                                 title=self.tr('Import soil map'), allowReplace=True,
                                  fieldLabels={
-                                     'id': self.tr('Polygon ID'),
                                      'extid': self.tr('Soil type ID'),
                                  })
         dlg.show()
@@ -1299,17 +1344,30 @@ class IdrAgraTools():
             self.importVector(
                              fromLay=res['lay'], toLay=wsLay, fieldDict=res['fieldDict'], assignDate=res['assignDate'],
                              saveEdit=res['saveEdit'],
-                             progress=progress)
+                             progress=progress, generatePolygonIds=True, replaceExisting=res['replaceExisting'])
+
+    def importSoilProfiles(self):
+        from .forms.import_soil_profiles import ImportSoilProfiles
+        soilMap = self.getVectorLayerByName('idr_soilmap')
+        soilIds = set()
+        for feature in soilMap.getFeatures():
+            try:
+                soilIds.add(int(feature['extid']))
+            except (TypeError, ValueError):
+                pass
+        layers = [self.getVectorLayerByName(name) for name in ('idr_soil_types', 'idr_soil_profiles')]
+        dialog = ImportSoilProfiles(self.iface.mainWindow(), self.DBM.DBName,
+                                   layers, soil_ids=soilIds, settings=self.s)
+        dialog.exec()
 
     def importLandUseMap(self):
         wsLay = self.getVectorLayerByName('idr_usemap')
         layList = self.getLayerList(geomTypeList=[QgsWkbTypes.PolygonGeometry])
         from .forms.import_vector_dialog import ImportVectorDialog
         dlg = ImportVectorDialog(self.iface.mainWindow(), layList=layList, fields=wsLay.fields(),
-                                 skipFields=['fid', 'name'], dateFld=['date'], settings=self.s,
-                                 title=self.tr('Import land use map'),
+                                 skipFields=['fid', 'id', 'name'], dateFld=['date'], settings=self.s,
+                                 title=self.tr('Import land use map'), allowReplace=True,
                                  fieldLabels={
-                                     'id': self.tr('Polygon ID'),
                                      'extid': self.tr('Land-use ID'),
                                  })
         dlg.show()
@@ -1322,7 +1380,7 @@ class IdrAgraTools():
             self.importVector(
                              fromLay=res['lay'], toLay=wsLay, fieldDict=res['fieldDict'], assignDate=res['assignDate'],
                              saveEdit=res['saveEdit'],
-                             progress=progress)
+                             progress=progress, generatePolygonIds=True, replaceExisting=res['replaceExisting'])
 
     def importWaterDistrictMap(self):
         wsLay = self.getVectorLayerByName('idr_distrmap')
@@ -1347,10 +1405,9 @@ class IdrAgraTools():
         layList = self.getLayerList(geomTypeList=[QgsWkbTypes.PolygonGeometry])
         from .forms.import_vector_dialog import ImportVectorDialog
         dlg = ImportVectorDialog(self.iface.mainWindow(), layList=layList, fields=wsLay.fields(),
-                                 skipFields=['fid', 'name'], dateFld=[], settings=self.s,
-                                 title=self.tr('Import irrigation methods map'),
+                                 skipFields=['fid', 'id', 'name'], dateFld=[], settings=self.s,
+                                 title=self.tr('Import irrigation methods map'), allowReplace=True,
                                  fieldLabels={
-                                     'id': self.tr('Polygon ID'),
                                      'extid': self.tr('Irrigation method ID'),
                                  })
         dlg.show()
@@ -1363,7 +1420,7 @@ class IdrAgraTools():
             self.importVector(
                 fromLay=res['lay'], toLay=wsLay, fieldDict=res['fieldDict'], assignDate=None,
                 saveEdit=res['saveEdit'],
-                progress=progress)
+                progress=progress, generatePolygonIds=True, replaceExisting=res['replaceExisting'])
 
     def importDomainMap(self):
         domLay = self.getVectorLayerByName('idr_domainmap')
@@ -1450,8 +1507,16 @@ class IdrAgraTools():
         gpkg_layer = self.DBM.DBName + '|layername=' + tablename
         gpkg_layer = gpkg_layer.replace('\\', '/')
         vLayer = None
-        for layer in QgsProject.instance().mapLayers().values():
-            if (layer.source().replace('\\', '/') == gpkg_layer) :
+        project = QgsProject.instance()
+        dbPath = os.path.normcase(os.path.abspath(self.DBM.DBName))
+        for layer in project.mapLayers().values():
+            if layer.providerType() != 'ogr':
+                continue
+            source = QgsProviderRegistry.instance().decodeUri('ogr', layer.source())
+            sourcePath = source.get('path', '')
+            sourceTable = source.get('layerName', '')
+            if (sourcePath and isinstance(sourceTable, str) and sourceTable.casefold() == tablename.casefold()
+                    and os.path.normcase(os.path.abspath(project.readPath(sourcePath))) == dbPath):
                 vLayer = layer
                 break
 
@@ -1493,18 +1558,20 @@ class IdrAgraTools():
                                           QgsWkbTypes.PolygonGeometry,QgsWkbTypes.UnknownGeometry,
                                           QgsWkbTypes.NullGeometry]):
         res = {}
+        project = QgsProject.instance()
         dbPath = getattr(getattr(self, 'DBM', None), 'DBName', '')
-        dbPath = dbPath.replace('\\', '/').casefold()
-        managedSources = {
-            '%s|layername=%s' % (dbPath, tableName.casefold())
-            for tableName in self.LYRNAME
-        } if dbPath else set()
+        dbPath = os.path.normcase(os.path.abspath(dbPath)) if dbPath else ''
+        managedTables = {tableName.casefold() for tableName in self.LYRNAME}
 
-        for layer in QgsProject.instance().mapLayers().values():
+        for layer in project.mapLayers().values():
             if layer.type() == QgsMapLayer.VectorLayer:
-                source = layer.source().replace('\\', '/').casefold()
-                if any(source == managed or source.startswith(managed + '|') for managed in managedSources):
-                    continue
+                if dbPath and layer.providerType() == 'ogr':
+                    source = QgsProviderRegistry.instance().decodeUri('ogr', layer.source())
+                    sourcePath = source.get('path', '')
+                    sourceTable = source.get('layerName', '')
+                    if (sourcePath and isinstance(sourceTable, str) and sourceTable.casefold() in managedTables
+                            and os.path.normcase(os.path.abspath(project.readPath(sourcePath))) == dbPath):
+                        continue
                 vector_type = layer.geometryType()
                 if vector_type in geomTypeList:
                     res[layer.name()]=layer

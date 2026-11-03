@@ -56,7 +56,7 @@ class ImportVectorDialog(QDialog):
     closed = pyqtSignal()
 
     def __init__(self, parent=None, layList=[], fields=[], skipFields=[], dateFld=[], settings=None,
-                 title='Import vector dialog', fieldLabels=None):
+                 title='Import vector dialog', fieldLabels=None, allowReplace=False):
         QDialog.__init__(self, parent)
         # Set up the user interface from Designer.
         uiFilePath = os.path.abspath(os.path.join(os.path.dirname(__file__), 'import_vector_dialog.ui'))
@@ -89,6 +89,13 @@ class ImportVectorDialog(QDialog):
 
         self.updateFieldWidgets(self.SOURCE_CB.currentText())
 
+        self.REPLACE_CB = None
+        if allowReplace:
+            self.REPLACE_CB = CheckInput(objName='REPLACE_CB',
+                labelString=self.tr('Replace existing features'), defaultValue=False,
+                descr=self.tr('Removes all destination polygons before importing.'))
+            self.layout().addWidget(self.REPLACE_CB)
+
         # add check box
         self.SAVEEDIT_CB = CheckInput(objName='SAVEEDIT_CB', labelString =self.tr('Save edit'), defaultValue = False, descr = '')
         self.layout().addWidget(self.SAVEEDIT_CB)
@@ -113,6 +120,13 @@ class ImportVectorDialog(QDialog):
         # QObject.connect(self.buttonBox, SIGNAL("accepted()"), self.accept)
         # QObject.connect(self.buttonBox, SIGNAL("rejected()"), self.reject)
         QMetaObject.connectSlotsByName(self)
+        if allowReplace:
+            self.layout().setSpacing(6)
+            for index in range(self.layout().count()):
+                widget = self.layout().itemAt(index).widget()
+                if widget is not None and widget.layout() is not None:
+                    widget.layout().setContentsMargins(0, 0, 0, 0)
+            self.resize(max(520, self.sizeHint().width()), self.sizeHint().height())
 
     def closeEvent(self, event):
         self.closed.emit()
@@ -168,4 +182,5 @@ class ImportVectorDialog(QDialog):
 
         saveEdit = self.SAVEEDIT_CB.getValue()
 
-        return {'lay': lay, 'fieldDict': fieldDict,'assignDate':assignDate, 'saveEdit':saveEdit}
+        return {'lay': lay, 'fieldDict': fieldDict,'assignDate':assignDate, 'saveEdit':saveEdit,
+                'replaceExisting': bool(self.REPLACE_CB and self.REPLACE_CB.getValue())}

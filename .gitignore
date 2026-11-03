@@ -4,3 +4,4 @@
 /tools/crop_coef_20210920.py
 .vscode/
 *.pyc
+/tests
