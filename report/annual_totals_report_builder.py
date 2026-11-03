@@ -41,6 +41,8 @@ class AnnualTotalsReportBuilder(OverviewReportBuilder):
         yrs = sorted(list(all_data['year'].unique()))
         num_yrs = len(yrs)
         cats = sorted(list(all_data['category'].unique()))
+        category_labels = [str(int(cat)) if isinstance(cat, (int, float, np.integer, np.floating))
+                           and float(cat).is_integer() else str(cat) for cat in cats]
         num_cats = len(cats)
         fig, axs = plt.subplots(num_yrs, 1, figsize=(min(max(0.25*num_cats,6),10),3*num_yrs), constrained_layout=True)
 
@@ -60,7 +62,7 @@ class AnnualTotalsReportBuilder(OverviewReportBuilder):
 
                 ax.yaxis.grid(True)
                 ax.set_xticks([y + 1 for y in range(len(cats))],
-                              labels=cats)
+                              labels=category_labels)
                 ax.set_xlabel('Category')
                 ax.set_ylabel('Volumes (mm)')
                 ax.set_title(yrs[i])
@@ -84,8 +86,7 @@ class AnnualTotalsReportBuilder(OverviewReportBuilder):
         val_df = val_df.loc[val_df['val']!= varRL['nodata_value'],:]
         val_df = val_df.loc[val_df['val'].notna(), :]
 
-        res = val_df.groupby(['group'],as_index=False).agg(stat_list)#.reset_index(names=stat_list) aliases
-        res.columns = stat_list
+        res = val_df.groupby('group')['val'].agg(stat_list)
         return(res)
 
     def makeAnnualStats(self,outFolder,parFNList,parName,
