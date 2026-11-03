@@ -215,8 +215,10 @@ class DataManagerMainwindow(QMainWindow):#(QDialog)QMainWindow:
 				winList.append(window)
 		
 		nOfWin = len(winList)
+		if nOfWin == 0:
+			return
 		
-		hWin = self.MDI_AREA.height() / nOfWin
+		hWin = self.MDI_AREA.height() // nOfWin
 		wWin = self.MDI_AREA.width() 
 		for window in winList:
 			window.setGeometry(0,0,wWin,hWin)

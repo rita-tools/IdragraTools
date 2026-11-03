@@ -131,7 +131,8 @@ class ChartDialog(QDialog):
 			dates = mdt.date2num(dateTimeList)
 					
 			if yaxis in [1,'y']:
-				lines, = self.ax.plot_date(dates,values, lineType,color=color,label=name)
+				self.ax.xaxis_date()
+				lines, = self.ax.plot(dates,values, lineType,color=color,label=name)
 				if shadow:
 					verts = [(dates[0], 0), *zip(dates,values), (dates[-1], 0)]
 					poly = Polygon(verts, facecolor=shadow, edgecolor=color)
@@ -142,7 +143,8 @@ class ChartDialog(QDialog):
 				self.l.append(name)
 			
 			else:
-				lines, = self.ax2.plot_date(dates,values, lineType,color=color,label=name)
+				self.ax2.xaxis_date()
+				lines, = self.ax2.plot(dates,values, lineType,color=color,label=name)
 				if shadow:
 					verts = [(dates[0], 0), *zip(dates,values), (dates[-1], 0)]
 					poly = Polygon(verts, facecolor=shadow, edgecolor=color)

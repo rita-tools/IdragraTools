@@ -64,8 +64,8 @@ class CheckDatabaseBuilder(ReportBuilder):
         fig, axs = plt.subplots(3, 1, figsize=(10, 3.5 * 3))  # , constrained_layout=True)
         #axs[0].setAxis(secondAxis=True, label=['Temp', 'Prec'])
         # add timeseries
-        lines, = axs[0].plot_date(dataToPlot['timestamp'], dataToPlot['ws_ptot'], '-', '#416FA6',
-                                  meteoVarDict['ws_ptot'])
+        lines, = axs[0].plot(dataToPlot['timestamp'], dataToPlot['ws_ptot'], '-', color='#416FA6',
+                            label=meteoVarDict['ws_ptot'])
 
         y1Title = [meteoVarDict['ws_ptot']]
         y2Title = [meteoVarDict['ws_tmax'],meteoVarDict['ws_tmin']]
@@ -76,8 +76,8 @@ class CheckDatabaseBuilder(ReportBuilder):
         axs[0].set_ylabel(', '.join(y1Title))
 
         #newAxs = axs[0].twinx()
-        lines, = axs[1].plot_date(dataToPlot['timestamp'], dataToPlot['ws_tmax'], '-', '#A8423F',
-                                  meteoVarDict['ws_tmax'])
+        lines, = axs[1].plot(dataToPlot['timestamp'], dataToPlot['ws_tmax'], '-', color='#A8423F',
+                            label=meteoVarDict['ws_tmax'])
         # lines, = newAxs.plot_date(dataToPlot['timestamp'], dataToPlot['ws_tmin'], '-', '#4198AF',
         #                          meteoVarDict['ws_tmin'])
 

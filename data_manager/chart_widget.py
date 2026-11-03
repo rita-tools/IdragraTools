@@ -180,10 +180,12 @@ class ChartWidget(QWidget):
 		dates = mdt.date2num(dateTimeList)
 
 		if yaxis == 1:
-			lines, = self.ax.plot_date(dates, values, lineType, color=color, label=name, picker=5)
+			self.ax.xaxis_date()
+			lines, = self.ax.plot(dates, values, lineType, color=color, label=name, picker=5)
 		# cursor1 = FollowDotCursor(self.ax, x, y)
 		else:
-			lines, = self.ax2.plot_date(dates, values, lineType, color=color, label=name, picker=5)
+			self.ax2.xaxis_date()
+			lines, = self.ax2.plot(dates, values, lineType, color=color, label=name, picker=5)
 		# cursor1 = FollowDotCursor(self.ax2, x, y)
 
 		if shadow:
@@ -204,8 +206,7 @@ class ChartWidget(QWidget):
 			dates = dateTimeList
 
 			if yaxis in [1, 'y']:
-				#lines, = self.ax.plot(dates, values, lineType, color=color, label=name, picker=5)#plot_date
-				lines, = self.ax.plot_date(dates, values, lineType, color=color, label=name, picker=5)  # plot_date
+				lines, = self.ax.plot(dates, values, lineType, color=color, label=name, picker=5)
 
 				lines.set_gid('line%s'%(len(self.h)+1))
 				# https://stackoverflow.com/questions/31162780/how-to-plot-a-rectangle-on-a-datetime-axis-using-matplotlib
@@ -224,8 +225,7 @@ class ChartWidget(QWidget):
 					self.l.append(name)
 
 			else:
-				#lines, = self.ax2.plot(dates, values, lineType, color=color, label=name, picker=5)#plot_date
-				lines, = self.ax2.plot_date(dates, values, lineType, color=color, label=name, picker=5)  # plot_date
+				lines, = self.ax2.plot(dates, values, lineType, color=color, label=name, picker=5)
 
 				lines.set_gid('line%s' % (len(self.h) + 1))
 				if shadow:
