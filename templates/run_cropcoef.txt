@@ -1,5 +1,4 @@
 REM change dir
-[%DRIVE%]
-cd "[%SIMPATH%]"
+cd /d "%~dp0" || exit /b 1
 REM run cropcoeff
 "[%PATHTOCROPCOEFF%]" "[%CROPCOEFFPAR%]"
