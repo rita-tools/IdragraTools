@@ -2063,8 +2063,8 @@ class IdrAgraTools():
         CO2Text = ''
         for y,co2 in zip(yearList,CO2List):
             if not co2:
-                co2 = 337
-                progress.reportError(self.tr('CO2 concentration set to default value (337 p.p.m.) for year %s')%y,False)
+                co2 = 400
+                progress.reportError(self.tr('CO2 concentration set to default value (400 p.p.m.) for year %s')%y,False)
 
             CO2Text+='%s %s\n'%(y,co2)
 
@@ -2163,7 +2163,7 @@ class IdrAgraTools():
             os.makedirs(path2Geodata)
             progress.pushInfo(self.tr('Exporting to %s ...') % path2Geodata)
         else:
-            progress.pushInfo(self.tr('Directory %s already exists and all file will be remove') % path2Geodata)
+            progress.pushInfo(self.tr('Directory %s already exists and all file will be overwritten') % path2Geodata)
             # delete all file
             fileList = glob.glob(os.path.join(path2Geodata, '*.*'))
             for f in fileList:
