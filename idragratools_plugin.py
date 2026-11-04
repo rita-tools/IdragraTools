@@ -840,8 +840,14 @@ class IdrAgraTools():
             return
 
         settings = QgsSettings()
-        mode = settings.enumValue('qgis/enablePythonEmbedded', Qgis.PythonEmbeddedMode.Ask)
-        if mode != Qgis.PythonEmbeddedMode.Ask:
+        if Qgis.QGIS_VERSION_INT >= 34000:
+            permissionMode = Qgis.PythonEmbeddedMode
+            permissionKey = 'qgis/enablePythonEmbedded'
+        else: #%PS%: compatibility for QGIS versions earlier than 3.40 !todo: eventually remove
+            permissionMode = Qgis.PythonMacroMode
+            permissionKey = 'qgis/enableMacros'
+        mode = settings.enumValue(permissionKey, permissionMode.Ask)
+        if mode != permissionMode.Ask:
             return
 
         self._pythonPermissionOffered = True
@@ -857,7 +863,7 @@ class IdrAgraTools():
         prompt.setEscapeButton(keepButton)
         prompt.exec()
         if prompt.clickedButton() is allowButton:
-            settings.setEnumValue('qgis/enablePythonEmbedded', Qgis.PythonEmbeddedMode.SessionOnly)
+            settings.setEnumValue(permissionKey, permissionMode.SessionOnly)
 
     def updatePars(self):
         proj = QgsProject.instance()

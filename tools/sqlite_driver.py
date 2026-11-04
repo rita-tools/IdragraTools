@@ -37,7 +37,7 @@ from datetime import datetime,date
 import pandas as pd
 
 from qgis.core import QgsFeatureRequest
-from qgis.core import QgsVectorLayer, QgsField, QgsVectorFileWriter, QgsCoordinateTransformContext
+from qgis.core import Qgis, QgsVectorLayer, QgsField, QgsVectorFileWriter, QgsCoordinateTransformContext
 from qgis.PyQt.QtCore import QVariant, QObject, QMetaType
 
 
@@ -191,6 +191,9 @@ class SQLiteDriver(QObject):
 			pr = lyr.dataProvider()
 			attrList = []
 			for n, t in zip(STdef['fldNames'], STdef['fldTypes']):
+				# Before QGIS 3.38 QgsField requires QVariant.Type instead of QMetaType.Type.
+				if Qgis.QGIS_VERSION_INT < 33800:
+					t = QVariant.Type(int(t))
 				newField = QgsField(n,t)
 				# if n == 'id':
 				# 	cons = newField.constraints()
