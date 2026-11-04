@@ -31,7 +31,7 @@ __revision__ = '$Format:%H$'
 from math import tan, radians
 
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtCore import QCoreApplication,QVariant
+from qgis.PyQt.QtCore import QCoreApplication,QVariant,QDate
 from qgis.analysis import QgsZonalStatistics
 from qgis.core import QgsProcessingParameterCrs
 from qgis.core import (QgsProcessing,
@@ -466,12 +466,22 @@ class IdragraCreateDB(QgsProcessingAlgorithm):
 					idx = field_names.index(k)
 					# ~ print('%s --> %s'%(k,idx))
 					# ~ print('value: %s'%dataDict[k][i])
-					feat.setAttribute(idx, dataDict[k][i])
+					value = dataDict[k][i]
+					# Empty numeric CSV cells represent missing values, not strings.
+					if not value.strip() and pr.fields().at(idx).isNumeric():
+						value = None
+					if pr.fields().at(idx).type() == QVariant.Date:
+						if not value.strip() or value.strip().upper() == 'NULL':
+							value = None
+						else:
+							value = QDate.fromString(value.strip(), 'yyyy-MM-dd')
+							if not value.isValid():
+								raise ValueError('Invalid date in feature %s, field %s' % (i + 1, k))
+					feat.setAttribute(idx, value)
 
 			f = pr.addFeatures([feat])
-			if not f:
-				# print('in addFeaturesFromCSV, error adding feature %s'%i)
-				pass
+			if not f[0]:
+				raise RuntimeError('Unable to import feature %s: %s' % (i + 1, pr.lastError()))
 
 		self.vlayer.commitChanges()
 
