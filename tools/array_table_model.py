@@ -27,10 +27,10 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 # This will get replaced with a git SHA1 when you do a git archive
 
 __revision__ = '$Format:%H$'
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5 import uic
+from qgis.PyQt.QtCore import *
+from qgis.PyQt.QtGui import *
+from qgis.PyQt.QtWidgets import *
+from qgis.PyQt import uic
 
 class ArrayTableModel(QAbstractTableModel): 
 	def __init__(self, parent=None, data = [], header = []): 

@@ -28,7 +28,9 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from PyQt5.QtWidgets import *
+from qgis.PyQt.QtWidgets import *
+
+from IdragraTools.qt_compat import QAction
 
 from IdragraTools.layerforms.utils import *
 from IdragraTools.tools.array_table_model import ArrayTableModel
@@ -44,10 +46,20 @@ def formOpen(dialog,layerid,featureid):
 	# option list to update
 	tr = qgis.utils.plugins['IdragraTools'].tr
 	#global allItems
-	ph_rItems = {tr('Day-neutral plants'):0,tr('Long-day plants'):1,tr('Short-day plants'):2}
+	ph_rItems = {tr('Day-neutral plants'):0,
+				 tr('Long-day plants'):1,
+				 tr('Short-day plants'):2}
+
+	cl_cnItems = {tr('Fallow'):1,
+				  tr('Row crops'):2,
+				  tr('Small grains'):3,
+				  tr('Close-seeded or broadcast legumes or rotation'):4,
+				  tr('Meadow - continuous grass, protected from grazing and generally mowed for hay'):5,
+				  tr('Woods - grass combination (orchard or tree farm)'):6}
 	
 	# elements to hide
 	ph_rLE = myDialog.findChild(QLineEdit,'ph_r')
+	cl_cnLE = myDialog.findChild(QLineEdit, 'cl_cn')
 
 	gddLE = myDialog.findChild(QLineEdit,'gdd')
 	kcbLE = myDialog.findChild(QLineEdit,'kcb')
@@ -56,6 +68,7 @@ def formOpen(dialog,layerid,featureid):
 	srLE = myDialog.findChild(QLineEdit,'sr')
 
 	ph_rLE.setHidden(True)
+	cl_cnLE.setHidden(True)
 
 	gddLE.setHidden(True)
 	kcbLE.setHidden(True)
@@ -63,15 +76,23 @@ def formOpen(dialog,layerid,featureid):
 	hcLE.setHidden(True)
 	srLE.setHidden(True)
 
-	# combo to populate
-	ph_rCB = myDialog.findChild(QComboBox,'ph_r_CB')
 	global objToBeEnabledList
 	objToBeEnabledList = []
+
+	# combo to populate
+	ph_rCB = myDialog.findChild(QComboBox,'ph_r_CB')
 	objToBeEnabledList.append(ph_rCB)
 	
 	updateComboItems(ph_rCB,ph_rItems)
 	ph_rCB.currentIndexChanged[str].connect(lambda txt: updateLineEdit(txt,ph_rItems,ph_rLE))
 	updateSelected(ph_rCB, ph_rLE,ph_rItems)
+
+	cl_cnCB = myDialog.findChild(QComboBox, 'cl_cn_CB')
+	objToBeEnabledList.append(cl_cnCB)
+
+	updateComboItems(cl_cnCB, cl_cnItems)
+	cl_cnCB.currentIndexChanged[str].connect(lambda txt: updateLineEdit(txt, cl_cnItems, cl_cnLE))
+	updateSelected(cl_cnCB, cl_cnLE, cl_cnItems)
 	
 	setEditMode(layer.isEditable())
 		
@@ -130,7 +151,7 @@ def showEditDialog():
 	#dlg.finished.connect(updateTableValues)
 
 	dlg.show()
-	result = dlg.exec_()
+	result = dlg.exec()
 	# See if OK was pressed
 	res = []
 	if result == 1:

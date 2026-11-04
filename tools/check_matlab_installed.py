@@ -31,35 +31,49 @@ __revision__ = '$Format:%H$'
 import os
 import subprocess
 from os import *
+from sys import platform
 
 def checkMatlabInstalled(version= '9.9'):
-	# edit thie pars if cropcoef is compiled under another version
-	queryMLruntime = ['reg','query','HKEY_LOCAL_MACHINE\SOFTWARE\MathWorks\MATLAB Runtime'+'\\'+version]
-	queryMLframework = ['reg','query','HKEY_LOCAL_MACHINE\SOFTWARE\MathWorks\MATLAB'+'\\'+version]
+	stderr = ''
+	print('platform: ',platform)
+	try:
+		if platform == "win32":
+			queryMLruntime = ['reg','query',r'HKEY_LOCAL_MACHINE\SOFTWARE\MathWorks\MATLAB Runtime'+'\\'+version]
+			queryMLframework = ['reg','query',r'HKEY_LOCAL_MACHINE\SOFTWARE\MathWorks\MATLAB'+'\\'+version]
 
-	proc = subprocess.Popen(queryMLruntime, stderr=subprocess.PIPE, stdout=subprocess.PIPE, encoding='utf8')
-	stdout, stderr = proc.communicate()
+			# try with matlab runtime
+			proc = subprocess.Popen(queryMLruntime, stderr=subprocess.PIPE, stdout=subprocess.PIPE, encoding='utf8')
+			stdout, stderr = proc.communicate()
 
-	# print('stdout1\n',stdout)
-	# print('stderr1\n', stderr)
+			# print('stdout1\n',stdout)
+			# print('stderr1\n', stderr)
+			# try with matlab framework
+			if stderr:
+				proc = subprocess.Popen(queryMLframework, stderr=subprocess.PIPE, stdout=subprocess.PIPE,
+										encoding='utf8')
+				stdout, stderr = proc.communicate()
+				# print('stdout2', stdout)
+				# print('stderr2', stderr)
+		if platform == "linux" or platform == "linux2":
+			# linux
+			pass
+		elif platform == "darwin":
+			# OS X
+			pass
+	except Exception as e:
+		stderr = str(e)
 
-	if stderr:
-		proc = subprocess.Popen(queryMLframework, stderr=subprocess.PIPE, stdout=subprocess.PIPE,
-								encoding='utf8')
-		stdout, stderr = proc.communicate()
-		# print('stdout2', stdout)
-		# print('stderr2', stderr)
-
-	if stderr:
-		path2ML=''
-	else:
-		stdout = stdout.replace('\n','')
-		toks = stdout.split('REG_SZ    ')
-		folderPath = toks[1]
-		if 'MATLAB Runtime' in folderPath:
-			path2ML = os.path.join(folderPath,'v'+version.replace('.',''), 'runtime', 'win64')
-		else:
-			path2ML = os.path.join(folderPath,'runtime','win64')
+	path2ML = ''
+ 	# if stderr:
+	# 	path2ML=''
+	# else:
+	# 	stdout = stdout.replace('\n','')
+	# 	toks = stdout.split('REG_SZ    ')
+	# 	folderPath = toks[1]
+	# 	if 'MATLAB Runtime' in folderPath:
+	# 		path2ML = os.path.join(folderPath,'v'+version.replace('.',''), 'runtime', 'win64')
+	# 	else:
+	# 		path2ML = os.path.join(folderPath,'runtime','win64')
 
 	return path2ML
 

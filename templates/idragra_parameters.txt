@@ -123,8 +123,8 @@ DeltaDate = [%STEPOUTPUT%]
 # 01q_trasp: 10th percentile of soil conductivity for traspirative layer
 01q_trasp = 0.472116
 
-# 09q_eva: 90th percentile of soil conductivity for traspirative layer
-09q_eva = 7.706101
+# 09q_trasp: 90th percentile of soil conductivity for traspirative layer
+09q_trasp = 7.706101
 
 # 2.2. Irrigation inputs
 

@@ -20,7 +20,7 @@
       <string>Unique feature identifier</string>
      </property>
      <property name="text">
-      <string>Id</string>
+      <string>Id [id]</string>
      </property>
     </widget>
    </item>
@@ -40,7 +40,7 @@
       <string>The name of the link</string>
      </property>
      <property name="text">
-      <string>Name</string>
+      <string>Name [name]</string>
      </property>
     </widget>
    </item>
@@ -54,7 +54,7 @@
    <item row="2" column="0">
     <widget class="QLabel" name="descr_LBL">
      <property name="text">
-      <string>Description</string>
+      <string>Description [descr]</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
@@ -109,7 +109,7 @@
    <item row="4" column="0">
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>Crop sequence</string>
+      <string>Crop sequence [croplist]</string>
      </property>
     </widget>
    </item>

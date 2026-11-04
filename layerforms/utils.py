@@ -28,7 +28,7 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from PyQt5.QtWidgets import QMessageBox
+from qgis.PyQt.QtWidgets import QMessageBox
 from qgis.gui import *
 
 def toSpecialInt(n):
@@ -125,4 +125,4 @@ def toDo():
 	msg.setInformativeText('This function will be deleted or developed in the next release ...')
 	msg.setWindowTitle('QWaDiS')
 	msg.setStandardButtons(QMessageBox.Ok)
-	msg.exec_()
+	msg.exec()

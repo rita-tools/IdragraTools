@@ -103,7 +103,7 @@ def getTimeSeriesConsistency(dbname, fromTime, toTime, weatStatList=[],watSource
 
 	# make a list of years, expected number of days (365, 366) and number of filled days
 	data = np.array(data)
-	values = np.array(data[:,1:],dtype=np.float)
+	values = np.array(data[:,1:],dtype=float)
 	years=np.array(data[:,0],np.datetime64).astype('datetime64[Y]').astype(int) + 1970
 	uniqueY = np.unique(years).tolist()
 	prodOfData = np.prod(values[:,1:], axis=1)

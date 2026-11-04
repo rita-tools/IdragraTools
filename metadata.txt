@@ -8,16 +8,17 @@
 
 [general]
 name=Idragra Tools
-qgisMinimumVersion=3.0
-description= A QGIS plugin to manage input e output to/from IdrAgra water districts model
-version=0.1
-author=Enrico A. Chiaradia
+version=0.5
+qgisMinimumVersion=3.34.3
+qgisMaximumVersion=3.99
+description=Prepare inputs and visualize outputs for the IdrAgra model
+author=Enrico A. Chiaradia, Paolo Soffietti
 email=enrico.chiaradia@unimi.it
 
-about= The plugin shares user interfaces and tools to manage IdrAgra simulation
+about=Tools to prepare inputs, run simulations and visualize outputs for IdrAgra. Compatible with IdrAgra 2.x. Tested on Windows with QGIS 3.34.3 and 3.44.15.
 
-tracker=https://github.com/happ/idragratools
-repository=https://github.com/happ/idragratools
+tracker=https://github.com/rita-tools/IdragraTools/issues
+repository=https://github.com/rita-tools/IdragraTools
 # End of mandatory metadata
 
 # Recommended items:
@@ -28,7 +29,7 @@ repository=https://github.com/happ/idragratools
 # Tags are comma separated with spaces allowed
 tags=water management, irrigation, water balance, idragra
 
-homepage=https://github.com/happ/idragratools/wiki
+homepage=https://github.com/rita-tools/IdragraTools
 category=Analysis
 icon=idragratools_logo.png
 # experimental flag

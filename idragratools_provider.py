@@ -32,8 +32,16 @@ import os
 
 from qgis.core import QgsProcessingProvider
 
-from PyQt5.QtGui import QIcon
+from qgis.PyQt.QtGui import QIcon
 
+from .algs.idragra_create_elev_to_field import IdragraCreateElevToField
+from .algs.idragra_clean_overlap import IdragraCleanOverlap
+from .algs.idragra_multi_join import IdragraMultiJoin
+from .algs.idragra_resultsmap import IdragraResultsMap
+from .algs.idragra_export_control_points_vector import IdragraExportControlPointsVector
+from .algs.idragra_create_raster_to_field import IdragraCreateRasterToField
+from .algs.idragra_create_field_table import IdragraCreateFieldTable
+from .algs.idragra_report_overview import IdragraReportOverview
 from .algs.idragra_import_from_existing_db import IdragraImportFromExistingDB
 from .algs.idragra_groupstats_by_raster import IdragraGroupStatsByRaster
 from .algs.idragra_import_irrunits_results import IdragraImportIrrUnitsResults
@@ -43,7 +51,7 @@ from .algs.idragra_raster_groupstats import IdragraRasterGroupStats
 from .algs.idragra_import_crop_par import IdragraImportCropPar
 from .algs.idragra_bulk_import_timeserie import IdragraBulkImportTimeserie
 from .algs.idragra_statserie import IdragraStatserie
-from .algs.idragra_export_control_points import IdragraExportControlPoints
+from .algs.idragra_export_control_points_grid import IdragraExportControlPointsGrid
 from .algs.idragra_calc_waterdepth import IdragraCalcWaterDepth
 from .algs.idragra_rasterize_time_map import IdragraRasterizeTimeMap
 from .algs.idragra_rasterize_map import IdragraRasterizeMap
@@ -91,7 +99,7 @@ class IdrAgraToolsProvider(QgsProcessingProvider):
 						IdragraRasterizeMap(),
 						IdragraRasterizeTimeMap(),
 						IdragraCalcWaterDepth(),
-						IdragraExportControlPoints(),
+						IdragraExportControlPointsGrid(),
 						IdragraStatserie(),
 						IdragraBulkImportTimeserie(),
 						IdragraImportCropPar(),
@@ -100,7 +108,15 @@ class IdrAgraToolsProvider(QgsProcessingProvider):
 						IdragraRasterQuality(),
 						IdragraGroupStatsByRaster(),
 						IdragraImportIrrUnitsResults(),
-						IdragraImportFromExistingDB()
+						IdragraImportFromExistingDB(),
+						IdragraReportOverview(),
+						IdragraCreateFieldTable(),
+						IdragraCreateRasterToField(),
+						IdragraExportControlPointsVector(),
+						IdragraResultsMap(),
+						IdragraMultiJoin(),
+						IdragraCleanOverlap(),
+						IdragraCreateElevToField()
 						]
 
 	def unload(self):

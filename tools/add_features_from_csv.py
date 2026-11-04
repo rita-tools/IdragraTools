@@ -32,7 +32,7 @@ from qgis.core import QgsVectorLayer,QgsFeature,QgsGeometry
 from .parse_par_file import parseParFile
 
 def addFeaturesFromCSV(laySource,csvSource,feedback = None):
-	#if feedback: feedback.pushInfo('in addFeaturesFromCSV, processing: %s'%laySource)
+	if feedback: feedback.pushInfo('in addFeaturesFromCSV, processing: %s'%laySource)
 	#print('in addFeaturesFromCSV, processing: %s'%laySource)
 	vlayer = QgsVectorLayer(laySource, 'dummy', "ogr")
 	vlayer.startEditing()

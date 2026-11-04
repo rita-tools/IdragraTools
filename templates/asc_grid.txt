@@ -1,0 +1,7 @@
+ncols [%n_cols%]
+nrows [%n_rows%]
+xllcorner [%xll_corner%]
+yllcorner [%yll_corner%]
+cellsize [%cell_size%]
+nodata_value [%nodata_value%]
+[%data%]

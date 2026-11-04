@@ -28,7 +28,7 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from PyQt5.QtWidgets import QMessageBox
+from qgis.PyQt.QtWidgets import QMessageBox
 
 def toDo():
 	msg = QMessageBox()
@@ -37,4 +37,4 @@ def toDo():
 	msg.setInformativeText('This function will be deleted or developed in the next release ...')
 	msg.setWindowTitle('Idragra4QGIS')
 	msg.setStandardButtons(QMessageBox.Ok)
-	msg.exec_()
+	msg.exec()

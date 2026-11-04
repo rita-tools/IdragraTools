@@ -8,6 +8,8 @@
 # Id: Irrigation method code
 Id = [%ID%]
 
+# Irrigation efficiency: [%IRR_EFF%]
+
 # Qadaq: irrigation water depth [mm]
 Qadaq = [%QADAQ%]
 
@@ -16,6 +18,9 @@ K_stress = [%KSTRESS%]
 
 # K_stresspozzi: water stress coefficient for the activation of irrigation from private wells
 K_stresswells = [%KSTRESSWELL%]
+
+# fw: exposed and wetted soil fraction
+fw = [%FW%]
 
 # Min_a & Max_a: parameters of percolation model
 Min_a = [%AMIN%]
@@ -39,5 +44,9 @@ c = [%CLOSSES%]
 # InterceptionFlag = FALSE or F if irrigation water is not interception by foliage
 InterceptionFlag = [%FINTERCEPTION%]
 
+# Add here extra option(s)
+[%ADV_OPTS%]
+
 # Irrigation run time
 [%IRRTIMETABLE%]
+

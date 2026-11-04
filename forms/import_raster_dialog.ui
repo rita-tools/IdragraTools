@@ -59,15 +59,21 @@
     </item>
     <item>
      <widget class="QCheckBox" name="IMPORT_CB">
+      <property name="enabled">
+       <bool>false</bool>
+      </property>
       <property name="text">
        <string>Import in database</string>
+      </property>
+      <property name="checked">
+       <bool>true</bool>
       </property>
      </widget>
     </item>
     <item>
      <widget class="QgsExtentGroupBox" name="OUTPUTEXT">
       <property name="enabled">
-       <bool>false</bool>
+       <bool>true</bool>
       </property>
      </widget>
     </item>

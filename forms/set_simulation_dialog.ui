@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>757</width>
-    <height>570</height>
+    <height>680</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -36,7 +36,7 @@
     <item>
      <widget class="QToolBox" name="toolBox">
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="IRRIGATION_PG">
        <property name="geometry">
@@ -44,13 +44,13 @@
          <x>0</x>
          <y>0</y>
          <width>717</width>
-         <height>325</height>
+         <height>457</height>
         </rect>
        </property>
        <attribute name="label">
         <string>Simulation options</string>
        </attribute>
-       <layout class="QFormLayout" name="formLayout_7">
+       <layout class="QFormLayout" name="formLayout_4">
         <item row="0" column="0">
          <widget class="QLabel" name="MODEL_LB">
           <property name="text">
@@ -61,7 +61,7 @@
         <item row="0" column="1">
          <widget class="QComboBox" name="MODE_CB"/>
         </item>
-        <item row="1" column="0" colspan="2">
+        <item row="1" column="0">
          <widget class="QCheckBox" name="SOILUSEVARFLAG_CB">
           <property name="enabled">
            <bool>false</bool>
@@ -77,6 +77,43 @@
           </property>
          </widget>
         </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="DEF_LU_LB">
+          <property name="text">
+           <string>Default land use</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QComboBox" name="DEF_LU_CB"/>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="DEF_IM_LB">
+          <property name="text">
+           <string>Default irrigation method</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QComboBox" name="DEF_IM_CB"/>
+        </item>
+        <item row="4" column="0">
+         <widget class="QLabel" name="RANDWIND_LB">
+          <property name="text">
+           <string>Random sowing window (days)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QSpinBox" name="RANDWIND_SB">
+          <property name="maximum">
+           <number>365</number>
+          </property>
+          <property name="value">
+           <number>6</number>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
       <widget class="QWidget" name="TIME_PG">
@@ -84,8 +121,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>214</width>
-         <height>139</height>
+         <width>171</width>
+         <height>119</height>
         </rect>
        </property>
        <attribute name="label">
@@ -95,7 +132,7 @@
         <item row="0" column="0">
          <widget class="QLabel" name="FROM_LB">
           <property name="text">
-           <string>From the 1th day of year</string>
+           <string>From the 1st day of year</string>
           </property>
          </widget>
         </item>
@@ -145,45 +182,78 @@
          <x>0</x>
          <y>0</y>
          <width>717</width>
-         <height>325</height>
+         <height>457</height>
         </rect>
        </property>
        <attribute name="label">
         <string>Spatial resolution</string>
        </attribute>
-       <layout class="QFormLayout" name="formLayout_3">
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_3">
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <widget class="QRadioButton" name="VECTOR_MODE">
           <property name="text">
-           <string>Cell dimension</string>
+           <string>Use domain shape(s) as computing element(s)</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
-        <item row="0" column="1">
-         <widget class="QDoubleSpinBox" name="CELLSIZE_SB">
-          <property name="maximum">
-           <double>1000.000000000000000</double>
-          </property>
-          <property name="value">
-           <double>0.000000000000000</double>
+        <item>
+         <widget class="QRadioButton" name="GRID_MODE">
+          <property name="text">
+           <string>Create regular grid from domain estents and cell size</string>
           </property>
          </widget>
         </item>
-        <item row="2" column="0" colspan="2">
-         <widget class="QLabel" name="DOMAINEXT_LB">
-          <property name="text">
-           <string>Set domain extension</string>
+        <item>
+         <widget class="QGroupBox" name="SETDOMAIN_GB">
+          <property name="enabled">
+           <bool>false</bool>
           </property>
-         </widget>
-        </item>
-        <item row="3" column="0" colspan="2">
-         <widget class="QgsExtentGroupBox" name="DOMAINEXT"/>
-        </item>
-        <item row="4" column="0">
-         <widget class="QPushButton" name="DRAW_GRID_BT">
-          <property name="text">
-           <string>Draw preview grid</string>
+          <property name="title">
+           <string/>
           </property>
+          <layout class="QFormLayout" name="formLayout_3">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_3">
+             <property name="text">
+              <string>Cell dimension</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QDoubleSpinBox" name="CELLSIZE_SB">
+             <property name="maximum">
+              <double>1000.000000000000000</double>
+             </property>
+             <property name="value">
+              <double>0.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="DOMAINEXT_LB">
+             <property name="text">
+              <string>Set domain extension</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0" colspan="2">
+            <widget class="QgsExtentGroupBox" name="DOMAINEXT">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0" colspan="2">
+            <widget class="QCheckBox" name="DRAW_GRID_CB">
+             <property name="text">
+              <string>Draw preview grid</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </widget>
         </item>
        </layout>
@@ -193,8 +263,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>245</width>
-         <height>151</height>
+         <width>206</width>
+         <height>135</height>
         </rect>
        </property>
        <attribute name="label">
@@ -283,8 +353,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>166</width>
-         <height>57</height>
+         <width>136</width>
+         <height>49</height>
         </rect>
        </property>
        <attribute name="label">

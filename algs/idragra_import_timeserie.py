@@ -28,9 +28,9 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import QCoreApplication,QVariant
-from qgis._core import QgsProcessingParameterMapLayer, QgsFeature
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import QCoreApplication,QVariant
+from qgis.core import QgsProcessingParameterMapLayer, QgsFeature
 from qgis.core import (QgsProcessing,
 						QgsFeatureSink,
 						QgsProcessingException,

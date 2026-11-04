@@ -1,0 +1,54 @@
+<a id="simsettings"><h2>Simulation settings</h2></a>
+<h3>Path and folder</h3>
+<table class="statistics">
+        <thead><th>Variable</th><th>Value</th><th>Description</th></thead>
+        <tbody>
+            <tr><td>OutputPath</td><td>[%outputpath%]</td><td>Path to output folder</td></tr>
+            <tr><td>MeteoPath</td><td>[%meteopath%]</td><td>Path to meteorological stations folder</td></tr>
+            <tr><td>PhenoPath</td><td>[%phenopath%]</td><td>Path to phenological parameters folder</td></tr>
+            <tr><td>IrrMethPath</td><td>[%irrmethpath%]</td><td>Path to irrigation methods folder</td></tr>
+            <tr><td>IrrMethFileName</td><td>[%irrmethfilename%]</td><td>File, located in irrigation methods folder, in which irrigation methods filenames are stored</td></tr>
+            <tr><td>WatSourPath</td><td>[%watsourpath%]</td><td>Path to water sources folder</td></tr>
+        </tbody>
+        <tfoot></tfoot>
+</table>
+<h3>Simulation mode</h3>
+<table class="statistics">
+        <thead><th>Variable</th><th>Value</th><th>Description</th></thead>
+        <tbody>
+            <tr><td>Mode</td><td>[%mode%]</td><td>Type of simulation<br><br>
+                <small>
+                0: simulation without irrigation;<br>
+                1: simulation with irrigation, mode consumptions;<br>
+                2: simulation with irrigation, field capacity needs satisfaction;<br>
+                3: simulation with irrigation, fixed volumes;<br>
+                4: fixed irrigation applications, data and volumes are specified in a file.</small>
+            </td></tr>
+        </tbody>
+        <tfoot></tfoot>
+</table>
+<h3>Simulation parameters</h3>
+<table class="statistics">
+        <thead><th>Variable</th><th>Value</th><th>Description</th></thead>
+        <tbody>
+            <tr><td>CapillaryFlag</td><td>[%capillaryflag%]</td><td>Simulate capillary rise (True/False)</td></tr>
+            <tr><td>MeteoStatWeightNum</td><td>[%meteostatweightnum%]</td><td>Number of nearest meteorological stations used to weight crop phenology</td></tr>
+            <tr><td>StartIrrSeason</td><td>[%startirrseason%]</td><td>Start irrigation at day [1...366]</td></tr>
+            <tr><td>EndIrrSeason</td><td>[%endirrseason%]</td><td>Stop irrigation season at day [1...366]</td></tr>
+            <tr><td>zEvap</td><td>[%zevap%]</td><td>Evaporative layer depth (m)</td></tr>
+            <tr><td>zRoot</td><td>[%zroot%]</td><td>Transpirative layer depth (m)</td></tr>
+        </tbody>
+        <tfoot></tfoot>
+</table>
+<h3>Periodical output setting</h3>
+<table class="statistics">
+        <thead><th>Variable</th><th>Value</th><th>Description</th></thead>
+        <tbody>
+            <tr><td>MonthlyFlag</td><td>[%monthlyflag%]</td><td>Export outputs aggregated by months (True/False)</td></tr>
+            <tr><td colspan="3"><cite>If MonthlyFlag is False, the following settings are used:</cite></td></tr>
+            <tr><td>StartDate</td><td>[%startdate%]</td><td>Save output starting from day [1...366]</td></tr>
+            <tr><td>EndDate</td><td>[%enddate%]</td><td>Stop output at day [1...366]</td></tr>
+            <tr><td>DeltaDate</td><td>[%deltadate%]</td><td>Save outputs every n days [1...366]</td></tr>
+        </tbody>
+        <tfoot></tfoot>
+</table>

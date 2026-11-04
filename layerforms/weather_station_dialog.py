@@ -32,8 +32,10 @@ import datetime
 import numpy as np
 import os
 
-from PyQt5.QtWidgets import *
+from qgis.PyQt.QtWidgets import *
 from qgis.core import *
+
+from IdragraTools.qt_compat import QAction
 
 
 from IdragraTools.layerforms.utils import *
@@ -193,16 +195,19 @@ def plotMeteoVars(wsId,name):
 			shadow = p['color']+'29'
 		# get data
 		dateTimeList, values = qgis.utils.plugins['IdragraTools'].DBM.getTimeSeries(p['table'],p['id'])
+		print('ws:',type(dateTimeList[0]))
+		#dateTimeList = [np.datetime64(dt) for dt in dateTimeList]
+		print('ws:', type(dateTimeList[0]))
 		cw.addTimeSerie(dateTimeList,values,lineType='-',color=p['color'],name = p['name'],yaxis = p['axes'],shadow= shadow)
 		if p['axes']=='y': y1Title.append(p['name'])
 		if p['axes']=='y2': y2Title.append(p['name'])
 
-	# set title
-	cw.setTitles(xlabs = None, ylabs = None, xTitle = None, yTitle = ', '.join(y1Title), y2Title = ', '.join(y2Title), mainTitle = None)
-
 	# flip y axes
 	cw.flipAxes(x1 = None, y1 = True, x2 = None, y2 = None)
 
+	# set title
+	cw.setTitles(xlabs=None, ylabs=None, xTitle=None, yTitle=', '.join(y1Title), y2Title=', '.join(y2Title),
+				 mainTitle=None)
 
 	# second plot
 	cw.setAxis(pos=312 , secondAxis=False,label = ['Humidity'])
@@ -315,12 +320,12 @@ def plotPheno(wsId,varIdx):
 	# make a plot
 	cw = ChartWidget(myDialog, '', False, False)
 	cw.setAxis(pos=111, secondAxis=False, label=['main chart'])
-	timestamp = phenos['timestamp']
+	timestamp = phenos['timestamp'].values
 	nOfSeries = len(list(phenos.keys()))
-	colList = plt.cm.get_cmap('tab20', nOfSeries)
+	colList = plt.get_cmap('tab20', nOfSeries)
 	for i,landuse in enumerate(list(phenos.keys())):
 		if landuse != 'timestamp':
-			cw.addTimeSerie(timestamp, phenos[landuse],'-',colList(i/nOfSeries),landuse,1,False)
+			cw.addTimeSerie(timestamp, phenos[landuse].values,'-',colList(i/nOfSeries),landuse,1,False)
 
 	cw.setTitles(yTitle=list(phenovars.values())[varIdx])
 
@@ -360,7 +365,7 @@ def createArray(wsId,tableName = 'ws_ptot'):
 		newListOfValues[idx]= values[i]
 
 	# make a 2d array
-	data2D = np.array(newListOfValues,np.float)
+	data2D = np.array(newListOfValues,np.float32)
 	data2D = np.reshape(data2D,(nOfYear,366))
 
 	return data2D,startYear,endYear

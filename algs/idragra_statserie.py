@@ -32,9 +32,9 @@ import glob
 from math import tan, radians
 
 import qgis
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import QCoreApplication, QVariant, QDate
-from qgis._analysis import QgsZonalStatistics
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import QCoreApplication, QVariant, QDate
+from qgis.analysis import QgsZonalStatistics
 from qgis.core import (QgsProcessing,
 					   QgsFeatureSink,
 					   QgsProcessingException,
@@ -302,15 +302,24 @@ class IdragraStatserie(QgsProcessingAlgorithm):
 
 		# call aggregation algorithm
 		tempFile = QgsProcessingUtils.generateTempFilename('aggrOutput.gpkg')
-		algResults = processing.run("idragratools:IdragraGroupStats",
-								   {'IDRAGRA_FILE': idragraFile,
-									'AGGR_LAY': aggrLay, 'AGGR_FLD': aggrFld,
-									'AGGR_VAR': varIdx, 'AGGR_FUN': aggrFunIdx,
-									'OUTPUT_TABLE': tempFile},
-								   context=context,
-								   feedback=feedback,
-								   is_child_algorithm=True
-								   )
+		# algResults = processing.run("idragratools:IdragraGroupStats",
+		# 						   {'IDRAGRA_FILE': idragraFile,
+		# 							'AGGR_LAY': aggrLay, 'AGGR_FLD': aggrFld,
+		# 							'AGGR_VAR': varIdx, 'AGGR_FUN': aggrFunIdx,
+		# 							'OUTPUT_TABLE': tempFile},
+		# 						   context=context,
+		# 						   feedback=feedback,
+		# 						   is_child_algorithm=True
+		# 						   )
+
+		algResults = processing.run("idragratools:IdragraGroupStatsByRaster",
+					   {'IDRAGRA_FILE': idragraFile,
+						'AGGR_LAY': 'irr_units', 'AGGR_VAR': varIdx, 'AGGR_FUN': aggrFunIdx,
+						'OUTPUT_TABLE': tempFile},
+					   context=context,
+					   feedback=feedback,
+					   is_child_algorithm=True
+		)
 
 		# get table and create time series
 		table = QgsVectorLayer(tempFile,'temp','ogr')

@@ -30,10 +30,10 @@ __revision__ = '$Format:%H$'
 
 from math import tan, radians
 
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import QCoreApplication,QVariant
-from qgis._analysis import QgsZonalStatistics
-from qgis._core import QgsProcessingParameterCrs
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import QCoreApplication,QVariant
+from qgis.analysis import QgsZonalStatistics
+from qgis.core import QgsProcessingParameterCrs
 from qgis.core import (QgsProcessing,
 					   QgsFeatureSink,
 					   QgsProcessingException,
@@ -75,6 +75,8 @@ from datetime import datetime
 
 import os
 
+import pandas as pd
+
 from tools.add_features_from_csv import addFeaturesFromCSV
 from tools.parse_par_file import parseParFile
 from tools.sqlite_driver import SQLiteDriver
@@ -103,6 +105,7 @@ class IdragraBulkImportTimeserie(QgsProcessingAlgorithm):
 	SOURCEFOLDER = 'SOURCE_FOLDER'
 	TIMEFORMAT = 'TIME_FORMAT'
 	SEP = 'SEP'
+	REPLACE_EXISTING = 'REPLACE_EXISTING'
 	FEEDBACK = None
 
 	def __init__(self):
@@ -202,6 +205,8 @@ class IdragraBulkImportTimeserie(QgsProcessingAlgorithm):
 		self.addParameter(
 			QgsProcessingParameterString(self.TIMEFORMAT, self.tr('Time format'), '%d/%m/%Y', False, False))
 
+		self.addParameter(QgsProcessingParameterBoolean(self.REPLACE_EXISTING, self.tr('Replace existing'),True,True))
+
 	def processAlgorithm(self, parameters, context, feedback):
 		"""
 		Here is where the processing itself takes place.
@@ -212,7 +217,7 @@ class IdragraBulkImportTimeserie(QgsProcessingAlgorithm):
 		sourceFolder = self.parameterAsFile(parameters, self.SOURCEFOLDER, context)
 		sep = self.parameterAsString(parameters, self.SEP, context)
 		timeFormat = self.parameterAsString(parameters, self.TIMEFORMAT, context)
-
+		replace_existing = self.parameterAsBool(parameters,self.REPLACE_EXISTING,context)
 		self.DBM = SQLiteDriver(dbFilename, False, None,self.FEEDBACK,self.tr, QgsProject.instance())
 
 		# get list of table
@@ -223,6 +228,8 @@ class IdragraBulkImportTimeserie(QgsProcessingAlgorithm):
 		# for each file
 		timeFld = 'timestamp'
 		for i,f in enumerate(fileList):
+			if self.FEEDBACK.isCanceled(): break
+
 			self.FEEDBACK.setProgress(100.*i/nOfFile)
 			self.FEEDBACK.pushInfo(self.tr('INFO: processing %s' % f))
 			if f.endswith('.csv'):
@@ -233,22 +240,33 @@ class IdragraBulkImportTimeserie(QgsProcessingAlgorithm):
 					continue
 
 				filePath = os.path.join(sourceFolder,f)
-
-				# for each supported table, find the field index
-				for supportedTable in self.supportedTableList:
-					# read the first line and get the timestamp field index
-					tsIndex,valueIndex = self.readHeaderLine(filePath, sep, supportedTable,timeFld)
-					# import the table
-					if ((tsIndex>-1) and (valueIndex>-1)):
-						self.importDataFromCSV(filePath, supportedTable,
-											   tsIndex, valueIndex,
-											   sensorId, 1, timeFormat, sep,
-										  self.FEEDBACK, '')
-					else:
-						self.FEEDBACK.reportError(self.tr('Unsupported file format from %s') % filePath, False)
-						self.FEEDBACK.pushInfo(self.tr('Field index for %s: %s' % (timeFld, tsIndex)))
-						self.FEEDBACK.pushInfo(self.tr('Field index for %s: %s' % (supportedTable, valueIndex)))
-						continue
+				#replace_existing = False
+				if not replace_existing:
+					self.DBM.startConnection()
+					self.importDataFromCSV_wpandas(filename = filePath,
+												   sensor_id = sensorId,
+												   conn = self.DBM.conn,
+												   progress = self.FEEDBACK,
+												   timeFldName=timeFld,
+												   timeFormat=timeFormat,
+												   column_sep=sep)
+					self.DBM.stopConnection()
+				else:
+					# for each supported table, find the field index
+					for supportedTable in self.supportedTableList:
+						# read the first line and get the timestamp field index
+						tsIndex,valueIndex = self.readHeaderLine(filePath, sep, supportedTable,timeFld)
+						# import the table
+						if ((tsIndex>-1) and (valueIndex>-1)):
+							self.importDataFromCSV(filePath, supportedTable,
+												   tsIndex, valueIndex,
+												   sensorId, 1, timeFormat, sep,
+											  self.FEEDBACK, '')
+						else:
+							self.FEEDBACK.reportError(self.tr('Unsupported file format from %s') % filePath, False)
+							self.FEEDBACK.pushInfo(self.tr('Field index for %s: %s' % (timeFld, tsIndex)))
+							self.FEEDBACK.pushInfo(self.tr('Field index for %s: %s' % (supportedTable, valueIndex)))
+							continue
 
 		self.plugin_dir = os.path.join(os.path.dirname(__file__), os.pardir)
 
@@ -268,6 +286,23 @@ class IdragraBulkImportTimeserie(QgsProcessingAlgorithm):
 		if valueFld in data: valueIndex = data.index(valueFld)
 
 		return tsIndex,valueIndex
+
+	def importDataFromCSV_wpandas(self, filename, sensor_id, conn, progress,
+								  timeFldName ='timestamp', timeFormat = '%Y-%m-%d', column_sep = ';'):
+		# load as dataframe
+		data = pd.read_csv(filename, sep=column_sep)
+		print(data)
+		data['timestamp'] = pd.to_datetime(data[timeFldName], format=timeFormat).dt.strftime('%Y-%m-%d')
+		data['wsid'] =  sensor_id
+		all_cols = list(data.columns.values)
+		for col_name in all_cols:
+			if col_name in self.supportedTableList:
+				progress.pushInfo(self.tr('INFO: appending new values in %s' % col_name))
+				# create temporary dataframe
+				temp_df = data[['timestamp','wsid',col_name]]
+				temp_df = temp_df.rename(columns={col_name: 'recval'})
+				#append temporary dataframe to each table
+				temp_df.to_sql(col_name, con=conn, if_exists='append', index= False)
 
 	def importDataFromCSV(self, filename, tablename, timeFldIdx, valueFldIdx, sensorId, skip, timeFormat, column_sep,
 						  progress, year=''):

@@ -6,384 +6,63 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>520</width>
-    <height>483</height>
+    <width>378</width>
+    <height>259</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
-  <property name="locale">
-   <locale language="English" country="UnitedStates"/>
-  </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
-   <item>
-    <widget class="QTabWidget" name="tabWidget">
-     <property name="currentIndex">
-      <number>3</number>
+  <layout class="QFormLayout" name="formLayout">
+   <item row="0" column="0">
+    <widget class="QLabel" name="id_LBL">
+     <property name="toolTip">
+      <string>Unique feature identifier</string>
      </property>
-     <widget class="QWidget" name="tab">
-      <attribute name="title">
-       <string>Base properties</string>
-      </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout_3">
-       <item>
-        <widget class="QLabel" name="id_LB">
-         <property name="text">
-          <string>Unique id (for intermediate mode only):</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="id">
-         <property name="enabled">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="NAME_LB">
-         <property name="text">
-          <string>Name:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="name"/>
-       </item>
-       <item>
-        <widget class="QLabel" name="DESCR_LB">
-         <property name="text">
-          <string>Description:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPlainTextEdit" name="descr"/>
-       </item>
-       <item>
-        <widget class="QLabel" name="CN_LB">
-         <property name="text">
-          <string>CN hydrological class:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QComboBox" name="hydr_group_cb">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="hydr_group"/>
-       </item>
-      </layout>
-     </widget>
-     <widget class="QWidget" name="tab_2">
-      <attribute name="title">
-       <string>Evaporative layer</string>
-      </attribute>
-      <layout class="QFormLayout" name="formLayout_4">
-       <item row="0" column="0">
-        <widget class="QLabel" name="KS1_LB">
-         <property name="text">
-          <string>Ks (cm h^-1)</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="1">
-        <widget class="QLineEdit" name="ksat_1"/>
-       </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="N1_LB">
-         <property name="text">
-          <string>n (-)</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="1">
-        <widget class="QLineEdit" name="n_1"/>
-       </item>
-       <item row="2" column="0">
-        <widget class="QLabel" name="REW1_LB">
-         <property name="text">
-          <string>REW (-)</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="1">
-        <widget class="QLineEdit" name="rew_1"/>
-       </item>
-       <item row="3" column="0">
-        <widget class="QLabel" name="TFC1_LB">
-         <property name="text">
-          <string>Theta FC (-)</string>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="1">
-        <widget class="QLineEdit" name="theta1_fc"/>
-       </item>
-       <item row="4" column="0">
-        <widget class="QLabel" name="TWP1_LB">
-         <property name="text">
-          <string>Theta WP (-)</string>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="1">
-        <widget class="QLineEdit" name="theta1_wp"/>
-       </item>
-       <item row="5" column="0">
-        <widget class="QLabel" name="TR1_LB">
-         <property name="text">
-          <string>Theta R (-)</string>
-         </property>
-        </widget>
-       </item>
-       <item row="5" column="1">
-        <widget class="QLineEdit" name="theta1_r"/>
-       </item>
-       <item row="6" column="0">
-        <widget class="QLabel" name="TS1_LB">
-         <property name="text">
-          <string>Theta S (-)</string>
-         </property>
-        </widget>
-       </item>
-       <item row="6" column="1">
-        <widget class="QLineEdit" name="theta1_sat"/>
-       </item>
-      </layout>
-     </widget>
-     <widget class="QWidget" name="tab_3">
-      <attribute name="title">
-       <string>Transpirative layer</string>
-      </attribute>
-      <layout class="QFormLayout" name="formLayout_5">
-       <item row="0" column="1">
-        <widget class="QLineEdit" name="ksat_2"/>
-       </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="N2_LB">
-         <property name="text">
-          <string>n (-)</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="1">
-        <widget class="QLineEdit" name="n_2"/>
-       </item>
-       <item row="2" column="0">
-        <widget class="QLabel" name="REW2_LB">
-         <property name="text">
-          <string>REW (-)</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="1">
-        <widget class="QLineEdit" name="rew_2"/>
-       </item>
-       <item row="3" column="0">
-        <widget class="QLabel" name="TFC2_LB">
-         <property name="text">
-          <string>Theta FC (-)</string>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="1">
-        <widget class="QLineEdit" name="theta2_fc"/>
-       </item>
-       <item row="4" column="0">
-        <widget class="QLabel" name="TWP2_LB">
-         <property name="text">
-          <string>Theta WP (-)</string>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="1">
-        <widget class="QLineEdit" name="theta2_wp"/>
-       </item>
-       <item row="5" column="0">
-        <widget class="QLabel" name="TR2_LB">
-         <property name="text">
-          <string>Theta R (-)</string>
-         </property>
-        </widget>
-       </item>
-       <item row="5" column="1">
-        <widget class="QLineEdit" name="theta2_r"/>
-       </item>
-       <item row="6" column="0">
-        <widget class="QLabel" name="TS2_LB">
-         <property name="text">
-          <string>Theta S (-)</string>
-         </property>
-        </widget>
-       </item>
-       <item row="6" column="1">
-        <widget class="QLineEdit" name="theta2_sat"/>
-       </item>
-       <item row="0" column="0">
-        <widget class="QLabel" name="KS2_LB">
-         <property name="text">
-          <string>Ks (cm h^-1)</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-     <widget class="QWidget" name="tab_4">
-      <attribute name="title">
-       <string>Sub layer</string>
-      </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout_4">
-       <item>
-        <widget class="QGroupBox" name="groupBox">
-         <property name="title">
-          <string>Capilar Rise Model</string>
-         </property>
-         <layout class="QFormLayout" name="formLayout">
-          <item row="0" column="0">
-           <widget class="QLabel" name="a3_lbl">
-            <property name="text">
-             <string>a3</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QLineEdit" name="caprisepar_a3"/>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="a4_lbl">
-            <property name="text">
-             <string>a4</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QLineEdit" name="caprisepar_a4"/>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="b1_lbl">
-            <property name="text">
-             <string>b1</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QLineEdit" name="caprisepar_b1"/>
-          </item>
-          <item row="3" column="0">
-           <widget class="QLabel" name="b2_lbl">
-            <property name="text">
-             <string>b2</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QLineEdit" name="caprisepar_b2"/>
-          </item>
-          <item row="4" column="0">
-           <widget class="QLabel" name="b3_lbl">
-            <property name="text">
-             <string>b3</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="1">
-           <widget class="QLineEdit" name="caprisepar_b3"/>
-          </item>
-          <item row="5" column="0">
-           <widget class="QLabel" name="b4_lbl">
-            <property name="text">
-             <string>b4</string>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="1">
-           <widget class="QLineEdit" name="caprisepar_b4"/>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <spacer name="verticalSpacer">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-      </layout>
-     </widget>
+     <property name="text">
+      <string>Id [id]</string>
+     </property>
     </widget>
    </item>
-   <item>
-    <widget class="QFrame" name="frame">
-     <property name="frameShape">
-      <enum>QFrame::NoFrame</enum>
+   <item row="0" column="1">
+    <widget class="QLineEdit" name="id">
+     <property name="enabled">
+      <bool>true</bool>
      </property>
-     <property name="frameShadow">
-      <enum>QFrame::Raised</enum>
+     <property name="toolTip">
+      <string>Unique soil use identifier</string>
      </property>
-     <property name="lineWidth">
-      <number>0</number>
-     </property>
-     <layout class="QHBoxLayout" name="horizontalLayout">
-      <property name="leftMargin">
-       <number>0</number>
-      </property>
-      <property name="topMargin">
-       <number>0</number>
-      </property>
-      <property name="rightMargin">
-       <number>0</number>
-      </property>
-      <property name="bottomMargin">
-       <number>0</number>
-      </property>
-      <item>
-       <widget class="QFrame" name="frame_2">
-        <property name="maximumSize">
-         <size>
-          <width>150</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="frameShape">
-         <enum>QFrame::NoFrame</enum>
-        </property>
-        <property name="frameShadow">
-         <enum>QFrame::Raised</enum>
-        </property>
-        <property name="lineWidth">
-         <number>0</number>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout_2">
-         <property name="leftMargin">
-          <number>0</number>
-         </property>
-         <property name="topMargin">
-          <number>0</number>
-         </property>
-         <property name="rightMargin">
-          <number>0</number>
-         </property>
-         <property name="bottomMargin">
-          <number>0</number>
-         </property>
-        </layout>
-       </widget>
-      </item>
-     </layout>
     </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="name_LBL">
+     <property name="toolTip">
+      <string>The name of the link</string>
+     </property>
+     <property name="text">
+      <string>Name [name]</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QLineEdit" name="name">
+     <property name="toolTip">
+      <string>The name of the link</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="descr_LBL">
+     <property name="text">
+      <string>Description [descr]</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QPlainTextEdit" name="descr"/>
    </item>
   </layout>
  </widget>

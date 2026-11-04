@@ -28,7 +28,7 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from qgis._core import QgsRectangle
+from qgis.core import QgsRectangle
 
 
 def returnExtent(extStr):
@@ -50,3 +50,4 @@ def isLeap(year):
         res = True
 
     return res
+

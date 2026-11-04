@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Idragra Simulation Report[%sub_title%]</title>
+    <style>
+    div.notes {margin-top: 25px; padding: 10px; border-radius: 25px;border-radius: 25px;
+                border: 2px solid black;}
+    div.warnings {margin-top: 25px; padding: 10px; background-color: #2196f3;
+                    color: white; border-radius: 25px;}
+
+    body {width: 90%; padding: 5px; font-family:Arial;}
+    table {width:100%; table-layout:fixed;}
+    tr.odd {background-color: LightGrey;}
+    table.statistics, table.statistics th, table.statistics td
+                     {text-align: center;
+                      border: 1px solid black;
+                      border-collapse: collapse;
+                      }}
+    img {width:100%;
+         max-width:300px}
+    div.image_container{display: flex; justify-content: center}
+    p.caption {font-weight: bold;
+               font-style: italic;}
+
+    #left {
+        width: 15rem;
+        position: sticky;
+        position: -webkit-sticky;
+        top: 0;
+        padding: 2px;
+        //width:25%;
+        height: 100vh;
+        overflow: auto;
+        }
+
+    #right {
+        flex:1;
+        padding: 2px;
+        //width:75%;
+        }
+
+    #header {
+        width:100%;
+        text-align: center;
+    }
+
+    .container {
+      width:100%;
+      display: flex;
+      -webkit-box-flex: 1;
+    }
+
+    /*
+    header {
+        text-align: center;
+    }
+
+    nav {
+      position: sticky;
+      position: -webkit-sticky;
+      top: 0;
+      padding: 5px;
+      width:25%;
+      height: 100vh;
+    }
+
+    main {
+        padding: 5px;
+        width:75%;
+    }
+    */
+
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>Idragra Simulation Report[%sub_title%]</h1>
+        <p>Created by IdrAgraTools on [%current_date%]</p>
+        <p>Based on data collected from <i>[%sim_path%]</i></p>
+    </div>
+    <div class="container">
+
+        <div id="left">
+            <h1>ToC</h1>
+            [%report_toc%]
+        </div>
+        <div id="right">
+            <div id="content">
+                [%report_body%]
+            </div>
+        </div>
+    </div>
+</body>
+<footer>
+</footer>
+</html>

@@ -31,15 +31,16 @@ __copyright__ = '(C) 2018 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 import sys
-from PyQt5 import QtGui
-from PyQt5.QtWidgets import QDialog,QAction,QMenu,QMessageBox,QPushButton,QWidget,QVBoxLayout,QComboBox,QLabel
+from qgis.PyQt import QtGui
+from qgis.PyQt.QtWidgets import QDialog,QMenu,QMessageBox,QPushButton,QWidget,QVBoxLayout,QComboBox,QLabel
 		
-
+import matplotlib
 from matplotlib.backends.backend_qt5agg  import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdt
 from matplotlib.patches import Polygon, Patch
+import matplotlib.dates as mdates
 
 import numpy as np
 
@@ -48,11 +49,16 @@ from datetime import datetime
 
 from matplotlib.sankey import Sankey
 
-from data_manager.chart_tool_bar import ChartToolBar
-
+if (matplotlib.__version__).startswith('3.1.'):
+	from data_manager.chart_tool_bar_3_1 import ChartToolBar
+elif (matplotlib.__version__).startswith('3.5.'):
+	from data_manager.chart_tool_bar_3_5 import ChartToolBar
+else:
+	from data_manager.chart_tool_bar_3_1 import ChartToolBar
 
 class ChartWidget(QWidget):
-	def __init__(self, parent=None, title = '', secondAxis = False, enableConnection = True,size= None):
+	def __init__(self, parent=None, title = '', secondAxis = False,
+				 enableConnection = True, size= None, advanced = False, digits = False):
 		QWidget.__init__(self,parent) 
 		
 		self.setWindowTitle(title)
@@ -71,7 +77,8 @@ class ChartWidget(QWidget):
 		# this is the Navigation widget
 		# it takes the Canvas widget and a parent
 		#self.toolbar = NavigationToolbar(self.canvas, self)
-		self.toolbar = ChartToolBar(self.canvas,self)
+		self.toolbar = ChartToolBar(self.canvas,parent, advanced, digits)#self
+		self.toolbar.update()
 
 		if enableConnection:
 			# Add
@@ -80,6 +87,11 @@ class ChartWidget(QWidget):
 			self.WINCB.currentTextChanged.connect(self.parent().parent().manageSubConnection)
 			self.toolbar.addWidget(self.WINLBL)
 			self.toolbar.addWidget(self.WINCB)
+
+		# for i,act in enumerate(self.toolbar.actions()):
+		# 	print(i,act.text())
+
+		#self.toolbar.actions()[10].triggered.connect(self.redraw_legend)
 
 		#self.line_edit.editingFinished.connect(self.do_something)
 		# set the layout
@@ -144,11 +156,16 @@ class ChartWidget(QWidget):
 		if mainTitle is not None: self.ax.set_title(mainTitle)
 		if xTitle is not None: self.ax.set_xlabel(xTitle)
 		if yTitle is not None: self.ax.set_ylabel(yTitle)
+		#print('in setTitles, y2Title:',y2Title)
 		if y2Title is not None: self.ax2.set_ylabel(y2Title)
 		
 		#ax.set_xticks(ind + width / 2)
 		#plt.tight_layout()
-		
+
+		#format_str = '%y-%m'
+		#format_ = mdates.DateFormatter(format_str)
+		#self.ax.xaxis.set_major_formatter(format_)
+
 		self.figure.autofmt_xdate()
 		# beautify the x-labels
 		#plt.gcf().autofmt_xdate()
@@ -163,10 +180,12 @@ class ChartWidget(QWidget):
 		dates = mdt.date2num(dateTimeList)
 
 		if yaxis == 1:
-			lines, = self.ax.plot_date(dates, values, lineType, color=color, label=name, picker=5)
+			self.ax.xaxis_date()
+			lines, = self.ax.plot(dates, values, lineType, color=color, label=name, picker=5)
 		# cursor1 = FollowDotCursor(self.ax, x, y)
 		else:
-			lines, = self.ax2.plot_date(dates, values, lineType, color=color, label=name, picker=5)
+			self.ax2.xaxis_date()
+			lines, = self.ax2.plot(dates, values, lineType, color=color, label=name, picker=5)
 		# cursor1 = FollowDotCursor(self.ax2, x, y)
 
 		if shadow:
@@ -180,15 +199,23 @@ class ChartWidget(QWidget):
 		self.l.append(name)
 		# self.ax.legend(self.h, self.l)
 		plt.legend(self.h, self.l)
-		
+
 	def addTimeSerie(self,dateTimeList,values,lineType='-',color='r',name = 'lineplot',yaxis = 1,shadow= False, addToLegend = True):
 		if len(dateTimeList) > 0:
-			dates = mdt.date2num(dateTimeList)
+			#dates = mdt.date2num(dateTimeList)
+			dates = dateTimeList
 
 			if yaxis in [1, 'y']:
-				lines, = self.ax.plot_date(dates, values, lineType, color=color, label=name, picker=5)
+				lines, = self.ax.plot(dates, values, lineType, color=color, label=name, picker=5)
+
+				lines.set_gid('line%s'%(len(self.h)+1))
+				# https://stackoverflow.com/questions/31162780/how-to-plot-a-rectangle-on-a-datetime-axis-using-matplotlib
 				if shadow:
-					verts = [(dates[0], 0), *zip(dates, values), (dates[-1], 0)]
+					#verts = [(dates[0], 0), *zip(dates, values), (dates[-1], 0)]
+					verts = [(mdates.date2num(dates[0]), 0),
+							 *zip([mdates.date2num(dt) for dt in dates], values),
+							 (mdates.date2num(dates[-1]), 0)]
+
 					poly = Polygon(verts, facecolor=shadow, edgecolor=color)
 					self.ax.add_patch(poly)
 					lines = Patch(facecolor=shadow, edgecolor=color, label=name, picker=5)
@@ -198,7 +225,9 @@ class ChartWidget(QWidget):
 					self.l.append(name)
 
 			else:
-				lines, = self.ax2.plot_date(dates, values, lineType, color=color, label=name, picker=5)
+				lines, = self.ax2.plot(dates, values, lineType, color=color, label=name, picker=5)
+
+				lines.set_gid('line%s' % (len(self.h) + 1))
 				if shadow:
 					verts = [(dates[0], 0), *zip(dates, values), (dates[-1], 0)]
 					poly = Polygon(verts, facecolor=shadow, edgecolor=color)
@@ -213,7 +242,27 @@ class ChartWidget(QWidget):
 			# self.ax.legend(self.h, self.l)
 			# plt.legend(self.h, self.l)
 			# plt.legend(handles = self.h, labels = self.l, loc='upper center', bbox_to_anchor=(0.5, -0.1),fancybox=True, shadow=True, ncol=len(self.h))
-			plt.legend(handles=self.h, labels=self.l)#, loc='upper center', bbox_to_anchor=(0.5, 1.15), fancybox=True, shadow=True, ncol=len(self.h))
+			#plt.legend(handles=self.h, labels=self.l)#, loc='upper center', bbox_to_anchor=(0.5, 1.15), fancybox=True, shadow=True, ncol=len(self.h))
+			#self.ax.legend()
+			#self.figure.legend()
+			#self.ax.legend(handles=self.h, labels=self.l)
+			plt.legend(self.h, self.l)
+
+	def redraw_legend(self):
+		self.h = []
+		self.l = []
+		for p in self.ax.lines:
+			self.h.append(p)
+			self.l.append(p.get_label())
+
+		self.ax.legend(self.h, self.l)
+		self.canvas.draw()
+
+	# def home_callback(self):
+	# 	print("home called")
+	# 	#plt.legend(self.h, self.l)
+	# 	self.ax.legend(self.h, self.l)
+	# 	self.canvas.draw()
 
 	def addFluxChart(self,flows=[25, 0, 60, -10, -20, -5, -15, -10, -40],
 				   labels=['', '', '', 'First', 'Second', 'Third', 'Fourth',
@@ -235,7 +284,13 @@ class ChartWidget(QWidget):
 		diagrams = sankey.finish()
 		diagrams[0].texts[-1].set_color('r')
 		diagrams[0].text.set_fontweight('bold')
-		
+
+	def addPieChart(self,labels=['Frogs', 'Hogs', 'Dogs', 'Logs'], sizes=[15, 30, 45, 10]):
+		# Pie chart, where the slices will be ordered and plotted counter-clockwise:
+		self.ax.axis('off')
+		self.ax.pie(sizes, labels=labels)
+		self.ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+
 	def addBarPlot(self,x,y,width=1,color='b',name = 'barplot'):
 		
 		# add some text for labels, title and axes ticks
@@ -365,8 +420,5 @@ class ChartWidget(QWidget):
 		
 if __name__ == '__console__':
 	#app = QtGui.QApplication(sys.argv)
-
-	main = Window()
-	main.show()
-
-	#sys.exit(app.exec_())
+	#sys.exit(app.exec())
+	pass

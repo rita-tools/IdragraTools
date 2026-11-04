@@ -30,7 +30,7 @@ __revision__ = '$Format:%H$'
 
 import os
 
-from PyQt5.QtCore import QSettings
+from qgis.PyQt.QtCore import QSettings
 
 from .write_pars_to_template import writeParsToTemplate
 
@@ -45,7 +45,6 @@ def exportBat(outPath, feedback = None,tr=None):
 	# save to file
 	writeParsToTemplate(outfile=os.path.join(outPath,'run_cropcoef.bat'),
 									parsDict =  {
-									'SIMPATH':outPath,
 									'PATHTOCROPCOEFF':path2cropcoeff.replace('/','\\'),
 									'CROPCOEFFPAR':'cropcoef.txt',
 									},
@@ -54,7 +53,6 @@ def exportBat(outPath, feedback = None,tr=None):
 	# save to file
 	writeParsToTemplate(outfile=os.path.join(outPath,'run_idragra.bat'),
 									parsDict =  {
-									'SIMPATH':outPath,
 									'PATHTOIDRAGRA':path2idragra.replace('/','\\'),
 									'IDRAGRAPAR':'idragra_parameters.txt'
 									},
@@ -69,7 +67,6 @@ def exportCropCoefBat(outPath):
 	# save to file
 	writeParsToTemplate(outfile=os.path.join(outPath,'run_cropcoef.bat'),
 									parsDict =  {
-									'SIMPATH':outPath,
 									'PATHTOCROPCOEFF':path2cropcoeff.replace('/','\\'),
 									'CROPCOEFFPAR':'cropcoef.txt',
 									},
@@ -83,7 +80,6 @@ def exportIdrAgraBat(outPath):
 	# save to file
 	writeParsToTemplate(outfile=os.path.join(outPath,'run_idragra.bat'),
 									parsDict =  {
-									'SIMPATH':outPath,
 									'PATHTOIDRAGRA':path2idragra.replace('/','\\'),
 									'IDRAGRAPAR':'idragra_parameters.txt'
 									},

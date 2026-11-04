@@ -28,12 +28,12 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
+from qgis.PyQt.QtCore import *
+from qgis.PyQt.QtGui import *
 
-from PyQt5 import uic
+from qgis.PyQt import uic
 
-from PyQt5.QtWidgets import QDialog,QToolBox,QWidget,QVBoxLayout,QFileDialog,QListWidgetItem,QMessageBox
+from qgis.PyQt.QtWidgets import QDialog,QToolBox,QWidget,QVBoxLayout,QFileDialog,QListWidgetItem,QMessageBox
 	
 #qgis import
 from qgis.core import *
@@ -85,7 +85,7 @@ class RemoveData(QDialog):
 			msg.setWindowTitle('Data Manager')
 			msg.setDetailedText('Fix time')
 			msg.setStandardButtons(QMessageBox.Ok)
-			msg.exec_()
+			msg.exec()
 		else:
 			msg = QMessageBox()
 			msg.setIcon(QMessageBox.Question)
@@ -98,6 +98,6 @@ class RemoveData(QDialog):
 								   )
 			msg.setWindowTitle('Data Manager')
 			msg.setStandardButtons(QMessageBox.Yes|QMessageBox.No)
-			ret = msg.exec_()
+			ret = msg.exec()
 			if ret == QMessageBox.Yes:
 				self.accept()

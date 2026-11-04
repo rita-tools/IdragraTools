@@ -28,9 +28,12 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
+import os
+from os.path import relpath
+
 import processing
-from qgis._core import QgsCoordinateReferenceSystem, QgsRectangle, QgsRasterLayer, QgsRasterBlockFeedback, \
-    QgsRasterFileWriter, QgsRasterPipe, QgsRasterProjector
+from qgis.core import QgsCoordinateReferenceSystem, QgsRectangle, QgsRasterLayer, QgsRasterBlockFeedback, \
+    QgsRasterFileWriter, QgsRasterPipe, QgsRasterProjector, QgsProject
 
 from tools.delete_raster_from_DB import deleteRasterFromDB
 
@@ -129,9 +132,15 @@ def importRasterInDB(DBM, rasterFileName, tableName, crs=QgsCoordinateReferenceS
                         print('err', rfeedback.errors())
                     # progress.reportError('\n'.join(rfeedback.errors()), True)
                     else:
-                        rasterFilePath = 'GPKG:' + gpkgFile + ':' + tableName
+                        #gpkgFile = relpath(gpkgFile, QgsProject.instance().absolutePath())
+                        gpkgFile = os.path.basename(gpkgFile)
+                        #rasterFilePath = 'GPKG:' + gpkgFile + ':' + tableName
+                        rasterFilePath =os.path.join('.',gpkgFile) + ':' + tableName
                 # rasterFilePath = rasterFilePath.replace('\\', '/')
                 # if layName:
                 #    self.loadRaster(rasterFilePath, layName, layGroup)
+    # if QgsProject.instance().filePathStorage()==1:
+    #     # get relative path to the project
+    #     rasterFilePath = relpath(rasterFilePath, QgsProject.instance().absolutePath())
 
     return rasterFilePath.replace('\\', '/')

@@ -30,12 +30,12 @@ __revision__ = '$Format:%H$'
 
 import time
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
+from qgis.PyQt.QtCore import *
+from qgis.PyQt.QtGui import *
 
-from PyQt5 import uic
+from qgis.PyQt import uic
 
-from PyQt5.QtWidgets import QDialog,QToolBox,QWidget,QVBoxLayout,QApplication
+from qgis.PyQt.QtWidgets import QDialog,QToolBox,QWidget,QVBoxLayout,QApplication
 	
 #qgis import
 from qgis.core import *

@@ -12,7 +12,7 @@
    viewBox="0 0 48 48"
    version="1.1"
    sodipodi:docname="NewDB.svg"
-   inkscape:version="1.0.1 (3bc2e813f5, 2020-09-07)">
+   inkscape:version="1.0.2-2 (e86c870879, 2021-01-15)">
   <defs
      id="defs9">
     <linearGradient
@@ -186,11 +186,11 @@
      inkscape:window-height="1010"
      id="namedview7"
      showgrid="false"
-     inkscape:zoom="7.6964278"
+     inkscape:zoom="7.5040171"
      inkscape:cx="28.537074"
      inkscape:cy="35.073917"
-     inkscape:window-x="-7"
-     inkscape:window-y="-7"
+     inkscape:window-x="-6"
+     inkscape:window-y="-6"
      inkscape:window-maximized="1"
      inkscape:current-layer="svg3792"
      inkscape:document-rotation="0"
@@ -384,7 +384,7 @@
      sodipodi:cx="30.869888"
      sodipodi:sides="8"
      id="path966"
-     style="fill:#ffdd55;fill-opacity:1;stroke:#000000;stroke-width:0.54619741;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     style="fill:#ffcc00;fill-opacity:1;stroke:#bca443;stroke-width:0.54619741;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
      sodipodi:type="star"
      d="m 39.078067,37.65056 -6.479077,-3.278462 -0.341175,7.253299 -2.263176,-6.899621 -5.370104,4.887609 3.278462,-6.479076 -7.253299,-0.341175 6.899621,-2.263177 -4.887609,-5.370104 6.479076,3.278462 0.341175,-7.253299 2.263177,6.899622 5.370104,-4.88761 -3.278462,6.479077 7.253299,0.341175 -6.899622,2.263176 z" />
 </svg>

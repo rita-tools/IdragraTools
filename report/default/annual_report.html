@@ -1,0 +1,84 @@
+
+<a id="wbf"><h3>Water balance</h3></a>
+
+<div>
+    <div class="image_container">
+        <img src="[%annual_fluxes%]">
+    </div>
+    <p class="caption">Figure [%img_num%]: water fluxes into the soil volume</p>
+
+    <div class="notes">
+        <p><strong>Notation:</strong></p>
+        <p>P: Cumulative precipitation (mm), I: Cumulative irrigation (mm),
+           L: Irrigation application losses (mm), E: Cumulative actual evaporation (mm),
+           T: Cumulative actual transpiration (mm), R: Cumulative runoff (mm),
+           N: Net flux to groundwater (mm)</p>
+    </div>
+</div>
+
+<div>
+    <p class="caption">Table [%tbl_num%]: inflows (negative net flux to ground water means inflow in case of capillary rise)</p>
+    [%wbf_table_income%]
+</div>
+
+<div>
+    <p class="caption">Table [%tbl_num%]: outflows</p>
+    [%wbf_table_outcome%]
+</div>
+
+
+<div>
+    <p class="caption">Table [%tbl_num%]: water productivity</p>
+    [%wp_table%]
+</div>
+
+<div>
+    <p class="caption">Table [%tbl_num%]: water management</p>
+    [%wm_table%]
+</div>
+
+<a id="ai"><h3>Average total water demand</h3></a>
+<h4>By soil type:</h4>
+<div class="image_container">
+    <img src="[%soil_vol_bxp%]">
+</div>
+<p class="caption">Figure [%img_num%]: irrigation volumes by soil type</p>
+<div>
+    <p class="caption">Table [%tbl_num%]: average irrigation volumes by soil type and year</p>
+    [%soil_stat_table%]
+</div>
+<h4>By soil use:</h4>
+<div class="image_container">
+    <img src="[%use_vol_bxp%]">
+</div>
+<p class="caption">Figure [%img_num%]: irrigation volumes by land uses</p>
+<div>
+    <p class="caption">Table [%tbl_num%]: average irrigation volumes by land use and year</p>
+    [%use_stat_table%]
+</div>
+<h4>By irrigation method:</h4>
+<div class="image_container">
+    <img src="[%irrmeth_vol_bxp%]">
+</div>
+<p class="caption">Figure [%img_num%]: irrigation volumes by irrigation method</p>
+<div>
+    <p class="caption">Table [%tbl_num%]: average irrigation volumes by irrigation method and year</p>
+    [%irrmeth_stat_table%]
+</div>
+
+<a id="fcp"><h3>Crop production</h3></a>
+<div>
+    <p class="caption">Table [%tbl_num%]: first crop production</p>
+    [%fcp_table%]
+</div>
+
+<div>
+    <p class="caption">Table [%tbl_num%]: second crop production</p>
+    [%scp_table%]
+</div>
+
+<div class="warnings">
+    <p><strong>Warnings:</strong></p>
+    <p>Mean value is the be intended as arithmetic mean while average (aver.) is weighted arithmetic by area.</p>
+    <p>Irrigation efficiency is calculated as (Actual Evaporation + Actual transpiration)/(Precipitation + Irrigation) during the crop season</p>
+</div>

@@ -32,11 +32,11 @@ import sqlite3
 from math import tan, radians
 
 import qgis
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import QCoreApplication,QVariant
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from osgeo import gdal
-from qgis._analysis import QgsZonalStatistics
-from qgis._core import QgsProcessingParameterCrs
+from qgis.analysis import QgsZonalStatistics
+from qgis.core import QgsProcessingParameterCrs
 from qgis.core import (QgsProcessing,
 					   QgsFeatureSink,
 					   QgsProcessingException,
@@ -236,16 +236,16 @@ class IdragraImportFromExistingDB(QgsProcessingAlgorithm):
 			destFieldList = self.DEST_DBM.getFieldsList(tName)
 			if 'fid' in destFieldList: destFieldList.remove('fid')
 			destFieldListStr = ', '.join(destFieldList)
-			#self.FEEDBACK.pushInfo(self.tr('Destination fields: %s' % destFieldList))
+			#if (tName=='idr_soilmap'): self.FEEDBACK.pushInfo(self.tr('Destination fields: %s' % destFieldList))
 			destValListStr = ','.join(['?']*len(destFieldList))
-			#self.FEEDBACK.pushInfo(self.tr('Destination values: %s' % destValListStr))
-			#self.FEEDBACK.pushInfo(self.tr('Raw SQL: %s' % sql))
+			#if (tName=='idr_soilmap'): self.FEEDBACK.pushInfo(self.tr('Destination values: %s' % destValListStr))
+			#if (tName=='idr_soilmap'): self.FEEDBACK.pushInfo(self.tr('Raw SQL: %s' % sql))
 			sql = sql%(tName,destFieldListStr,destValListStr)
-			#self.FEEDBACK.pushInfo(self.tr('Formatted SQL: %s' % sql))
+			#if (tName=='idr_soilmap'): self.FEEDBACK.pushInfo(self.tr('Formatted SQL: %s' % sql))
 
 			# compare with source db table
 			sourceFieldList = self.SOURCE_DBM.getFieldsList(tName)
-			#self.FEEDBACK.pushInfo(self.tr('Source fields: %s' % str(sourceFieldList)))
+			#if (tName=='idr_soilmap'): self.FEEDBACK.pushInfo(self.tr('Source fields: %s' % str(sourceFieldList)))
 
 			# make a map between destination and source table
 			sourceFieldIdx = [None] * len(sourceFieldList)
@@ -253,26 +253,28 @@ class IdragraImportFromExistingDB(QgsProcessingAlgorithm):
 				if (fieldName in destFieldList):
 					sourceFieldIdx[i]= destFieldList.index(fieldName)
 
-			#self.FEEDBACK.pushInfo(self.tr('Source/Destination fields index: %s' % str(sourceFieldIdx)))
+			#if (tName=='idr_soilmap'): self.FEEDBACK.pushInfo(self.tr('Source/Destination fields index: %s' % str(sourceFieldIdx)))
 
 			# loop in table rows and populate sql command
 			rows = self.SOURCE_DBM.getDataFromTable(tName)
 			newDataRows = []
-			numRows = len(rows)
-			for r,row in enumerate(rows):
-				self.FEEDBACK.setProgress(100.0*r/numRows)
-				newDataList = ['']*len(destFieldList)
-				for i,val in enumerate(row):
-					if (sourceFieldIdx[i] is not None):
-						if destFieldList[sourceFieldIdx[i]] == 'geom':
-							newDataList[sourceFieldIdx[i]] = sqlite3.Binary(val)
-						elif destFieldList[sourceFieldIdx[i]] == 'fid':
-							newDataList[sourceFieldIdx[i]] = NULL
-						else:
-							newDataList[sourceFieldIdx[i]]=val
+			if rows:
+				numRows = len(rows)
+				for r,row in enumerate(rows):
+					self.FEEDBACK.setProgress(100.0*r/numRows)
+					newDataList = ['']*len(destFieldList)
+					for i,val in enumerate(row):
+						if (sourceFieldIdx[i] is not None):
+							if destFieldList[sourceFieldIdx[i]] == 'geom':
+								newDataList[sourceFieldIdx[i]] = sqlite3.Binary(val)
+							elif destFieldList[sourceFieldIdx[i]] == 'fid':
+								newDataList[sourceFieldIdx[i]] = NULL
+							else:
+								newDataList[sourceFieldIdx[i]]=val
 
-				#self.FEEDBACK.pushInfo(self.tr('Add row: %s' % str(newDataList)))
-				newDataRows.append(tuple(newDataList))
+					#if (tName=='idr_soilmap'): self.FEEDBACK.pushInfo(self.tr('Add row: %s' % str(newDataList)))
+
+					newDataRows.append(tuple(newDataList))
 
 
 			#self.FEEDBACK.pushInfo(self.tr('Data to be imported: %s' % str(newDataRows)))
@@ -296,25 +298,29 @@ class IdragraImportFromExistingDB(QgsProcessingAlgorithm):
 		# import raster
 		if rasterFlag:
 			# search for all raster in source db
-			gpkg = gdal.Open(sourceFn)
+			gdal.UseExceptions()
+			try:
+				gpkg = gdal.Open(sourceFn)
+			except Exception as e:
+				self.FEEDBACK.reportError(self.tr('Unable to read database for raster layers (Complete error: %s)') % str(e), True)
+			if gpkg:
+				if gpkg.GetSubDatasets():
+					for raster in gpkg.GetSubDatasets():
+						rasterSrc = raster[0]
+						rasterName = raster[1].split(' - ')[0]
 
-			if gpkg.GetSubDatasets():
-				for raster in gpkg.GetSubDatasets():
-					rasterSrc = raster[0]
-					rasterName = raster[1].split(' - ')[0]
-
-					if rasterName.startswith('elevation'):
-						# copy raster
-						newRasterSource = self.copyRaster(rasterSrc, rasterName, destFn)
-						if newRasterSource:
-							elevRasterDict[rasterName] = newRasterSource
-					elif rasterName.startswith('watertable'):
-						# copy raster
-						newRasterSource = self.copyRaster(rasterSrc, rasterName, destFn)
-						if newRasterSource:
-							wtRasterDict[rasterName] = newRasterSource
-					else:
-						self.FEEDBACK.reportError(self.tr('Unrecognized raster layer: %s') % rasterName, False)
+						if rasterName.startswith('elevation'):
+							# copy raster
+							newRasterSource = self.copyRaster(rasterSrc, rasterName, destFn)
+							if newRasterSource:
+								elevRasterDict[rasterName] = newRasterSource
+						elif rasterName.startswith('watertable'):
+							# copy raster
+							newRasterSource = self.copyRaster(rasterSrc, rasterName, destFn)
+							if newRasterSource:
+								wtRasterDict[rasterName] = newRasterSource
+						else:
+							self.FEEDBACK.reportError(self.tr('Unrecognized raster layer: %s') % rasterName, False)
 
 		return {'NUMIMPORTEDTABLES':numImportedTables,'ELEVATION':elevRasterDict,'WATERTABLE':wtRasterDict}
 

@@ -31,9 +31,11 @@ __revision__ = '$Format:%H$'
 import glob
 import os
 import numpy as np
-from PyQt5.QtCore import QObject
+from qgis.PyQt.QtCore import QObject
 from qgis import processing
+from qgis.core import QgsVectorLayer, QgsFeatureRequest
 
+from .check_value import checkValue
 from .compact_dataset import save2idragra
 from .gis_grid import GisGrid
 from .utils import returnExtent
@@ -54,7 +56,7 @@ class Exporter(QObject):
 		self.algResults2 = None  # store temporary outputs
 
 	def exportGeodata(self,DBM,outPath, extent, cellSize, dtm, watertableDict, depthList,yearList,):
-		yearList = [str(x) for x in yearList] # make a list of strings
+		yearList = ['']+[str(x) for x in yearList] # make a list of strings, add first empty year for default values
 		# TODO: fix output digits
 		# export water district map
 		# DISTRICT SOURCE
@@ -87,10 +89,46 @@ class Exporter(QObject):
 		self.feedback.pushInfo(self.tr('Exporting soils parameters'))
 		self.feedback.setProgress(50.0)
 		# SOIL PARAMETERS MAP
+		# check soil params
+		soil_prof = DBM.getRecordAsDict(tableName='idr_soil_profiles',fieldsList='')
+		#print('soil_prof',soil_prof)
+		for sp in soil_prof:
+			check_flag = 1
+			# maxdepth, ksat >0
+			check_flag*=checkValue('maxdepth', sp['maxdepth'], 0, '>=', self.tr, self.feedback)
+			check_flag*=checkValue('ksat', sp['ksat'], 0, '>=', self.tr, self.feedback)
+			# theta_fc,theta_wp,theta_r,theta_sat > 0 & <= 1
+			check_flag*=checkValue('theta_fc', sp['theta_fc'], [0., 1.], '>=<=', self.tr, self.feedback)
+			check_flag*=checkValue('theta_wp', sp['theta_wp'], [0., 1.], '>=<=', self.tr, self.feedback)
+			check_flag*=checkValue('theta_r', sp['theta_r'], [0., 1.], '>=<=', self.tr, self.feedback)
+			check_flag*=checkValue('theta_sat', sp['theta_sat'], [0., 1.], '>=<=', self.tr, self.feedback)
+			# theta_sat>theta_fc>theta_wp>theta_r
+			check_flag *= checkValue('theta_sat>theta_fc', sp['theta_sat'], sp['theta_fc'], '>', self.tr,
+									 self.feedback)
+			check_flag *= checkValue('theta_fc>theta_wp', sp['theta_fc'], sp['theta_wp'], '>', self.tr,
+									 self.feedback)
+			check_flag *= checkValue('theta_wp>theta_r', sp['theta_wp'], sp['theta_r'], '>', self.tr,
+									 self.feedback)
+			# txtr_code in 1 - 12
+			check_flag *= checkValue('txtr_code', sp['txtr_code'], list(range(1,13)), 'in', self.tr, self.feedback)
+
+			if check_flag == 0: return -1
+
+		# export soil ids. Actually not used by IdrAgra but needed to test cell dimension
+		fileName = os.path.join(outPath, 'soilid' + '.asc')
+		soilMap = DBM.DBName + '|layername=idr_soilmap'
+		fieldName = 'extid'
+		self.algResults = processing.run("idragratools:IdragraRasterizeMap",
+										 {'VECTOR_LAY': soilMap, 'VECTOR_FLD': fieldName,
+										  'RASTER_EXT': extent,
+										  'CELL_DIM': cellSize,
+										  'DEST_FILE': fileName},
+										 context=None, feedback=self.feedback, is_child_algorithm=False)
+
 		# make aggregate parameters
 		sourceTable = DBM.DBName + '|layername=idr_soil_profiles'
-		soilMap = DBM.DBName + '|layername=idr_soilmap'
 		depths = ' '.join([str(x) for x in depthList])
+		print('depths:',depths)
 		# make aggregate soil params
 		self.algResults = processing.run("idragratools:IdragraSoilParams",
 									{'SOURCE_TABLE':sourceTable,
@@ -140,7 +178,7 @@ class Exporter(QObject):
 									{'INPUT': soilMap, 'FIELD': 'extid', 'BURN': 0,
 									 'UNITS': 1, 'WIDTH': cellSize, 'HEIGHT': cellSize,
 									 'EXTENT': extent,
-									 'NODATA': -9, 'OPTIONS': '', 'DATA_TYPE': 4, 'INIT': -9, 'INVERT': False,
+									 'NODATA': -9999, 'OPTIONS': '', 'DATA_TYPE': 4, 'INIT': -9999, 'INVERT': False,
 									 'EXTRA': '',
 									 'OUTPUT': 'TEMPORARY_OUTPUT'},
 									context=None, feedback=self.feedback, is_child_algorithm=False
@@ -149,7 +187,12 @@ class Exporter(QObject):
 		fileName = os.path.join(outPath, 'hydr_group' + '.asc')
 		waterTableFirst = ''
 		for var, waterTable in watertableDict.items():
-			waterTableFirst = waterTable
+			waterTableFirst = 'GPKG:' + self.simdic['DBFILE']+ ':'+var
+
+			# waterTableFirst = waterTable
+			# if waterTableFirst.startswith('.'):
+			# 	waterTableFirst = 'GPKG:'+os.path.join(os.path.dirname(self.simdic['DBFILE']), waterTableFirst[2:])
+
 			break
 
 		self.algResults = processing.run("idragratools:IdragraCreateHSGMap", {
@@ -166,27 +209,47 @@ class Exporter(QObject):
 		# LANDUSE maps (time)
 		# TODO: check if time is always necessary
 		landuseMap = DBM.DBName + '|layername=idr_usemap'
+		defaultValue = -9999
+		if self.simdic['DEFAULT_LU']: defaultValue = self.simdic['DEFAULT_LU']
 		processing.run("idragratools:IdragraRasterizeTimeMap",
 					   {'VECTOR_LAY': landuseMap, 'DATA_FLD': 'extid',
 						'TIME_FLD': 'date', 'NAME_FORMAT': 'soiluse',
 						'RASTER_EXT': extent,
-						'CELL_DIM': cellSize, 'YEAR_LIST': ' '.join(yearList),'DEST_FOLDER': outPath},
+						'CELL_DIM': cellSize,
+						'INIT_VALUE':defaultValue,
+						'YEAR_LIST': ' '.join(yearList),'DEST_FOLDER': outPath},
 									context=None, feedback=self.feedback, is_child_algorithm=False)
 
 		# IRRIGATION MAP (time)
 		self.feedback.pushInfo(self.tr('Exporting irrigation methods'))
 		self.feedback.setProgress(90.0)
 		irrMethodsMap = DBM.DBName + '|layername=idr_irrmap'
+
+		defaultValue = -9999
+		if self.simdic['DEFAULT_IM']: defaultValue = self.simdic['DEFAULT_IM']
+
 		processing.run("idragratools:IdragraRasterizeTimeMap",
 					   {'VECTOR_LAY': irrMethodsMap, 'DATA_FLD': 'extid',
 						'TIME_FLD': 'date', 'NAME_FORMAT': 'irr_meth',
 						'RASTER_EXT': extent,
-						'CELL_DIM': cellSize,  'YEAR_LIST': ' '.join(yearList), 'DEST_FOLDER': outPath},
+						'CELL_DIM': cellSize,
+						'INIT_VALUE':defaultValue,
+						'YEAR_LIST': ' '.join(yearList), 'DEST_FOLDER': outPath},
 									context=None, feedback=self.feedback, is_child_algorithm=False)
 
 		# EXPORT IRRIGATION EFFICIENCY MAP (time)
 		# join irrigation methods map with irrigation params
 		irrMethodsPars = DBM.DBName + '|layername=idr_irrmet_types'
+
+		# get irrigation efficiency for default method
+		parTable = QgsVectorLayer(irrMethodsPars,'irrmethods')
+		defaultValue = -9999
+		if self.simdic['DEFAULT_IM']:
+			req = QgsFeatureRequest().setFilterExpression('"id" = %s'%(self.simdic['DEFAULT_IM']))
+			for feat in parTable.getFeatures(req):
+				defaultValue = feat['irr_eff']
+
+
 		algresult = processing.run("qgis:joinattributestable",
 								   {'DISCARD_NONMATCHING': True,
 									'FIELD': 'extid',
@@ -202,11 +265,14 @@ class Exporter(QObject):
 		joinedLay = algresult['OUTPUT']
 
 		# rasterize time maps of irrigation efficiency
+		# efficiency is set to zero by default in order to accidentally compute irrigation requirements
 		processing.run("idragratools:IdragraRasterizeTimeMap",
 					   {'VECTOR_LAY': joinedLay, 'DATA_FLD': 'irr_eff',
 						'TIME_FLD': 'date', 'NAME_FORMAT': 'irr_eff',
 						'RASTER_EXT': extent,
-						'CELL_DIM': cellSize,  'YEAR_LIST': ' '.join(yearList),'DEST_FOLDER': outPath},
+						'CELL_DIM': cellSize,
+						'INIT_VALUE':defaultValue,
+						'YEAR_LIST': ' '.join(yearList),'DEST_FOLDER': outPath},
 					   context=None, feedback=self.feedback, is_child_algorithm=False)
 		# SLOPE MAPS
 		self.feedback.pushInfo(self.tr('Exporting slope maps'))
@@ -237,6 +303,11 @@ class Exporter(QObject):
 		nOfWTdepths = 0
 		if dtm:
 			for var,waterTable in watertableDict.items():
+				#if waterTable.startswith('.'):
+				#	waterTable = 'GPKG:'+os.path.join(os.path.dirname(self.simdic['DBFILE']), waterTable[2:])
+
+				waterTable = 'GPKG:' + self.simdic['DBFILE'] + ':' + var
+
 				if nOfWTdepths==0:
 					# make a general water table for the first year
 					self.feedback.pushInfo(self.tr('A base waterdepth map was set for the simulation period'))
@@ -250,21 +321,25 @@ class Exporter(QObject):
 								   )
 				nOfWTdepths+=1
 				# get year and number of days from the 1st of January
-				year = int(var[11:-4])
-				month = int(var[15:-2])
-				day = int(var[17:])
-				delta =  date(year, month, day) - date(year, 1, 1)
-				nOfDays = delta.days
+				# FIXED: manage missing year-day
+				try:
+					year = int(var[11:-4])
+					month = int(var[15:-2])
+					day = int(var[17:])
+					delta =  date(year, month, day) - date(year, 1, 1)
+					nOfDays = delta.days+1
 
-				#wtdepthName = os.path.join(outPath,'waterdepth'+var[10:-4]+'.asc') # remove month and day
-				wtdepthName = os.path.join(outPath, 'waterdepth' + str(year)+'_'+ str(nOfDays) + '.asc')  # set year and num of days from the beginning
-				processing.run("idragratools:IdragraCalcWaterDepth", {'DTM': dtm,
-																	  'WATERTABLE': waterTable,
-																	  'EXTENT': extent,
-																	  'CELLSIZE': cellSize,
-																	  'OUTPUT': wtdepthName},
-							   context=None, feedback=self.feedback, is_child_algorithm=False
-							   )
+					#wtdepthName = os.path.join(outPath,'waterdepth'+var[10:-4]+'.asc') # remove month and day
+					wtdepthName = os.path.join(outPath, 'waterdepth' + str(year)+'_'+ str(nOfDays) + '.asc')  # set year and num of days from the beginning
+					processing.run("idragratools:IdragraCalcWaterDepth", {'DTM': dtm,
+																		  'WATERTABLE': waterTable,
+																		  'EXTENT': extent,
+																		  'CELLSIZE': cellSize,
+																		  'OUTPUT': wtdepthName},
+								   context=None, feedback=self.feedback, is_child_algorithm=False
+								   )
+				except:
+					pass
 
 		if nOfWTdepths==0:
 			self.feedback.reportError(self.tr('No water depths were processed. DTM or water table maps are missing.'),False)
@@ -296,7 +371,7 @@ class Exporter(QObject):
 						   context=None, feedback=self.feedback, is_child_algorithm=False)
 
 		# export cell area map
-		cellareaFile = os.path.join(outPath, 'cellarea.asc')
+		cellareaFile = os.path.join(outPath, 'shapearea.asc')
 		self.aGrid = GisGrid(progress= self.feedback)
 		self.aGrid.openASC(domainFile)
 		self.aGrid = self.aGrid*cellSize*cellSize
@@ -349,6 +424,15 @@ class Exporter(QObject):
 
 			os.rename(f, newName)
 
+		# export control points
+		self.feedback.setText(self.tr('Export control points'))
+		cellListFile = os.path.join(self.simdic['OUTPUTPATH'], 'cells.txt')
+		controlPointMap = DBM.DBName + '|layername=idr_control_points'
 
+		processing.run("idragratools:IdragraExportControlPointsGrid",
+					   {'VECTOR_LAY': controlPointMap,
+						'RASTER_EXT': extent,
+						'CELL_DIM': self.simdic['CELLSIZE'], 'DEST_FILE': cellListFile},
+					   context=None, feedback=self.feedback, is_child_algorithm=False)
 
 		self.feedback.setPercentage(100.0)

@@ -34,6 +34,9 @@ from qgis.core import QgsVectorLayer
 import os
 import numpy as np
 
+from tools.check_value import checkValue
+
+
 def queryDB(sql,DBM,feedback,tr):
 	data = []
 	try:
@@ -96,7 +99,7 @@ def exportMeteodataFromDB(DBM, outpath,startY,endY,feedback,tr=None):
 			CO2.append(valueList)
 
 	# calculate average sumCO2
-	CO2 = np.array(CO2,dtype=np.float)
+	CO2 = np.array(CO2,dtype=float)
 	meanCO2 = np.nanmean(CO2, axis=0)
 	CO2List = meanCO2.tolist()
 	for i,v in enumerate(CO2List):
@@ -122,7 +125,7 @@ def exportMeteodata(filename, dbname, sensorId, sensorName, sensorLat, sensorAlt
 	
 	sql = createQuery(fromTime,toTime,sensorId)
 		
-	#feedback.pushInfo(sql)
+	feedback.pushInfo(tr('Processing weather station %s [%s]')%(sensorName,sensorId))
 	
 	msg = ''
 	data = None
@@ -149,8 +152,21 @@ def exportMeteodata(filename, dbname, sensorId, sensorName, sensorLat, sensorAlt
 	textData = ''
 	try:
 		for d in data:
+			check_flag = 1
+			#'ws_tmax','ws_tmin','ws_Ptot','ws_umax','ws_umin','ws_vmed','ws_rgcorr'
+			check_flag *= checkValue('[%s] ws_tmax >= ws_tmin'%str(d[0]), d[1], d[2], '>=', tr, feedback)
+			check_flag *= checkValue('[%s] ws_Ptot'%str(d[0]), d[3], 0., '>=', tr, feedback)
+			check_flag *= checkValue('[%s] ws_umax'%str(d[0]), d[4], [0., 100.], '>=<=', tr, feedback)
+			check_flag *= checkValue('[%s] ws_umin'%str(d[0]), d[5], [0., 100.], '>=<=', tr, feedback)
+			check_flag *= checkValue('[%s] ws_umax >= ws_umin'%str(d[0]), d[4],d[5], '>=', tr, feedback)
+			check_flag *= checkValue('[%s] ws_vmed'%str(d[0]), d[6], [0.,10.], '>=<=', tr, feedback)
+			check_flag *= checkValue('[%s] ws_rgcorr'%str(d[0]), d[7], [0., 50.], '>=<=', tr, feedback)
+
+			if check_flag ==0: return -1
+
 			textData += ''.join(format(x, "9.3f") for x in d[1:])+'\n'
 	except Exception as e:
+		#print(str(e))
 		feedback.reportError(
 			tr('Unable to prepare weather data for station %s [id = %s]. Dataset must be complete for the selected period')%
 			(sensorName,sensorId),True)

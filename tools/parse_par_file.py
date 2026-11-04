@@ -28,7 +28,7 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from qgis._core import QgsVectorDataProvider
+from qgis.core import QgsVectorDataProvider
 
 def all_encodings():
 	return QgsVectorDataProvider.availableEncodings()
@@ -39,14 +39,20 @@ def parseParFile(filename,parSep = '=', colSep=' ', feedback = None,tr=None):
 	#if feedback: feedback.pushInfo('in parseParFile, processing: %s'%filename)
 	#print('in parseParFile, processing: %s'%filename)
 	lines=[]
-
 	encodings = all_encodings()
+	#print('encodings:',encodings)
 	for enc in encodings:
-		feedback.pushInfo(tr('INFO: try with codec %s' % str(enc)))
+		# TODO: lost reference to feedback if called from algorithm
+		#if feedback: feedback.pushInfo(tr('INFO: try with codec %s' % str(enc)))
 		try:
-			with open(filename, encoding=enc) as f:
+			with open(filename, encoding=enc, errors='strict') as f:
 				lines = f.readlines()
-				break
+				# check if there are not hexadecimal representations of strings caused by erroneous codec selection
+				if r'\x' not in repr(''.join(lines)):
+					break
+		except ValueError:
+			print('test encoding:', enc,'returned value error')
+			pass
 		except Exception:
 			pass
 

@@ -1,10 +1,10 @@
-# bare soil
+# bare soil (update 2022-06-28)
 id = 1
 name =  bare soil
-sowingdate_min	= 0	# minimum sowing date (1-366)
+sowingdate_min	= 1	# minimum sowing date (1-366)
 sowingdelay_max	= 0	# maximum number of days allowed for sowing after SowingDate_min
-harvestdate_max	= 0	# maximum harvest date (1-366)
-harvnum_max	= 0	# maximum number of harvest/cuts per the year
+harvestdate_max	= 366	# maximum harvest date (1-366)
+harvnum_max	= 1	# maximum number of harvest/cuts per the year
 cropsOverlap	=0 	# minimum number of days between two subsequent crops in case of double cropping
 tsowing		= 0 	# minimum sowing temperature [°C]
 tdaybase	= 0     # minimum temperature for crop growth [°C]
@@ -31,7 +31,7 @@ ky3		= 0 	# water stress coefficient for the mid stage
 ky4		= 0 	# water stress coefficient for the end stage
 praw		= 0 	# parameter to compute RAW
 ainterception	= 0 	# parameter to calculate interception
-cl_cn		= 0 	# CN class
+cl_cn		= 2 	# CN class
 irrigation	= 0     # irrigation (1 = Yes, 0 = No)
 gdd = 0 # GDD [°C]
 kcb = 0 # Kcb [-]

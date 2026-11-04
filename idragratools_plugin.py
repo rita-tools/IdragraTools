@@ -29,6 +29,7 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 import gc
+import math
 import os
 import re
 import shutil
@@ -43,17 +44,18 @@ import scipy.io as sio
 import os.path as osp
 import numpy as np
 
-from PyQt5 import QtSql
-from PyQt5.QtXml import QDomDocument
+from qgis.PyQt import QtSql
+from qgis.PyQt.QtXml import QDomDocument
 from qgis import processing
 
+from tools.export_geodata_vector import ExportGeodataVector
+from .forms.report_view import ReportDialog
 from .tools.show_message import showInfoMessageBox, showCriticalMessageBox
 from .tools.network_analyst import NetworkAnalyst
 from .tools.check_matlab_installed import checkMatlabInstalled
 from .data_manager.chart_widget import ChartWidget
 from .tools.gis_grid import GisGrid
 from .tools.iface_progress import IfaceProgress
-from .tools.import_from_csv import importDataFromCSVXXX
 from .tools.import_raster_in_db import importRasterInDB
 from .tools.my_progress import MyProgress
 from .forms.manage_rasters_dialog import ManageRastersDialog
@@ -71,14 +73,15 @@ cmd_folder = os.path.split(inspect.getfile(inspect.currentframe()))[0]
 if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
 
-from qgis.core import QgsProcessingAlgorithm, QgsApplication, QgsProject, QgsVectorLayer, QgsGeometry, QgsFeature, \
-    QgsFeatureRequest, QgsExpression
-from qgis.PyQt.QtCore import QVariant
-from processing import execAlgorithmDialog
+from qgis.core import Qgis, QgsProcessingAlgorithm, QgsApplication, QgsProject, QgsProviderRegistry, QgsVectorLayer, \
+    QgsGeometry, QgsFeature, QgsFeatureRequest, QgsExpression
+from qgis.PyQt.QtCore import QVariant, QUrl
 
-from PyQt5.QtCore import qVersion, QCoreApplication, QLocale, QSettings, QTranslator, QThread, Qt, QTimer
-from PyQt5.QtGui import QIcon, QColor, QPixmap
-from PyQt5.QtWidgets import QAction, QMenu, QMessageBox, QProgressBar, QDialog
+from qgis.PyQt.QtCore import qVersion, QCoreApplication, QLocale, QSettings, QTranslator, QThread, Qt, QTimer
+from qgis.PyQt.QtGui import QIcon, QColor, QPixmap
+from qgis.PyQt.QtWidgets import QMenu, QMessageBox, QProgressBar, QDialog
+
+from .qt_compat import QAction
 
 from .idragratools_provider import IdrAgraToolsProvider
 
@@ -106,10 +109,6 @@ else:
     def checkTread(t):
         return t.isAlive()
 
-
-# TODO:
-# soilmap for each year
-# id field nell'algoritmo dei pesi
 
 class Feedback():
     def __init__(self, iface):
@@ -164,20 +163,22 @@ class IdrAgraTools():
 
         # TODO: check the latest version of idragra and cropcoef
         self.s = QSettings('UNIMI-DISAA', 'IdrAgraTools')
-        if self.s.value('idragraPath','')=='': self.s.setValue('idragraPath', os.path.join(self.plugin_dir,'bin','idragra_20210907ASC.exe'))
-        if self.s.value('cropcoeffPath','')=='': self.s.setValue('cropcoeffPath', os.path.join(self.plugin_dir,'bin','CropCoef_v4.exe'))
+        if self.s.value('idragraPath','')=='': self.s.setValue('idragraPath', os.path.join(self.plugin_dir,'bin','idragra.exe'))
+        if self.s.value('cropcoeffPath','')=='': self.s.setValue('cropcoeffPath', os.path.join(self.plugin_dir,'bin','cropcoef.exe'))
         if self.s.value('MCRpath', '') == '': self.s.setValue('MCRpath',checkMatlabInstalled(version= '9.9'))
         #if self.s.value('MinGWPath', '') == '': self.s.setValue('MinGWPath', checkMatlabInstalled(version='9.9'))
 
         self.PRJNAME = 'Idragra simulation'
         self.FILEFORMAT = 'Geopackage file (*.gpkg)'#'Idragra db (*.idb)'
         self.FILEEXT = 'gpkg'#'idb'
+        self.HTMLFILE = None # store reference to html report file
 
         self.STATFUN = {'SUM': self.tr('Sum'), 'AVG': self.tr('Mean'), 'MAX': self.tr('Max'), 'MIN': self.tr('Min')}
 
         # init table and layer names and labels
         # TODO: for the next release 'idr_gw_wells': self.tr('Ground water wells'),
         self.LYRNAME = {'idr_control_points':self.tr('Control points'),
+                        'idr_domainmap':self.tr('Domain'),
                         'idr_nodes': self.tr('Nodes'),
                         'idr_links': self.tr('Links'),
                         'idr_distrmap': self.tr('Irrigation units'),
@@ -201,14 +202,14 @@ class IdrAgraTools():
 
         # the order is the same in the legend (from bottom to top)
         self.LYRGRPNAME = { 'idr_soil_types': self.tr('Soil'),
-                           'idr_soil_profiles':self.tr('Soil'),
-                           'idr_crop_types': self.tr('Land use'),
-                           'idr_soiluses': self.tr('Land use'),
-                           'idr_irrmet_types': self.tr('Land use'),
-                           'ws_tmin': self.tr('Weather'), 'ws_tmax': self.tr('Weather'),
-                           'ws_ptot': self.tr('Weather'),
-                           'ws_umin': self.tr('Weather'), 'ws_umax': self.tr('Weather'),
-                           'ws_vmed': self.tr('Weather'), 'ws_rgcorr': self.tr('Weather'),
+                            'idr_soil_profiles':self.tr('Soil'),
+                            'idr_crop_types': self.tr('Land use'),
+                            'idr_soiluses': self.tr('Land use'),
+                            'idr_irrmet_types': self.tr('Land use'),
+                            'ws_tmin': self.tr('Weather'), 'ws_tmax': self.tr('Weather'),
+                            'ws_ptot': self.tr('Weather'),
+                            'ws_umin': self.tr('Weather'), 'ws_umax': self.tr('Weather'),
+                            'ws_vmed': self.tr('Weather'), 'ws_rgcorr': self.tr('Weather'),
                             'ws_co2': self.tr('Weather'),
                             'idr_soilmap': self.tr('Soil'),
                             'idr_usemap': self.tr('Land use'),
@@ -216,24 +217,26 @@ class IdrAgraTools():
                             'idr_weather_stations': self.tr('Weather'),
                             'idr_gw_wells': self.tr('Ground water'),
 
-                            'stp_irr': self.tr('Network'),
-                            'stp_irr_distr': self.tr('Network'),
-                            'stp_irr_loss': self.tr('Network'),
-                            'stp_irr_privw': self.tr('Network'),
-                            'stp_prec': self.tr('Network'),
-                            'stp_runoff': self.tr('Network'),
-                            'stp_trasp_act': self.tr('Network'),
-                            'stp_trasp_pot': self.tr('Network'),
-                            'stp_et_act': self.tr('Network'),
-                            'stp_et_pot': self.tr('Network'),
-                            'stp_caprise': self.tr('Network'),
-                            'stp_flux2': self.tr('Network'),
+                            'stp_irr': self.tr('Analysis'),
+                            'stp_irr_distr': self.tr('Analysis'),
+                            'stp_irr_loss': self.tr('Analysis'),
+                            'stp_irr_privw': self.tr('Analysis'),
+                            'stp_prec': self.tr('Analysis'),
+                            'stp_runoff': self.tr('Analysis'),
+                            'stp_trasp_act': self.tr('Analysis'),
+                            'stp_trasp_pot': self.tr('Analysis'),
+                            'stp_et_act': self.tr('Analysis'),
+                            'stp_et_pot': self.tr('Analysis'),
+                            'stp_caprise': self.tr('Analysis'),
+                            'stp_flux2': self.tr('Analysis'),
 
-
-                           'node_act_disc': self.tr('Network'),
-                           'node_disc': self.tr('Network'),
+                            'node_act_disc': self.tr('Network'),
+                            'node_disc': self.tr('Network'),
                             'idr_nodes': self.tr('Network'), 'idr_links': self.tr('Network'),
                             'idr_distrmap': self.tr('Network'),
+
+                            'idr_domainmap': self.tr('Computing'),
+
                             'idr_control_points': self.tr('Analysis')
                             }
 
@@ -262,8 +265,8 @@ class IdrAgraTools():
             'cp_infiltration_mm': self.tr('Infiltration (mm)'),
             'cp_eva_pot_mm': self.tr('Potential evaporation (mm)'),
             'cp_eva_mm': self.tr('Actual evaporation (mm)'),
-            'cp_perc1_mm': self.tr('1th layer percolation (mm)'),
-            'cp_theta1_mm': self.tr('1th layer water content (mm)'),
+            'cp_perc1_mm': self.tr('1st layer percolation (mm)'),
+            'cp_theta1_mm': self.tr('1st layer water content (mm)'),
             'cp_ponding_mm': self.tr('Ponding (mm)'),
             'cp_trasp_pot_mm': self.tr('Potential transpiration (mm)'),
             'cp_trasp_act_mm': self.tr('Actual transpiration (mm)'),
@@ -439,13 +442,18 @@ class IdrAgraTools():
                         'CELLSIZE': 250,
                         'WATERTABLEMAP': {},
                         'ELEVMAP': {},
+                        'LANDUSEMAP':{},
+                        'IRRMETHMAP': {},
                         'STARTOUTPUT':105,
                         'ENDOUTPUT': 273,
                         'STEPOUTPUT': 10,
                         'MONTHOUTPUT':'F',
                         'MINSLOPE':0.1,
                         'MAXSLOPE':1000,
-                        'SOURCE_DB':''
+                        'SOURCE_DB':'',
+                        'DEFAULT_LU':0,
+                        'DEFAULT_IM':0,
+                        'VECTOR_MODE':0
                        }
 
         self.PHENOVARS = {'CNvalue':self.tr('CN value'),
@@ -455,19 +463,20 @@ class IdrAgraTools():
                          'Sr': self.tr('Root depth')
                          }
 
-        # enable macro for this session
-        s = QgsSettings()
-        self.MACROPOLICY = s.value('qgis/enableMacros')
-        #self.TABLEPOLICY = s.value('qgis/attributeTableView')
-        s.setValue('qgis/enableMacros', 'SessionOnly')
-        #s.setValue('qgis/attributeTableView', 1)
+        # supported report types
+        self.REPORT_TYPES = {'general': self.tr('Simulation overview'),
+                            'annuals_totals': self.tr('Annual totals'),
+                            'irrunits_totals': self.tr('Irrigation units totals')
+                            }
 
         self.DBM = None
+        self._openingDB = False
+        self._pythonPermissionOffered = False
 
         # force activation state for specific names
         # None means always set as initialization
-        self.actionList = ['Advanced','Options']
-        self.actionState = [None,None]
+        self.actionList = ['Advanced','Options','testexport','Test']
+        self.actionState = [None,None,None,None]
 
         self.mainMenu = None
         self.iface.projectRead.connect(self.loadFromProject)
@@ -503,19 +512,29 @@ class IdrAgraTools():
 
         self.soilMenu = self._addmenu(self.mainMenu, 'Soil', self.tr('Soil'), False)
         self._addmenuitem(self.soilMenu, 'ImportSoilMap', self.tr('Import soil map'), self.importSoilMap, False)
+        self._addmenuitem(self.soilMenu, 'ImportSoilProfiles', self.tr('Import soil profiles'), self.importSoilProfiles, False)
         #self._addmenuitem(self.soilMenu, 'EditSoilType', self.tr('Edit soil type'), self.printSome, False)
 
         self.mainMenu.addMenu(self.soilMenu)
 
         self.landuseMenu = self._addmenu(self.mainMenu, 'LandUse', self.tr('Land use'), False)
-        self._addmenuitem(self.landuseMenu, 'ImportLandUseMap', self.tr('Import land use map'), self.importLandUseMap, False)
+        self._addmenuitem(self.landuseMenu, 'ImportLandUseMap', self.tr('Import land use map [vector]'), self.importLandUseMap, False)
+        self._addmenuitem(self.landuseMenu, 'SetLandUse', self.tr('Set/edit land use map [raster]'),
+                          self.setRasterLanduse, False)
+        self._addmenuitem(self.landuseMenu, 'ConfigureLandUse', self.tr('Configure land-use classes'),
+                          self.configureLandUseClasses, False)
+
         #self._addmenuitem(self.landuseMenu, 'EditLandUseType', self.tr('Edit land use type'), self.printSome, False)
         self.mainMenu.addMenu(self.landuseMenu)
 
         self.irrigationMenu = self._addmenu(self.mainMenu, 'Irrigation', self.tr('Irrigation'), False)
         self._addmenuitem(self.irrigationMenu, 'ImportWaterDistrictMap', self.tr('Import irrigation units map'), self.importWaterDistrictMap, False)
-        self._addmenuitem(self.irrigationMenu, 'importIrrMethMap', self.tr('Import irrigation methods map'),
+        self._addmenuitem(self.irrigationMenu, 'importIrrMethMap', self.tr('Import irrigation methods map [vector]'),
                           self.importIrrMethMap, False)
+        self._addmenuitem(self.irrigationMenu, 'SetIrrMeth', self.tr('Set/edit irrigation map [raster]'), self.setRasterIrrmeth, False)
+        self._addmenuitem(self.irrigationMenu, 'ImportIrrigationMethods', self.tr('Import irrigation methods'),
+                          self.importIrrigationMethods, False)
+
         self._addmenuitem(self.irrigationMenu, 'ImportNodeMap', self.tr('Import node map'),  self.importNodes, False)
         self._addmenuitem(self.irrigationMenu, 'ImportLinkMap', self.tr('Import link map'), self.importLinks, False)
         #self._addmenuitem(self.irrigationMenu, 'CheckNetwork', self.tr('Check network'), self.printSome, False)
@@ -530,6 +549,11 @@ class IdrAgraTools():
         self.wtMenu = self._addmenu(self.mainMenu, 'WaterTable', self.tr('Ground water'), False)
         self._addmenuitem(self.wtMenu, 'SetWT', self.tr('Set/edit water table'), self.setWaterTable, False)
         self.mainMenu.addMenu(self.wtMenu)
+
+        self.cptMenu = self._addmenu(self.mainMenu, 'Domain', self.tr('Domain'), False)
+        self._addmenuitem(self.cptMenu, 'ImportDomain', self.tr('Import domain'), self.importDomainMap, False)
+        self._addmenuitem(self.cptMenu, 'CreateDomain', self.tr('Create domain'), self.createDomainMap, False)
+        self.mainMenu.addMenu(self.cptMenu)
 
         self.simulationMenu = self._addmenu(self.mainMenu, 'Simulation', self.tr('IdrAgra'), False)
         self._addmenuitem(self.simulationMenu, 'RunAll', self.tr('Run all'), self.runAll, False)
@@ -550,24 +574,48 @@ class IdrAgraTools():
 
         self.mainMenu.addMenu(self.simulationMenu)
 
+        self.reportMenu = self._addmenu(self.mainMenu, 'GenerateReport', self.tr('Report for'), False)
+
+        self._addmenuitem(self.reportMenu, 'GenerateReport0', self.tr('Simulation inputs overview'),
+                          lambda: self.runAsThread(self.generateReport, self.showReportExplorer, repIndex=0),
+                          False)
+
+        self._addmenuitem(self.reportMenu, 'GenerateReport1', self.tr('Annual outputs totals'),
+                          lambda: self.runAsThread(self.generateReport, self.showReportExplorer, repIndex=1),
+                          False)
+
+        self._addmenuitem(self.reportMenu, 'GenerateReport2', self.tr('Irrigation units outputs'),
+                          lambda: self.runAsThread(self.generateReport, self.showReportExplorer, repIndex=2),
+                          False)
+
+        self.mainMenu.addMenu(self.reportMenu)
+
         self.analysisMenu = self._addmenu(self.mainMenu, 'Analysis', self.tr('Analysis'), False)
         #self._addmenuitem(self.analysisMenu, 'ImportControlPointsResults', self.tr('Import control points results'),
         #                  lambda: self.runAsThread(self.importControlPointsResults), False)
+
         self._addmenuitem(self.analysisMenu, 'ImportDistrictData', self.tr('Import irrigation units results'),
-                          lambda: self.runAsThread(self.importWaterDistrictData), False)
+                          lambda: self.runAsThread(self.importWaterDistrictData,
+                                                  lambda: self.loadLayer(tableNames=set(self.STEPNAME))), False)
         self._addmenuitem(self.analysisMenu, 'DischargeToNode', self.tr('Node water demand'),
-                          lambda: self.runAsThread(self.computeNodeDischarge), False)
+                          lambda: self.runAsThread(self.computeNodeDischarge,
+                                                  lambda: self.loadLayer(tableNames=set(self.STEPNAME) | {'node_disc'})), False)
         self._addmenuitem(self.analysisMenu, 'GroupedStats', self.tr('Grouped statistics'),
                           self.makeGroupedStats, False)
+        self._addmenuitem(self.analysisMenu, 'ImportResultsMap', self.tr('Import results map'),
+                          self.importResultsMap, False)
         self._addmenuitem(self.analysisMenu, 'ManageTimeSerie', self.tr('Explore timeseries'), self.manageTimeSerie,
                           False)
+
+
+
 
         self.mainMenu.addMenu(self.analysisMenu)
 
         self.advancedMenu = self._addmenu(self.mainMenu, 'Advanced', self.tr('Advanced'), True)
         self._addmenuitem(self.advancedMenu, 'Options', self.tr('Options'), self.setOptions,True)
-        #self._addmenuitem(self.advancedMenu, 'Test', self.tr('test'), self.test,
-        #                  False)
+        #self._addmenuitem(self.advancedMenu, 'Test', self.tr('test'), lambda: self.runAsThread(self.test),True)
+        #self._addmenuitem(self.advancedMenu, 'testexport', self.tr('Test esport'), self.createImageMap, True)
 
         self.mainMenu.addMenu(self.advancedMenu)
 
@@ -588,7 +636,11 @@ class IdrAgraTools():
         if self.mainMenu:
             for action,activate in zip(self.actionList,self.actionState):
                 if activate is not None:
-                    ACT = self.mainMenu.findChild(QAction, action)
+                    try:
+                        ACT = self.mainMenu.findChild(QAction, action)
+                    except:
+                        ACT = None
+
                     if ACT: ACT.setEnabled(activate)
                     MENU = self.mainMenu.findChild(QMenu, action)
                     if MENU: MENU.setEnabled(activate)
@@ -617,13 +669,16 @@ class IdrAgraTools():
                 if MENU: MENU.setEnabled(not MENU.isEnabled())
 
     def unload(self):
+        for signal, slot in (
+                (self.iface.projectRead, self.loadFromProject),
+                (self.iface.newProjectCreated, self.resetMenuItemState)):
+            try:
+                signal.disconnect(slot)
+            except (TypeError, RuntimeError):
+                pass
         self.mainMenu.deleteLater()
         # remove processing provider
         QgsApplication.processingRegistry().removeProvider(self.provider)
-        # restore macro policy
-        s = QgsSettings()
-        s.setValue('qgis/enableMacros', self.MACROPOLICY)
-        #s.setValue('qgis/attributeTableView', self.TABLEPOLICY)
 
     def _addmenuitem(self, parent, name, text, function, activate=True):
         if name not in self.actionList:
@@ -699,7 +754,7 @@ class IdrAgraTools():
         from .forms.common_settings import CommonSettings
         dlg = CommonSettings(self.iface)
 
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         if result:
             res = dlg.getData()
@@ -743,7 +798,7 @@ class IdrAgraTools():
         # TODO
         dlg = NewDbDialog(self.iface.mainWindow(),self.SIMDIC,self.FILEEXT)
         dlg.show()
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         res = []
         if result == 1:
@@ -754,6 +809,8 @@ class IdrAgraTools():
             self.SIMDIC['DBFILE'] = res['dbFile']
             self.SIMDIC['SOURCE_DB'] = res['sourceFile']
             self.SIMDIC['CRS'] = res['crs']
+            for rasterKey in ('WATERTABLEMAP', 'ELEVMAP', 'LANDUSEMAP', 'IRRMETHMAP'):
+                self.SIMDIC[rasterKey] = {}
             rootName = os.path.basename(res['dbFile'])
             rootName = rootName[:-5]
             rootPath = os.path.dirname(res['dbFile'])
@@ -776,6 +833,37 @@ class IdrAgraTools():
         self.loadLayer()
         self.setupAllLayers()
         self.updatePars()
+        self.offerPythonSessionPermission()
+
+    def offerPythonSessionPermission(self):
+        if self._pythonPermissionOffered:
+            return
+
+        settings = QgsSettings()
+        if Qgis.QGIS_VERSION_INT >= 34000:
+            permissionMode = Qgis.PythonEmbeddedMode
+            permissionKey = 'qgis/enablePythonEmbedded'
+        else: #%PS%: compatibility for QGIS versions earlier than 3.40 !todo: eventually remove
+            permissionMode = Qgis.PythonMacroMode
+            permissionKey = 'qgis/enableMacros'
+        mode = settings.enumValue(permissionKey, permissionMode.Ask)
+        if mode != permissionMode.Ask:
+            return
+
+        self._pythonPermissionOffered = True
+        prompt = QMessageBox(self.iface.mainWindow())
+        prompt.setWindowTitle(self.tr('IdrAgraTools'))
+        prompt.setText(self.tr('Allow Python scripts for this QGIS session?'))
+        prompt.setInformativeText(self.tr(
+            'IdrAgraTools uses scripts in its attribute tables and forms. '
+            'You can allow them here to avoid repeated confirmations until QGIS restarts.'))
+        allowButton = prompt.addButton(self.tr('Allow for this session'), QMessageBox.AcceptRole)
+        keepButton = prompt.addButton(self.tr('Keep asking'), QMessageBox.RejectRole)
+        prompt.setDefaultButton(keepButton)
+        prompt.setEscapeButton(keepButton)
+        prompt.exec()
+        if prompt.clickedButton() is allowButton:
+            settings.setEnumValue(permissionKey, permissionMode.SessionOnly)
 
     def updatePars(self):
         proj = QgsProject.instance()
@@ -783,6 +871,18 @@ class IdrAgraTools():
         proj.writeEntry('IdrAgraTools', 'simsettings', str(self.SIMDIC))
         #print('OK update pars',str(self.SIMDIC))
         uri = 'geopackage:'+self.SIMDIC['DBFILE']+'?projectName='+self.PRJNAME
+        #print('updatePars, CRS', self.SIMDIC['CRS'])
+        try:
+            crsCode = float(self.SIMDIC['CRS'])
+            crs = QgsCoordinateReferenceSystem()
+            # crs.createFromSrid(self.SIMDIC['CRS']) deprecated since 3.10
+            crs.createFromSrsId(crsCode)
+        except:
+            crsCode = self.SIMDIC['CRS']
+            crs = QgsCoordinateReferenceSystem(crsCode)
+
+
+        proj.setCrs(crs)
         proj.write(uri)
         proj.writeEntry('Paths', 'Absolute', 'false')
         proj.write(uri)
@@ -829,6 +929,8 @@ class IdrAgraTools():
             dbpath = QFileDialog.getOpenFileName(None, self.tr('Open idragra database'), s.value('lastPath'),
                                                  self.tr(self.FILEFORMAT))
             dbpath = dbpath[0]
+            if not dbpath:
+                return
 
         proj = None
         # update project record
@@ -852,10 +954,20 @@ class IdrAgraTools():
 
         proj = QgsProject.instance()
         uri = 'geopackage:' + dbpath + '?projectName=' + self.PRJNAME
-        proj.read(uri)
+        self._openingDB = True
+        try:
+            proj.read(uri)
+        finally:
+            self._openingDB = False
 
-        # load parameters
-        self.SIMDIC = eval(proj.readEntry('IdrAgraTools', 'simsettings')[0])
+        # load parameters without removing defaults if exist
+        tempSimDic = eval(proj.readEntry('IdrAgraTools', 'simsettings')[0])
+        for k,v in tempSimDic.items():
+            self.SIMDIC[k]=v
+        for rasterKey in ('WATERTABLEMAP', 'ELEVMAP', 'LANDUSEMAP', 'IRRMETHMAP'):
+            rasterMap = self.SIMDIC.get(rasterKey, {})
+            if isinstance(rasterMap, dict):
+                self.SIMDIC[rasterKey] = {name: source for name, source in rasterMap.items() if name}
 
         # TODO: INIT DB
         self.updateProj(dbpath)
@@ -876,92 +988,72 @@ class IdrAgraTools():
         # remove preprocessor
         QgsPathResolver.removePathPreprocessor(idProc)
 
-    def loadDemoData(self, fGeodata=True):
-        # load crop types
-        path2crop = os.path.join(self.plugin_dir, 'sample', 'crop')
-        fileList = os.listdir(path2crop)
-        for f in fileList:
-            cropDict = parseParFile(filename=os.path.join(path2crop, f), parSep='=', colSep=' ', feedback=None, tr=None)
-            cropValues = list(cropDict.values())
-            sql = "INSERT INTO idr_crop_types VALUES (null,'%s');" % ("','".join(cropValues))
-            msg = self.DBM.executeSQL(sql)
+    def loadLayer(self, tableNames=None):
+        project = QgsProject.instance()
+        dbPath = os.path.normcase(os.path.abspath(self.DBM.DBName))
 
-        # load irrigation methods
-        path2irrmethod = os.path.join(self.plugin_dir, 'sample', 'irr_method')
-        fileList = os.listdir(path2irrmethod)
-        for f in fileList:
-            irrDict = parseParFile(filename=os.path.join(path2irrmethod, f), parSep='=', colSep=' ', feedback=None,
-                                   tr=None)
-            irrValues = list(irrDict.values())
-            sql = "INSERT INTO idr_irrmet_types VALUES (null,'%s');" % ("','".join(irrValues))
-            msg = self.DBM.executeSQL(sql)
+        def sourceIdentity(layer):
+            if layer.providerType() != 'ogr':
+                return None
+            decoded = QgsProviderRegistry.instance().decodeUri('ogr', layer.source())
+            path = decoded.get('path', '')
+            tableName = decoded.get('layerName', '')
+            if not path or not tableName:
+                sourceParts = layer.source().replace('\\', '/').split('|')
+                path = path or sourceParts[0]
+                for part in sourceParts[1:]:
+                    if part.casefold().startswith('layername='):
+                        tableName = part.split('=', 1)[1]
+                        break
+            if not path or not tableName:
+                return None
+            path = project.readPath(path)
+            return os.path.normcase(os.path.abspath(path)), tableName.casefold()
 
-        # load soil types
-        path2soil = os.path.join(self.plugin_dir, 'sample', 'soil')
-        fileList = os.listdir(path2soil)
-        for f in fileList:
-            soilDict = parseParFile(filename=os.path.join(path2soil, f), parSep='=', colSep=' ', feedback=None, tr=None)
-            soilValues = list(soilDict.values())
-            sql = "INSERT INTO idr_soil_types VALUES (null,'%s');" % ("','".join(soilValues))
-            msg = self.DBM.executeSQL(sql)
+        existingLayers = {}
+        for layer in project.mapLayers().values():
+            identity = sourceIdentity(layer)
+            if identity and identity[0] == dbPath:
+                existingLayers.setdefault(identity[1], []).append(layer)
 
-        # load soil uses
-        path2soiluse = os.path.join(self.plugin_dir, 'sample', 'soiluse')
-        fileList = os.listdir(path2soiluse)
-        for f in fileList:
-            soiluseDict = parseParFile(filename=os.path.join(path2soiluse, f), parSep='=', colSep=' ', feedback=None,
-                                       tr=None)
-            soiluseValues = list(soiluseDict.values())
-            sql = "INSERT INTO idr_soiluses VALUES (null,'%s');" % ("','".join(soiluseValues))
-            msg = self.DBM.executeSQL(sql)
-
-        if (fGeodata == True):
-            # load geometries
-            path2geodata = os.path.join(self.plugin_dir, 'sample', 'geodata')
-            listOfFile = ['idr_weather_stations', 'idr_gw_wells', 'idr_nodes', 'idr_links', 'idr_crop_fields']
-            for f in listOfFile:
-                # load crop field
-                gpkg_layer = self.DBM.DBName + '|layername=' + f
-                print('gpkg_layer:',gpkg_layer)
-                csvFile = os.path.join(path2geodata, f + '.csv')
-                addFeaturesFromCSV(gpkg_layer, csvFile)
-
-            # load meteo data
-            path2weather = os.path.join(self.plugin_dir, 'sample', 'weather')
-            fileList = os.listdir(path2weather)
-            varList = ['ws_tmax', 'ws_tmin', 'ws_ptot', 'ws_umax', 'ws_umin', 'ws_vmed', 'ws_rgcorr']
-            for c, f in enumerate(fileList):
-                for i, var in enumerate(varList):
-                    self.importDataFromCSV(filename=os.path.join(path2weather, f), tablename=var, timeFldIdx=0,
-                                           valueFldIdx=i + 1, sensorId=c + 1, skip=1, timeFormat='%Y/%m/%d',
-                                           column_sep=',', progress=None)
-
-            # load discharge data
-            path2disch = os.path.join(self.plugin_dir, 'sample', 'discharge')
-            fileList = os.listdir(path2disch)
-            varList = ['node_act_disc']
-            for c, f in enumerate(fileList):
-                for i, var in enumerate(varList):
-                    self.importDataFromCSV(filename=os.path.join(path2disch, f), tablename=var, timeFldIdx=0,
-                                           valueFldIdx=i + 1, sensorId=c + 1, skip=1, timeFormat='%d/%m/%Y',
-                                           column_sep=';', progress=None)
-
-    def loadLayer(self):
-        lyrSourcesList = [layer.source().replace('\\','/') for layer in QgsProject.instance().mapLayers().values()]
+        resultTables = set(self.STEPNAME) | {'node_disc'}
         for n, a in self.LYRNAME.items():
+            if tableNames is not None and n not in tableNames:
+                continue
+            matches = existingLayers.get(n.casefold(), [])
+            if n in resultTables and self.DBM.getTableAsDF('SELECT 1 FROM "%s" LIMIT 1' % n).empty:
+                for emptyLayer in matches:
+                    project.removeMapLayer(emptyLayer.id())
+                continue
+            validMatches = [layer for layer in matches if layer.isValid()]
+            if validMatches:
+                keepLayer = validMatches[0]
+                for duplicate in matches:
+                    if duplicate.id() != keepLayer.id():
+                        project.removeMapLayer(duplicate.id())
+                if n in resultTables:
+                    keepLayer.dataProvider().reloadData()
+                continue
+
+            for brokenLayer in matches:
+                project.removeMapLayer(brokenLayer.id())
+
             gpkg_layer = self.DBM.DBName + '|layername=' + n
             gpkg_layer = gpkg_layer.replace('\\', '/')
-            if not gpkg_layer in lyrSourcesList:
-                vlayer = QgsVectorLayer(gpkg_layer, a, "ogr")
-                if not vlayer.isValid():
-                    print("Failed to load layer %s"%a)  # TODO
-                else:
-                    groupIndex, mygroup = self.getGroupIndex(self.LYRGRPNAME[n])
-                    vlayer.loadNamedStyle(os.path.join(self.plugin_dir, 'styles', n + '.qml'))
-                    QgsProject.instance().addMapLayer(vlayer, False)
-                    mygroup.insertChildNode(groupIndex, QgsLayerTreeLayer(vlayer))
+            vlayer = QgsVectorLayer(gpkg_layer, a, "ogr")
+            if not vlayer.isValid():
+                print("Failed to load layer %s"%a)  # TODO
+            else:
+                groupIndex, mygroup = self.getGroupIndex(self.LYRGRPNAME[n])
+                print(os.path.join(self.plugin_dir, 'styles', n + '.qml'))
+                vlayer.loadNamedStyle(os.path.join(self.plugin_dir, 'styles', n + '.qml'))
+                project.addMapLayer(vlayer, False)
+                mygroup.insertChildNode(groupIndex, QgsLayerTreeLayer(vlayer))
 
-                # set up layer field
+            # set up layer field
+
+        if tableNames is not None:
+            return
 
         # load rasters
         for n,s in self.SIMDIC['ELEVMAP'].items():
@@ -969,6 +1061,13 @@ class IdrAgraTools():
 
         for n,s in self.SIMDIC['WATERTABLEMAP'].items():
             self.loadRaster(rasterPath = s, rasterName=n, layGroup=self.tr('Ground water'))
+
+        for n,s in self.SIMDIC['IRRMETHMAP'].items():
+            self.loadRaster(rasterPath = s, rasterName=n, layGroup=self.tr('Land use'))
+
+        for n,s in self.SIMDIC['LANDUSEMAP'].items():
+            self.loadRaster(rasterPath = s, rasterName=n, layGroup=self.tr('Land use'))
+
 
     def setupAllLayers(self):
         self.setupNodeLayer()
@@ -982,6 +1081,7 @@ class IdrAgraTools():
         self.setupIrrTypesLayer()
         self.setupIrrigationUnitLayer()
         self.setupControlPointLayer()
+        self.setupDomainLayer()
 
     def setupControlPointLayer(self):
         vlayerList = QgsProject.instance().mapLayersByName(self.LYRNAME['idr_control_points'])
@@ -1035,12 +1135,26 @@ class IdrAgraTools():
         for vlayer in vlayerList:
             self.setCustomForm(vlayer, 'soil_map_dialog')
 
+        vlayerList = QgsProject.instance().mapLayersByName(self.LYRNAME['idr_soil_types'])
+        for vlayer in vlayerList:
+            self.setCustomForm(vlayer, 'soil_type_dialog')
+
+
+        vlayerList = QgsProject.instance().mapLayersByName(self.LYRNAME['idr_soil_profiles'])
+        for vlayer in vlayerList:
+            self.setCustomForm(vlayer, 'soil_profile_dialog')
+
 
     def setupIrrTypesLayer(self):
         vlayerList = QgsProject.instance().mapLayersByName(self.LYRNAME['idr_irrmet_types'])
         for vlayer in vlayerList:
             self.setFieldCheckable(vlayer, 'f_interception')
             self.setCustomForm(vlayer, 'irrigation_method_dialog')
+
+    def setupDomainLayer(self):
+        vlayerList = QgsProject.instance().mapLayersByName(self.LYRNAME['idr_domainmap'])
+        for vlayer in vlayerList:
+            print('domain map: %s'%vlayer.name())
 
     def importMeteoData(self):
         # get meteo id,name
@@ -1064,22 +1178,20 @@ class IdrAgraTools():
 
     def importData(self,sensorsDict = {},varDict={}):
         from .forms.import_data import ImportData
-        dlg = ImportData(self.iface.mainWindow(),varDict,sensorsDict,self.s)
-        dlg.show()
-        result = dlg.exec_()
-        # See if OK was pressed
-        res = []
-        if result == 1:
-            res = dlg.getData()
-            progress = IfaceProgress(self.iface)
-            #print('res',res)
-            self.importDataFromCSV(
-                             filename=res['selFile'], tablename=res['selVar'],
-                             timeFldIdx=res['timeFldIdx'],valueFldIdx=res['valueFldIdx'],
-                             sensorId=res['selSensor'],
-                             skip=res['skipLines'], timeFormat=res['timeFormat'], column_sep=res['sep'],
-                             overWrite = res['overWrite'],saveEdit = res['saveEdit'],year = '',
-                             progress=progress)
+        dlg = ImportData(
+            self.iface.mainWindow(), varDict, sensorsDict, self.s,
+            databasePath=self.DBM.DBName
+        )
+        dlg.dataImported.connect(self.reloadImportedTimeSeries)
+        dlg.exec()
+
+    def reloadImportedTimeSeries(self, tableNames):
+        tableNames = set(tableNames)
+        for layer in QgsProject.instance().mapLayers().values():
+            source = layer.source().replace('\\', '/')
+            if any('|layername=%s' % tableName in source for tableName in tableNames):
+                layer.dataProvider().reloadData()
+                layer.triggerRepaint()
 
     def importWeatherStations(self):
         wsLay = self.getVectorLayerByName('idr_weather_stations')
@@ -1088,7 +1200,7 @@ class IdrAgraTools():
         dlg = ImportVectorDialog(self.iface.mainWindow(), layList = layList, fields=wsLay.fields(),
                                  skipFields = ['fid'], settings=self.s, title= self.tr('Weather stations'))
         dlg.show()
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         res = []
         if result == 1:
@@ -1106,7 +1218,7 @@ class IdrAgraTools():
         dlg = ImportVectorDialog(self.iface.mainWindow(), layList=layList, fields=nodeLay.fields(),
                                  skipFields=['fid'], settings=self.s, title= self.tr('Import nodes'))
         dlg.show()
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         res = []
         if result == 1:
@@ -1125,7 +1237,7 @@ class IdrAgraTools():
         dlg = ImportVectorDialog(self.iface.mainWindow(), layList=layList, fields=linkLay.fields(),
                                  skipFields=['fid'], settings=self.s, title = self.tr('Import links'))
         dlg.show()
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         res = []
         if result == 1:
@@ -1136,7 +1248,8 @@ class IdrAgraTools():
                 saveEdit=res['saveEdit'],
                 progress=progress)
 
-    def importVector(self,fromLay,toLay, fieldDict, assignDate = None, saveEdit = False, progress=None):
+    def importVector(self,fromLay,toLay, fieldDict, assignDate = None, saveEdit = False, progress=None,
+                     generatePolygonIds=False, replaceExisting=False, featureOverrides=None):
         # reset counter
         self.DBM.resetCounter()
         # start ediding
@@ -1154,6 +1267,14 @@ class IdrAgraTools():
         pr = toLay.dataProvider()
         fieldNames = [field.name() for field in pr.fields()]
 
+        nextPolygonId = 1
+        if generatePolygonIds and not replaceExisting:
+            for existingFeature in toLay.getFeatures():
+                try:
+                    nextPolygonId = max(nextPolygonId, int(existingFeature['id']) + 1)
+                except (TypeError, ValueError):
+                    pass  # Existing features may have an unset ID.
+
         # loop in fromLay feature
         nOfFeat =  fromLay.selectedFeatureCount()
         if nOfFeat>0:
@@ -1161,6 +1282,16 @@ class IdrAgraTools():
         else:
             nOfFeat = fromLay.featureCount()
             featureList = fromLay.getFeatures()
+
+        if replaceExisting:
+            if nOfFeat == 0:
+                progress.reportError(self.tr('Source layer has no features; nothing replaced.'), False)
+                return
+            toLay.beginEditCommand(self.tr('Replace imported polygons'))
+            if not toLay.deleteFeatures([feature.id() for feature in toLay.getFeatures()]):
+                toLay.destroyEditCommand()
+                progress.reportError(self.tr('Unable to remove existing features.'), True)
+                return
 
         i=0
         progress.pushInfo(self.tr('Copying features ...'))
@@ -1173,20 +1304,36 @@ class IdrAgraTools():
                 idx = fieldNames.index(k)
                 newFeat.setAttribute(idx, feat[v])
 
+            if featureOverrides is not None:
+                for field, value in featureOverrides[feat.id()].items():
+                    newFeat.setAttribute(fieldNames.index(field), value)
+
             if assignDate:
                 idx = fieldNames.index('date')
                 newFeat.setAttribute(idx, assignDate)
 
-            toLay.addFeature(newFeat)
+            if generatePolygonIds:
+                newFeat.setAttribute(fieldNames.index('id'), nextPolygonId)
+                nextPolygonId += 1
+
+            if not toLay.addFeature(newFeat) and replaceExisting:
+                toLay.destroyEditCommand()
+                progress.reportError(self.tr('Import failed; existing features restored.'), True)
+                return
 
             i += 1
             if progress: progress.setPercentage(100 * i / nOfFeat)
 
+        if replaceExisting:
+            toLay.endEditCommand()
         progress.pushInfo(self.tr('Copying completed!'))
 
         if saveEdit:
-            toLay.commitChanges()
+            if not toLay.commitChanges():
+                progress.reportError(self.tr('Unable to save edits: %s') % '; '.join(toLay.commitErrors()), True)
+                return
             progress.pushInfo(self.tr('Edits saved'))
+        return True
 
     def importWeightMap(self):
         pass
@@ -1196,9 +1343,13 @@ class IdrAgraTools():
         layList = self.getLayerList(geomTypeList = [QgsWkbTypes.PolygonGeometry])
         from .forms.import_vector_dialog import ImportVectorDialog
         dlg = ImportVectorDialog(self.iface.mainWindow(), layList=layList, fields=wsLay.fields(),
-                                 skipFields=['fid','date'], dateFld = [], settings=self.s,title= self.tr('Import soil map'))
+                                 skipFields=['fid', 'id', 'name', 'date'], dateFld=[], settings=self.s,
+                                 title=self.tr('Import soil map'), allowReplace=True,
+                                 fieldLabels={
+                                     'extid': self.tr('Soil type ID'),
+                                 })
         dlg.show()
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         res = []
         if result == 1:
@@ -1207,25 +1358,101 @@ class IdrAgraTools():
             self.importVector(
                              fromLay=res['lay'], toLay=wsLay, fieldDict=res['fieldDict'], assignDate=res['assignDate'],
                              saveEdit=res['saveEdit'],
-                             progress=progress)
+                             progress=progress, generatePolygonIds=True, replaceExisting=res['replaceExisting'])
+
+    def importSoilProfiles(self):
+        from .forms.import_soil_profiles import ImportSoilProfiles
+        soilMap = self.getVectorLayerByName('idr_soilmap')
+        soilIds = set()
+        for feature in soilMap.getFeatures():
+            try:
+                soilIds.add(int(feature['extid']))
+            except (TypeError, ValueError):
+                pass
+        layers = [self.getVectorLayerByName(name) for name in ('idr_soil_types', 'idr_soil_profiles')]
+        dialog = ImportSoilProfiles(self.iface.mainWindow(), self.DBM.DBName,
+                                   layers, soil_ids=soilIds, settings=self.s)
+        dialog.exec()
 
     def importLandUseMap(self):
         wsLay = self.getVectorLayerByName('idr_usemap')
         layList = self.getLayerList(geomTypeList=[QgsWkbTypes.PolygonGeometry])
         from .forms.import_vector_dialog import ImportVectorDialog
         dlg = ImportVectorDialog(self.iface.mainWindow(), layList=layList, fields=wsLay.fields(),
-                                 skipFields=['fid'], dateFld=['date'], settings=self.s, title= self.tr('Import land use map'))
+                                 skipFields=['fid', 'id'], dateFld=['date'], settings=self.s,
+                                 title=self.tr('Import land use map'), allowReplace=True, landUseClasses=True,
+                                 fieldLabels={
+                                     'extid': self.tr('Land-use class ID'),
+                                     'name': self.tr('Class name (optional)'),
+                                 })
         dlg.show()
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         res = []
         if result == 1:
             res = dlg.getData()
+            try:
+                overrides = self.landUseClassOverrides(res['lay'], wsLay, res['fieldDict'], res['classNames'])
+            except Exception as error:
+                QMessageBox.warning(self.iface.mainWindow(), self.tr('Unable to import land use'), str(error))
+                return
             progress = IfaceProgress(self.iface)
             self.importVector(
                              fromLay=res['lay'], toLay=wsLay, fieldDict=res['fieldDict'], assignDate=res['assignDate'],
                              saveEdit=res['saveEdit'],
-                             progress=progress)
+                             progress=progress, generatePolygonIds=True, replaceExisting=res['replaceExisting'],
+                             featureOverrides=overrides)
+
+    def landUseClassOverrides(self, sourceLayer, destinationLayer, fieldDict, useNames):
+        from .tools.landuse_library import positive_id, read_library, resolve_classes
+        from qgis.core import QgsVariantUtils
+        if 'extid' not in fieldDict:
+            raise ValueError(self.tr('Select the source column identifying land-use classes.'))
+        classes, _ = read_library(self.DBM.DBName)
+        mapClasses = []
+        for feature in destinationLayer.getFeatures():
+            if not QgsVariantUtils.isNull(feature['extid']):
+                name = feature['name']
+                mapClasses.append((positive_id(feature['extid']),
+                                   '' if QgsVariantUtils.isNull(name) else str(name)))
+        features = list(sourceLayer.getSelectedFeatures() if sourceLayer.selectedFeatureCount()
+                        else sourceLayer.getFeatures())
+        values = []
+        for feature in features:
+            value = feature[fieldDict['extid']]
+            name = feature[fieldDict['name']] if 'name' in fieldDict else None
+            values.append((None if QgsVariantUtils.isNull(value) else value,
+                           None if QgsVariantUtils.isNull(name) else name))
+        resolved = resolve_classes(values, classes, mapClasses, use_names=useNames)
+        return {feature.id(): {'extid': class_id, 'name': name}
+                for feature, (class_id, name) in zip(features, resolved)}
+
+    def configureLandUseClasses(self):
+        from .forms.configure_landuse import ConfigureLandUse
+        from .tools.landuse_library import positive_id, raster_class_ids
+        from qgis.core import QgsVariantUtils
+        try:
+            mapClasses = {}
+            for feature in self.getVectorLayerByName('idr_usemap').getFeatures():
+                class_id = positive_id(feature['extid'])
+                name = feature['name']
+                name = '' if QgsVariantUtils.isNull(name) else str(name).strip()
+                if class_id not in mapClasses or not mapClasses[class_id]:
+                    mapClasses[class_id] = name
+            sources = [QgsProject.instance().readPath(source)
+                       for source in self.SIMDIC['LANDUSEMAP'].values() if source]
+            for class_id in raster_class_ids(sources):
+                mapClasses.setdefault(class_id, '')
+            if not mapClasses:
+                QMessageBox.information(self.iface.mainWindow(), self.tr('Land-use classes'),
+                                        self.tr('Import a vector or raster land-use map first.'))
+                return
+            layers = [self.getVectorLayerByName(name) for name in ('idr_soiluses', 'idr_crop_types')]
+            dialog = ConfigureLandUse(self.iface.mainWindow(), self.DBM.DBName, mapClasses,
+                                     layers, os.path.join(self.plugin_dir, 'sample', 'crop'), self.s)
+            dialog.exec()
+        except Exception as error:
+            QMessageBox.warning(self.iface.mainWindow(), self.tr('Land-use classes'), str(error))
 
     def importWaterDistrictMap(self):
         wsLay = self.getVectorLayerByName('idr_distrmap')
@@ -1234,7 +1461,7 @@ class IdrAgraTools():
         dlg = ImportVectorDialog(self.iface.mainWindow(), layList=layList, fields=wsLay.fields(),
                                  skipFields=['fid'], dateFld=[], settings=self.s, title= self.tr('Import irrigation units map'))
         dlg.show()
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         res = []
         if result == 1:
@@ -1245,15 +1472,41 @@ class IdrAgraTools():
                              saveEdit=res['saveEdit'],
                              progress=progress)
 
+    def importIrrigationMethods(self):
+        from .forms.import_irrigation_methods import ImportIrrigationMethods
+        from .tools.landuse_library import crop_id, raster_class_ids
+        from qgis.core import QgsVariantUtils
+
+        def requiredIds():
+            identifiers = set()
+            for feature in self.getVectorLayerByName('idr_irrmap').getFeatures():
+                if not QgsVariantUtils.isNull(feature['extid']):
+                    identifiers.add(crop_id(feature['extid']))
+            sources = [QgsProject.instance().readPath(source)
+                       for source in self.SIMDIC['IRRMETHMAP'].values() if source]
+            identifiers.update(raster_class_ids(sources, allow_zero=True))
+            default = self.SIMDIC.get('DEFAULT_IM')
+            if default not in (None, '', 0, '0'):
+                identifiers.add(crop_id(default))
+            return identifiers - {0}
+
+        layers = [self.getVectorLayerByName('idr_irrmet_types')]
+        dialog = ImportIrrigationMethods(self.iface.mainWindow(), self.DBM.DBName,
+            os.path.join(self.plugin_dir, 'sample', 'irr_method'), layers, self.s, requiredIds)
+        dialog.exec()
+
     def importIrrMethMap(self):
         wsLay = self.getVectorLayerByName('idr_irrmap')
         layList = self.getLayerList(geomTypeList=[QgsWkbTypes.PolygonGeometry])
         from .forms.import_vector_dialog import ImportVectorDialog
         dlg = ImportVectorDialog(self.iface.mainWindow(), layList=layList, fields=wsLay.fields(),
-                                 skipFields=['fid'], dateFld=[], settings=self.s,
-                                 title=self.tr('Import irrigation methods map'))
+                                 skipFields=['fid', 'id', 'name'], dateFld=[], settings=self.s,
+                                 title=self.tr('Import irrigation methods map'), allowReplace=True,
+                                 fieldLabels={
+                                     'extid': self.tr('Irrigation method ID'),
+                                 })
         dlg.show()
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         res = []
         if result == 1:
@@ -1262,15 +1515,103 @@ class IdrAgraTools():
             self.importVector(
                 fromLay=res['lay'], toLay=wsLay, fieldDict=res['fieldDict'], assignDate=None,
                 saveEdit=res['saveEdit'],
+                progress=progress, generatePolygonIds=True, replaceExisting=res['replaceExisting'])
+
+    def importDomainMap(self):
+        domLay = self.getVectorLayerByName('idr_domainmap')
+        layList = self.getLayerList(geomTypeList=[QgsWkbTypes.PolygonGeometry])
+        from .forms.import_vector_dialog import ImportVectorDialog
+        dlg = ImportVectorDialog(self.iface.mainWindow(), layList=layList, fields=domLay.fields(),
+                                 skipFields=['fid'], dateFld=[], settings=self.s,
+                                 title=self.tr('Import domain map'))
+        dlg.show()
+        result = dlg.exec()
+        # See if OK was pressed
+        res = []
+        if result == 1:
+            res = dlg.getData()
+            progress = IfaceProgress(self.iface)
+            self.importVector(
+                fromLay=res['lay'], toLay=domLay, fieldDict=res['fieldDict'], assignDate=None,
+                saveEdit=res['saveEdit'],
                 progress=progress)
+
+    def createDomainMap(self):
+        # open grid settings
+        from .forms.create_grid_dialog import CreateGridDialog
+        dlg = CreateGridDialog(self.iface,title=self.tr('Create regular domain grid'))
+        dlg.show()
+        result = dlg.exec()
+        # See if OK was pressed
+        res = []
+        if result == 1:
+            res = dlg.getData()
+            print('res',res)
+            # res = {'cell_size':cell_size, 'grid_extent':grid_extent,'grid_crs':grid_crs,
+            # 				'save_edits':save_edits,'use_integer':use_integer}
+            progress = IfaceProgress(self.iface)
+
+            cell_size = res['cell_size']
+            grd_ext = res['grid_extent']
+            grd_crs = res['grid_crs']
+
+            save_edits = res['save_edits']
+            # regularize the grid to integer coordinates
+            if res['use_integer']:
+                grd_ext = QgsRectangle(math.floor(grd_ext.xMinimum()),
+                                       math.floor(grd_ext.yMinimum()),
+                                       math.ceil(grd_ext.xMaximum()),
+                                       math.ceil(grd_ext.yMaximum()))
+
+            progress.setProgress(0.)
+            progress.pushInfo(self.tr('Creating grid ...'))
+            # run the algorithm
+            self.algResults = processing.run("native:creategrid", {'TYPE': 2,
+                                                 'EXTENT': '%s,%s,%s,%s [%s]'%(grd_ext.xMinimum(),grd_ext.xMaximum(),
+                                                                                    grd_ext.yMinimum(),grd_ext.yMaximum(),grd_crs.authid()),
+                                                 'HSPACING': cell_size, 'VSPACING': cell_size,
+                                                 'HOVERLAY': 0, 'VOVERLAY': 0,
+                                                 'CRS': grd_crs,
+                                                 'OUTPUT': 'TEMPORARY_OUTPUT'},
+                                                context=None, feedback=None, is_child_algorithm=False)
+
+            progress.setProgress(50.)
+            # copy the result to the map
+            domLay = self.getVectorLayerByName('idr_domainmap')
+            domLay.startEditing()
+            c = 0
+            #temp_lay = QgsVectorLayer(self.algResults['OUTPUT'], 'temp','ogr')
+            num_feat = self.algResults['OUTPUT'].featureCount()
+            for feat in self.algResults['OUTPUT'].getFeatures():
+                c+=1
+                progress.setProgress(100*c/num_feat)
+                newFeat = QgsFeature(domLay.fields())
+                newFeat.setGeometry(feat.geometry())
+                newFeat['id'] = c
+                newFeat['name'] = 'cell_grid_%s'%c
+                newFeat['area_m2'] = feat.geometry().area()
+                domLay.addFeature(newFeat)
+
+            domLay.updateExtents()
+            self.iface.mapCanvas().refresh()
+
+            if save_edits: domLay.commitChanges()
 
 
     def getVectorLayerByName(self, tablename):
         gpkg_layer = self.DBM.DBName + '|layername=' + tablename
         gpkg_layer = gpkg_layer.replace('\\', '/')
         vLayer = None
-        for layer in QgsProject.instance().mapLayers().values():
-            if (layer.source().replace('\\', '/') == gpkg_layer) :
+        project = QgsProject.instance()
+        dbPath = os.path.normcase(os.path.abspath(self.DBM.DBName))
+        for layer in project.mapLayers().values():
+            if layer.providerType() != 'ogr':
+                continue
+            source = QgsProviderRegistry.instance().decodeUri('ogr', layer.source())
+            sourcePath = source.get('path', '')
+            sourceTable = source.get('layerName', '')
+            if (sourcePath and isinstance(sourceTable, str) and sourceTable.casefold() == tablename.casefold()
+                    and os.path.normcase(os.path.abspath(project.readPath(sourcePath))) == dbPath):
                 vLayer = layer
                 break
 
@@ -1312,9 +1653,20 @@ class IdrAgraTools():
                                           QgsWkbTypes.PolygonGeometry,QgsWkbTypes.UnknownGeometry,
                                           QgsWkbTypes.NullGeometry]):
         res = {}
+        project = QgsProject.instance()
+        dbPath = getattr(getattr(self, 'DBM', None), 'DBName', '')
+        dbPath = os.path.normcase(os.path.abspath(dbPath)) if dbPath else ''
+        managedTables = {tableName.casefold() for tableName in self.LYRNAME}
 
-        for layer in QgsProject.instance().mapLayers().values():
+        for layer in project.mapLayers().values():
             if layer.type() == QgsMapLayer.VectorLayer:
+                if dbPath and layer.providerType() == 'ogr':
+                    source = QgsProviderRegistry.instance().decodeUri('ogr', layer.source())
+                    sourcePath = source.get('path', '')
+                    sourceTable = source.get('layerName', '')
+                    if (sourcePath and isinstance(sourceTable, str) and sourceTable.casefold() in managedTables
+                            and os.path.normcase(os.path.abspath(project.readPath(sourcePath))) == dbPath):
+                        continue
                 vector_type = layer.geometryType()
                 if vector_type in geomTypeList:
                     res[layer.name()]=layer
@@ -1541,9 +1893,12 @@ class IdrAgraTools():
         self.updatePars()
         self.exportIrrigationMethodsTH(progress)
         self.updatePars()
-        if (self.SIMDIC['MODE'] in [1,'1']):
-            self.exportWaterSourcesDataTH(progress)
-            self.updatePars()
+        # if (self.SIMDIC['MODE'] in [1,'1']):
+        #     self.exportWaterSourcesDataTH(progress)
+        #     self.updatePars()
+        #
+        self.exportWaterSourcesDataTH(progress)
+        self.updatePars()
 
         self.exportSimProjTH(progress)
         self.execBatFile('run_cropcoef.bat',progress)
@@ -1552,14 +1907,37 @@ class IdrAgraTools():
     def setSimulation(self, callback = None):
         tNameList = list(self.METEONAME.keys()) + list(self.WATERSOURCENAME.keys())
         startDate, endDate = self.DBM.getMultiMinMax(tNameList, 'timestamp')
-        yearList = range(startDate, endDate + 1)
-        yearList = [str(y) for y in yearList]
+        # fix bug when no time series are imported
+        yearList = []
+        if (startDate and endDate):
+            yearList = range(startDate, endDate + 1)
+            yearList = [str(y) for y in yearList]
+        else:
+            showCriticalMessageBox(self.tr('Missing data'),
+                                   self.tr('No time data to use'),
+                                   self.tr('It is necessary to complete the database with time series'))
+            return
+
+        # get dictionary of landuses
+        luDict = {0:self.tr('Not selected')}
+        luDict.update(self.DBM.getDictFromTable('idr_soiluses','id','name'))
+        #luDict[0] = self.tr('Not selected')
+
+        # get dictionary of irrigation methods
+        imDict = {0:self.tr('Not selected')}
+        imDict.update(self.DBM.getDictFromTable('idr_irrmet_types', 'id', 'name'))
+        #imDict[0] = self.tr('Not selected')
 
         # show dialog to choose folder and set simulation parameters
         from .forms.set_simulation_dialog import SetSimulationDialog
-        dlg = SetSimulationDialog(self.iface, yearList, list(self.SIMMODE.values()),self.SIMDIC)
+        # update extent and crs from domain map
+        self.SIMDIC['EXTENT'] = self.getVectorLayerByName('idr_domainmap').extent().toString(4)
+        # fix proj issues
+        self.SIMDIC['CRS'] = self.getVectorLayerByName('idr_domainmap').crs().authid()
+
+        dlg = SetSimulationDialog(self.iface, yearList, list(self.SIMMODE.values()),self.SIMDIC, luDict,imDict)
         result = 1
-        #result = dlg.exec_()
+        #result = dlg.exec()
         # See if OK was pressed
         res = []
         def updateSim():
@@ -1567,13 +1945,18 @@ class IdrAgraTools():
             ### set output path
             self.SIMDIC['OUTPUTPATH'] = res['outfolder']
             self.SIMDIC['SOILUSEVARFLAG'] = res['useyearlymaps']
+            ### set simulation options
+            self.SIMDIC['RANDWIND'] = res['randWind']
             ### set simulation period
             self.SIMDIC['STARTYEAR'] = res['from']
             self.SIMDIC['ENDYEAR'] = res['to']
             self.SIMDIC['YEARS'] = list(range(res['from'], res['to'] + 1))
             ### set spatial resolution
+            self.SIMDIC['VECTOR_MODE'] = res['vectorMode']
             self.SIMDIC['EXTENT'] = res['extent'].toString(4)
-            self.SIMDIC['CRS'] = res['crs'].postgisSrid()
+            # fix proj issues
+            self.SIMDIC['CRS'] = res['crs'].authid()
+
             self.SIMDIC['CELLSIZE'] = res['cellsize']
             ### set hydrological model
             self.SIMDIC['ZEVALAY'] = res['zevalay']
@@ -1590,7 +1973,9 @@ class IdrAgraTools():
             self.SIMDIC['STARTOUTPUT'] = res['outStartDate']
             self.SIMDIC['ENDOUTPUT'] = res['outEndDate']
             self.SIMDIC['STEPOUTPUT'] = res['outStep']
-
+            # set default landuse and method
+            self.SIMDIC['DEFAULT_LU'] = res['defLU']
+            self.SIMDIC['DEFAULT_IM'] = res['defIM']
 
             #print(self.SIMDIC)
             self.updatePars()
@@ -1678,8 +2063,8 @@ class IdrAgraTools():
         CO2Text = ''
         for y,co2 in zip(yearList,CO2List):
             if not co2:
-                co2 = 337
-                progress.reportError(self.tr('CO2 concentration set to default value (337 p.p.m.) for year %s')%y,False)
+                co2 = 400
+                progress.reportError(self.tr('CO2 concentration set to default value (400 p.p.m.) for year %s')%y,False)
 
             CO2Text+='%s %s\n'%(y,co2)
 
@@ -1695,6 +2080,7 @@ class IdrAgraTools():
             progress.pushInfo('Directory %s already exists' % path2fielduse, False)
 
         soiluseIds = exportLandUse(self.DBM, path2fielduse, progress, self.tr)
+        #print('soiluseIds',soiluseIds)
         numOfLanduses = len(soiluseIds)
         self.SIMDIC['NOFSOILUSES'] = numOfLanduses
         self.SIMDIC['SOILUSESLIST'] = ' '.join(soiluseIds)
@@ -1713,10 +2099,11 @@ class IdrAgraTools():
         progress.setPercentage(100.)
 
     def exportWaterSourcesData(self, progress):
-        if str(self.SIMDIC['MODE'])=='1':
-            self.runAsThread(function = self.exportWaterSourcesDataTH, onFinished = self.updatePars)
-        else:
-            showCriticalMessageBox(self.tr('Water sources are not required by simulation mode'),'','')
+        self.runAsThread(function=self.exportWaterSourcesDataTH, onFinished=self.updatePars)
+        # if str(self.SIMDIC['MODE'])=='1':
+        #     self.runAsThread(function = self.exportWaterSourcesDataTH, onFinished = self.updatePars)
+        # else:
+        #     showCriticalMessageBox(self.tr('Water sources are not required by simulation mode'),'','')
 
     def exportWaterSourcesDataTH(self, progress):
         progress.setText(self.tr('Export water sources'))
@@ -1776,7 +2163,7 @@ class IdrAgraTools():
             os.makedirs(path2Geodata)
             progress.pushInfo(self.tr('Exporting to %s ...') % path2Geodata)
         else:
-            progress.pushInfo(self.tr('Directory %s already exists and all file will be remove') % path2Geodata)
+            progress.pushInfo(self.tr('Directory %s already exists and all file will be overwritten') % path2Geodata)
             # delete all file
             fileList = glob.glob(os.path.join(path2Geodata, '*.*'))
             for f in fileList:
@@ -1807,22 +2194,21 @@ class IdrAgraTools():
 
         progress.setProgress(50.0)
 
-        ext = returnExtent(self.SIMDIC['EXTENT'])
-        self.EXP = Exporter(parent = QgsProject.instance(), simdic = self.SIMDIC, feedback=progress, tr=self.tr)
-        self.EXP.exportGeodata(self.DBM, path2Geodata, ext, self.SIMDIC['CELLSIZE'], dtmLay,
-                      wtLayDic, [self.SIMDIC['ZEVALAY'],self.SIMDIC['ZTRANSLAY']],
-                      list(range(int(self.SIMDIC['STARTYEAR']),int(self.SIMDIC['ENDYEAR'])+1))
-                      )
+        # TODO: choose type of exporter (regular, vector)
 
-        # export control points
-        cellListFile = os.path.join(self.SIMDIC['OUTPUTPATH'], 'cells.txt')
-        controlPointMap = self.DBM.DBName + '|layername=idr_control_points'
 
-        processing.run("idragratools:IdragraExportControlPoints",
-                       {'VECTOR_LAY': controlPointMap,
-                        'RASTER_EXT': ext,
-                        'CELL_DIM': self.SIMDIC['CELLSIZE'], 'DEST_FILE': cellListFile},
-                       context=None, feedback=progress, is_child_algorithm=False)
+        if self.SIMDIC['VECTOR_MODE']:
+            self.EXP = ExportGeodataVector(parent = QgsProject.instance(), sim_dict = self.SIMDIC,
+                                           feedback=progress, tr=self.tr)
+            self.EXP.exportGeodata()
+        else:
+            ext = returnExtent(self.SIMDIC['EXTENT'])
+
+            self.EXP = Exporter(parent = QgsProject.instance(), simdic = self.SIMDIC, feedback=progress, tr=self.tr)
+            self.EXP.exportGeodata(self.DBM, path2Geodata, ext, self.SIMDIC['CELLSIZE'], dtmLay,
+                          wtLayDic, [self.SIMDIC['ZEVALAY'],self.SIMDIC['ZTRANSLAY']],
+                          list(range(int(self.SIMDIC['STARTYEAR']),int(self.SIMDIC['ENDYEAR'])+1))
+                          )
 
         progress.setProgress(100.0)
 
@@ -1903,7 +2289,7 @@ class IdrAgraTools():
                 try:
                     line = q.get(timeout=.1)  # q.get_nowait() # or #TODO_check performance
                     #line = q.get_nowait()
-                    line = line.decode('utf-8')
+                    line = line.decode('utf-8','ignore')
                     line = line.strip()
                 except Empty:
                     # do nothing
@@ -1971,7 +2357,7 @@ class IdrAgraTools():
             # this output are for matlab cropcoef
             # df = pd.read_csv(fileName, sep='\t', names = soiluseNames+['timestamp'],
             #                  engine='python', skiprows=1)
-            df = pd.read_csv(fileName, sep='\s* \s*', names=soiluseNames + ['timestamp'],
+            df = pd.read_csv(fileName, sep=r'\s* \s*', names=soiluseNames + ['timestamp'],
                              skiprows=1)
 
             df['timestamp']=dateList
@@ -1994,7 +2380,7 @@ class IdrAgraTools():
                                    '%s_cellinfo_%s_%s.csv' % (year, r, c))
             try:
                 # open csv file as dataframe
-                df = pd.read_csv(csvFile, sep='\s*;\s*',names=['pars','value'],
+                df = pd.read_csv(csvFile, sep=r'\s*;\s*',names=['pars','value'],
                                  engine='python',header=0,skiprows=1)
                 res = pd.DataFrame(columns=['timestamp'] + varList)
                 dateList = pd.date_range(datetime.strptime('%s0101' % year, '%Y%m%d'),
@@ -2012,7 +2398,8 @@ class IdrAgraTools():
 
                     res[var]= [varValue]*len(dateList)
 
-                finalDF = finalDF.append(res, ignore_index=True)
+                #finalDF = finalDF.append(res, ignore_index=True) # deprecated
+                finalDF = pd.concat([finalDF, res], ignore_index=True)
 
             except Exception as e:
                  msg += str(e)+'\n'
@@ -2032,14 +2419,15 @@ class IdrAgraTools():
 
             try:
                 # open csv file as dataframe
-                df = pd.read_csv(csvFile, sep='\s*;\s*',usecols = columList,engine='python')
+                df = pd.read_csv(csvFile, sep=r'\s*;\s*',usecols = columList,engine='python')
                 #print('df',year,df)
                 # replace Giulian_date with date
                 df['Giulian_day'] = df['Giulian_day'].apply(lambda x: datetime.strptime(str(year) + str(x), '%Y%j'))
                 if finalDF is None:
                     finalDF = df
                 else:
-                    finalDF = finalDF.append(df)
+                    #finalDF = finalDF.append(df,ignore_index = True) # deprecated
+                    finalDF = pd.concat([finalDF, df], ignore_index=True)
 
             except Exception as e:
                 msg += str(e) + '\n'
@@ -2047,6 +2435,27 @@ class IdrAgraTools():
         return finalDF,msg
 
     def getRowCol(self,feature):
+        c = -1
+        r = -1
+        cp_id = feature['id']
+
+        # open cells.txt and get c,r
+        # ncells = 2
+        # table =
+        # ID	X	Y
+        # 100	7	1
+        # 21	19	1
+        # endtable =
+        cells_fn = os.path.join(self.SIMDIC['OUTPUTPATH'],'cells.txt')
+        with open(cells_fn) as f:
+            for line in f:
+                if line.startswith(str(cp_id)+'\t'):
+                    id,r,c = line.split('\t')
+                    break
+
+        return int(r), int(c)
+
+    def getRowCol_OLD(self,feature):
         rasterExt = returnExtent(self.SIMDIC['EXTENT'])
         c=-1
         r=-1
@@ -2258,12 +2667,21 @@ class IdrAgraTools():
         effTable = {}
         for i, irrDistr in irrdistrDF.iterrows():
             replaceFieldTableIN['SubDistr_'+str(irrDistr['id'])]='Source_'+str(irrDistr['inlet_node'])
-            effTable[str(irrDistr['inlet_node'])] = 1. #irrDistr['distr_eff'] FIX: "need mode" always considers the internal network distribution see interventi_fabbisogni_fc in ogg_bilancio.f90
-            effTable[str(irrDistr['outlet_node'])] = 1. #/ irrDistr['distr_eff']
+            if (self.SIMDIC['MODE'] in [1, '1']):
+                effTable[str(irrDistr['inlet_node'])] = irrDistr['distr_eff']
+            else:
+                # irrDistr['distr_eff'] FIX: "need mode" always considers the internal network distribution see interventi_fabbisogni_fc in ogg_bilancio.f90
+                #effTable[str(irrDistr['inlet_node'])] = 1. # OLD IDRAGRA
+                effTable[str(irrDistr['inlet_node'])] = irrDistr['distr_eff'] # from new release, water need are calculated at field
+
+            #effTable[str(irrDistr['outlet_node'])] = 1. #/ irrDistr['distr_eff'] # OLD IDRAGRA
+            effTable[str(irrDistr['outlet_node'])] = 1./irrDistr['distr_eff'] # from new release, water need are calculated at field
             replaceFieldTableOUT['SubDistr_' + str(irrDistr['id'])] = 'Source_' + str(irrDistr['outlet_node'])
 
         # calculate irrigation district areas
         areaTable = self.calculateDistrictArea(progress)
+
+        print('areaTable',areaTable)
 
         if (self.SIMDIC['MODE'] in [1,'1']):
             # get consume table
@@ -2274,7 +2692,7 @@ class IdrAgraTools():
             for i, node in nodesDF.iterrows():
                 if node['node_type'] in [13]: replaceFieldTable[str(node['id'])] = 'Source_' + str(node['id'])
 
-            irrFromCrsDF = self.getDischargeFromCSV(yearList, '%s_Qcrs.csv', progress, replaceFieldTable)
+            irrFromCrsDF = self.getDischargeFromCSV(yearList, '%s_Qcrs.csv', progress, replaceFieldTableIN) #replaceFieldTable)
             surplusDF = self.getDischargeFromCSV(yearList, '%s_Qsurplus.csv', progress, replaceFieldTableOUT)
         else:
             irrFromDiversionDF = self.getDischargeFromMaps(watDistrAreas = areaTable, tableName ='stp_irr',
@@ -2308,13 +2726,13 @@ class IdrAgraTools():
         irrSum= res['Qirr'] + res['Qcrs'] + res['Qprivate']+res['Qcoll']
         res['recval'] = irrSum
         # delete Qirr, Qcrs Qprivate
-        res = res.drop('Qirr', 1)
-        res = res.drop('Qcrs', 1)
-        res = res.drop('Qprivate', 1)
-        res = res.drop('Qcoll', 1)
-        res = res.drop('QprivMaxAll', 1)
-        res = res.drop('QirrMaxAll', 1)
-        res = res.drop('QcrsMaxAll', 1)
+        res = res.drop('Qirr', axis=1)
+        res = res.drop('Qcrs', axis=1)
+        res = res.drop('Qprivate', axis=1)
+        res = res.drop('Qcoll', axis=1)
+        res = res.drop('QprivMaxAll', axis=1)
+        res = res.drop('QirrMaxAll', axis=1)
+        res = res.drop('QcrsMaxAll', axis=1)
 
         res.rename(columns={'DoY':'timestamp'},inplace=True)
 
@@ -2336,7 +2754,7 @@ class IdrAgraTools():
 
             try:
                 # open csv file as dataframe
-                df = pd.read_csv(csvFile, sep='\s*;\s*', usecols=None, engine='python')
+                df = pd.read_csv(csvFile, sep=r'\s*;\s*', usecols=None, engine='python')
                 if colMapper: df.rename(columns=colMapper,inplace=True)
                 # print('df\n',df)
                 # print('DoY\n', df['DoY'])
@@ -2348,14 +2766,16 @@ class IdrAgraTools():
                 if finalDF is None:
                     finalDF = df
                 else:
-                    finalDF = finalDF.append(df,ignore_index=True)
+                    #finalDF = finalDF.append(df,ignore_index=True) #deprecated
+                    finalDF = pd.concat([finalDF, df], ignore_index=True)
 
             except Exception as e:
-                progress.reportError(str(e),False)
+                progress.reportError(self.tr('Unable to open %s')%csvFile,False)
 
         return finalDF
 
-    def getDischargeFromMaps(self,watDistrAreas = {'11834':24000000,'9999':0}, tableName ='stp_irr', progress= None, colMapper = None):
+    def getDischargeFromMaps(self,watDistrAreas = {'11834':24000000,'9999':0},
+                             tableName ='stp_irr', progress= None, colMapper = None):
         # get/update irrigation, runoff volumes (mm) from maps
         i = list(self.STEPNAME.values()).index(self.STEPNAME[tableName])
         self.importDistrictData(i, tableName, progress)
@@ -2370,7 +2790,8 @@ class IdrAgraTools():
             if not firstTimeStamp:
                 firstTimeStamp = 'table_%s'%k
                 subDistrSqlList.append(
-                    "(select timestamp, recval*%s/(24*60*60*1000) as 'SubDistr_%s' from %s where wsid = %s) as 'table_%s'" % (v,k,tableName, k, k))
+                    "(select timestamp, recval*%s/(24*60*60*1000) as 'SubDistr_%s' from %s where wsid = %s) as 'table_%s'"
+                    % (v,k,tableName, k, k))
             else:
                 subDistrSqlList.append(
                     "left join (select timestamp, recval*%s/(24*60*60*1000) as 'SubDistr_%s' from %s where wsid = %s) as 'table_%s' on table_%s.timestamp = %s.timestamp" % (
@@ -2381,13 +2802,40 @@ class IdrAgraTools():
 
         sql = 'select %s.timestamp as DoY, %s from %s'%(firstTimeStamp, ', '.join(subDistrList),' '.join(subDistrSqlList))
 
-        #print('sql',sql)
+        print('sql',sql)
 
         tableDF = self.DBM.getTableAsDF(sql)
         if colMapper: tableDF.rename(columns=colMapper, inplace=True)
         return tableDF
 
-    def calculateDistrictArea(self,progress):
+    def calculateDistrictArea(self,progress,nodata=-9999):
+        resDict = {}
+
+        areaFile = os.path.join(self.SIMDIC['OUTPUTPATH'],self.SIMDIC['SPATIALFOLDER'], 'shapearea.asc')
+        irrUnitsFile = os.path.join(self.SIMDIC['OUTPUTPATH'], self.SIMDIC['SPATIALFOLDER'], 'irr_units.asc')
+
+        irrUnitData = np.loadtxt(irrUnitsFile, dtype=np.int32, skiprows=6)
+        irrUnitList = list(np.unique(irrUnitData))
+        if nodata in irrUnitList: irrUnitList.remove(nodata)# remove nodata
+
+        try:
+            areaData = np.loadtxt(areaFile, dtype=float, skiprows=6)
+
+            for i in irrUnitList:
+                # print('varData shape',np.shape(varData))
+                # mask = np.where(np.logical_and(baseData[:,:] == i,varData[:,:] != nodata))
+                # mask where there are valid values for the selected district
+                mask = np.where(np.logical_and(irrUnitData == i, areaData != float(nodata)))
+
+                calcVal = np.sum(areaData[mask])
+                resDict[str(i)] = calcVal
+
+            return resDict
+        except:
+            progress.reportError(self.tr('Unable to open %s, using vector data') % areaFile, False)
+            return self.calculateDistrictArea_OLD(progress)
+
+    def calculateDistrictArea_OLD(self,progress):
         resDict = {}
         domainFile = os.path.join(self.SIMDIC['OUTPUTPATH'],self.SIMDIC['SPATIALFOLDER'], 'domain.asc')
         gpkg_layer = self.DBM.DBName + '|layername=' + 'idr_distrmap'
@@ -2418,6 +2866,7 @@ class IdrAgraTools():
         tempFile = QgsProcessingUtils.generateTempFilename('aggrOutput.gpkg')
         algResults = processing.run("idragratools:IdragraImportIrrUnitsResults",
                                     {'IDRAGRA_FILE':idragraFile,'AGGR_VAR':varIndex,
+                                     'VOLUME':False,
                                      'DB_FILENAME':self.DBM.DBName},
                                    context=None,
                                    feedback=progress,
@@ -2594,126 +3043,6 @@ class IdrAgraTools():
 
             if progress: progress.setPercentage(100.0 * (nOfNode - len(nodeList)) / nOfNode)
 
-    def importDataFromCSV(self, filename, tablename, timeFldIdx, valueFldIdx, sensorId, skip, timeFormat, column_sep,
-                          overWrite = True, saveEdit = False, year='',
-                          progress = None):
-
-        self.DBM.resetCounter()
-
-        tsList = []
-        valList = []
-        # open CSV file
-        #print("importDataFromCSV")
-        try:
-            with open(filename, "r") as in_file:
-                i = 0
-                if progress: progress.setText(self.tr('%s loaded' % filename))
-                while 1:
-                    in_line = in_file.readline()
-                    if i >= skip:
-                        if len(in_line) == 0:
-                            break
-
-                        # process the line
-                        in_line = in_line[:-1]
-                        if column_sep != ' ': in_line = in_line.replace(' ', '')
-                        # print 'LN %d: %s'%(i,in_line)
-                        data = in_line.split(column_sep)
-                        timestamp = datetime.strptime(str(year) + data[timeFldIdx], timeFormat)
-                        value = float(data[valueFldIdx])
-                        tsList.append(timestamp.strftime('%Y-%m-%d'))
-                        valList.append(value)
-
-                    i += 1
-
-        except Exception as e:
-            progress.reportError(
-                self.tr('Unable to load %s: %s') %
-                (filename, str(e)), True)
-            return
-
-        nOfRecord = len(tsList)
-
-        if progress: progress.setText(self.tr('n. of imported record: %s') % nOfRecord)
-        #get table layer
-        lyrSourcesList = [layer.source().replace('\\', '/') for layer in QgsProject.instance().mapLayers().values()]
-        gpkg_layer = self.DBM.DBName + '|layername=' + tablename
-        gpkg_layer = gpkg_layer.replace('\\', '/')
-        self.vLayer = None
-        for layer in QgsProject.instance().mapLayers().values():
-            if layer.source() == gpkg_layer:
-                self.vLayer = layer
-
-        if self.vLayer is None:
-            self.vLayer = QgsVectorLayer(gpkg_layer, tablename, "ogr")
-
-
-        # start editing
-        if progress: progress.setText(self.tr('Starting editing %s') % tablename)
-
-        if self.vLayer.isEditable():
-            pass
-        else:
-            flg = self.vLayer.startEditing()
-            if flg == False:
-                progress.reportError(
-                    self.tr('Unable to edit layer %s') %
-                    (gpkg_layer), True)
-                return
-
-
-        pr = self.vLayer.dataProvider()
-        fieldNames = [field.name() for field in pr.fields()]
-        nOfRec = 0
-
-        idxTS = fieldNames.index('timestamp')
-        idxSens = fieldNames.index('wsid')
-        idxVal = fieldNames.index('recval')
-
-        # populate data
-        i = 0
-        newFeatList=[]
-        for t,v in zip(tsList,valList):
-            # check if the record exist
-            # check if attribute already exist
-            expr = QgsExpression(
-                "\"%s\" = '%s' and \"%s\" = '%s'" % ('timestamp', str(t), 'wsid', sensorId))
-            featList = self.vLayer.getFeatures(QgsFeatureRequest(expr))
-            updateFeat = 0
-            for feat in featList:
-                if feat['recval'] != v:
-                    if overWrite:
-                        progress.setText(self.tr('Updating feature %s') % feat.id())
-                        # FIX: update existing values
-                        self.vLayer.changeAttributeValues(feat.id(), {idxVal: v}, {idxVal: feat['recval']})
-                updateFeat += 1
-
-            if updateFeat > 1:
-                progress.reportError(
-                    self.tr('Unexpected number of matches (%s) for timestamp "%s" and sensor "%s"') %
-                    (updateFeat, timestamp, sensorId), True)
-                return
-
-
-            # no feature to update --> add it
-            if updateFeat == 0:
-                # add new record to table
-                try:
-                    newFeat = QgsFeature(pr.fields())
-                    newFeat.setAttribute(idxTS, str(t))
-                    newFeat.setAttribute(idxSens, sensorId)
-                    newFeat.setAttribute(idxVal, v)
-                    newFeatList.append(newFeat)
-                    self.vLayer.addFeature(newFeat)
-                except Exception as e:
-                    print('error',str(e))
-            i+=1
-            if progress: progress.setPercentage(100*i/nOfRecord)
-
-        if saveEdit:
-            if progress: progress.setText(self.tr('Save edits ...'))
-            self.vLayer.commitChanges()
-
     def printMsg(self, text,col = None):
         self.progressDlg.setText(text,col)
 
@@ -2727,6 +3056,12 @@ class IdrAgraTools():
         #print('enableOKBtn')
         self.thread.quit()
         self.threadIsConcluded = True  # it's true only in this case
+        if self.worker.exception is not None:
+            self.threadIsConcludedWithError = True
+            self.progressDlg.setText(self.tr('** Process failed! **'), 'red')
+            self.progressDlg.enableOK()
+            return
+
         if not self.threadIsConcludedWithError:
             self.progressDlg.setPercentage(100.)
             self.progressDlg.setText(self.tr('** Process concluded! **'), 'green')
@@ -2735,8 +3070,9 @@ class IdrAgraTools():
     def stopThread(self):
         self.thread.quit()
         self.thread.wait()
-        self.progressDlg.setText(self.tr('** Process stopped before finished! **'), 'red')
         self.threadIsConcludedWithError = True
+        self.progressDlg.setText(self.tr('** Process stopped before finished! **'), 'red')
+
         if not self.threadIsConcluded:
             showCriticalMessageBox(self.tr('Process stopped before finished'),
                                         self.tr('Output may not be completed'),
@@ -2772,7 +3108,7 @@ class IdrAgraTools():
 
         # self.worker.finished.connect(self.thread.quit)
         self.worker.finished.connect(self.enableOKBtn)
-        if onFinished: self.worker.finished.connect(onFinished)
+        if onFinished: self.worker.succeeded.connect(onFinished)
         # self.thread.finished.connect(self.enableOKBtn)
 
         # self.progressDlg.closed.connect(self.stopThread)
@@ -2842,10 +3178,16 @@ class IdrAgraTools():
 
     def setCustomForm(self, layer, formNameRoot):
         EFC = QgsEditFormConfig()
-        EFC.setUiForm(self.plugin_dir + '/layerforms/' + formNameRoot + '.ui')
-        EFC.setInitCodeSource(QgsEditFormConfig.PythonInitCodeSource.CodeSourceFile)
-        EFC.setInitFilePath(self.plugin_dir + '/layerforms/' + formNameRoot + '.py')
-        EFC.setInitFunction('formOpen')
+        customDlg = self.plugin_dir + '/layerforms/' + formNameRoot + '.ui'
+        if os.path.exists(customDlg):
+            EFC.setUiForm(customDlg)
+
+        customSource = self.plugin_dir + '/layerforms/' + formNameRoot + '.py'
+        if os.path.exists(customSource):
+            EFC.setInitCodeSource(QgsEditFormConfig.PythonInitCodeSource.CodeSourceFile)
+            EFC.setInitFilePath(customSource)
+            EFC.setInitFunction('formOpen')
+
         layer.setEditFormConfig(EFC)
 
     def getIdNameDict(self, tableName,idFld = 'id',nameFld = 'name',filterName='',filterValues=[]):
@@ -3150,16 +3492,75 @@ class IdrAgraTools():
         groupIndex = len(mygroup.children())
         return groupIndex, mygroup
 
+    def importResultsMap(self):
+        if not self.SIMDIC['VECTOR_MODE']:
+           showCriticalMessageBox(self.tr('Not available function'),
+                                   self.tr('This function is available for VECTOR mode simulation only'),
+                                   self.tr('Consider to use "Make grouped statistics" instead'))
+           return
+
+        # open the selector with the variable to be imported
+        from .forms.resultsmap_dialog import ResultsMapDialog
+
+        dlg = ResultsMapDialog(self.iface.mainWindow(), self.STEPNAME)
+        dlg.show()
+        result = dlg.exec()
+        # See if OK was pressed
+        if result == 1:
+            res = dlg.getData()
+            # TODO: fix dlg update problem
+
+            # self.progressDlg = WorkerDialog(parent=self.iface.mainWindow())
+            # self.progressDlg.show()
+            # feedback = Worker(None)
+            # feedback.reportMessage.connect(self.progressDlg.setText)
+            self.data = None
+
+            def processOutput(progress):
+                idragraFile = os.path.join(self.SIMDIC['OUTPUTPATH'], 'idragra_parameters.txt')
+                #domain_lay = self.getVectorLayerByName('idr_domainmap') # use db domain
+                domain_lay = os.path.join(self.SIMDIC['OUTPUTPATH'], 'geodata','domain.gpkg') # use domain in simulation
+                # TODO: check if input files exist
+                self.data = processing.run("idragratools:IdragraResultMaps",
+                                           {'IDRAGRA_FILE': idragraFile,
+                                            'DOMAIN_LAY': domain_lay,
+                                            'RES_VAR': res['selVarIdx'],
+                                            'OUTPUT_LAY': 'TEMPORARY_OUTPUT'},
+                                           context=None,
+                                           feedback=progress,
+                                           is_child_algorithm=False
+                                           )
+
+            def loadResults():
+                # load data in table view ...
+                if self.data:
+                    self.progressDlg.close()
+                    # add to
+                    groupIndex, mygroup = self.getGroupIndex(self.tr('Analysis'), True)
+                    # mygroup.insertChildNode(groupIndex, QgsLayerTreeLayer(data['OUTPUT_TABLE']))
+                    baseName = '%s' % (list(self.STEPNAME.values())[res['selVarIdx']])
+                    self.data['OUTPUT_LAY'].setName(baseName)
+                    QgsProject.instance().addMapLayer(self.data['OUTPUT_LAY'], False)  # False is the key
+                    mygroup.insertChildNode(groupIndex, QgsLayerTreeLayer(self.data['OUTPUT_LAY']))
+
+            # print('data:',data)
+            self.runAsThread(function=processOutput, onFinished=loadResults, progress=None)
+
+
+
     def makeGroupedStats(self):
+        if self.SIMDIC['VECTOR_MODE']:
+           showCriticalMessageBox(self.tr('Not available function'),
+                                   self.tr('This function is available for RASTER mode simulation only'),
+                                   self.tr('Consider to use "Import result maps" instead'))
+           return
+
         # TODO: fix UI
         from .forms.groupstats_dialog import GroupstatsDialog
-        from .forms.worker_dialog import WorkerDialog
-        from .tools.worker import Worker
-
 
         dlg = GroupstatsDialog(self.iface.mainWindow(), self.STEPNAME, self.AGGRFUNCTIONS)
         dlg.show()
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         if result == 1:
             res = dlg.getData()
@@ -3204,6 +3605,9 @@ class IdrAgraTools():
 
 
     def loadFromProject(self):
+        if self._openingDB:
+            return
+
         proj = QgsProject.instance()
         dbpath = ''
         try:
@@ -3213,6 +3617,10 @@ class IdrAgraTools():
             for k,v in tempDic.items():
                 if k in usedKeys: # to prevent bugs
                     self.SIMDIC[k]=v
+            for rasterKey in ('WATERTABLEMAP', 'ELEVMAP', 'LANDUSEMAP', 'IRRMETHMAP'):
+                rasterMap = self.SIMDIC.get(rasterKey, {})
+                if isinstance(rasterMap, dict):
+                    self.SIMDIC[rasterKey] = {name: source for name, source in rasterMap.items() if name}
 
             dbpath = self.SIMDIC['DBFILE']
 
@@ -3226,7 +3634,7 @@ class IdrAgraTools():
         # TODO: remove dbname, modify DBFILE
         if os.path.isfile(dbpath):
             #if (value is not None):
-            self.openDB(dbpath=dbpath)
+            self.updateProj(dbpath)
         else:
             print('dbpath is not a file:', dbpath)
             if dbpath not in ['','.']:
@@ -3241,7 +3649,7 @@ class IdrAgraTools():
         from .forms.import_raster_dialog import ImportRasterDialog
         dlg = ImportRasterDialog(self.iface,assignTime)
         dlg.show()
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         if result == 1:
             res = dlg.getData()
@@ -3297,19 +3705,46 @@ class IdrAgraTools():
         dlg.closed.connect(updatePar)
         dlg.show()
 
+    def setRasterLanduse(self):
+        dlg = ManageRastersDialog(iface= self.iface, assignTime = True,
+                                  rasterDict = self.SIMDIC['LANDUSEMAP'],
+                                  tableName='landuse',DBM = self.DBM)
+        dlg.rasterAdded.connect(lambda source, name: self.loadRaster(source, name, self.tr('Land use')))
+        dlg.rasterDeleted.connect(lambda source, name: self.unloadRaster(source, name))
+
+        def updatePar():
+            self.SIMDIC['LANDUSEMAP'] = dlg.getData()
+            self.updatePars()
+
+        dlg.closed.connect(updatePar)
+        dlg.show()
+
+
+    def setRasterIrrmeth(self):
+        dlg = ManageRastersDialog(iface= self.iface, assignTime = True,
+                                  rasterDict = self.SIMDIC['IRRMETHMAP'],
+                                  tableName='irrmeth',DBM = self.DBM)
+        dlg.rasterAdded.connect(lambda source, name: self.loadRaster(source, name, self.tr('Land use')))
+        dlg.rasterDeleted.connect(lambda source, name: self.unloadRaster(source, name))
+
+        def updatePar():
+            self.SIMDIC['IRRMETHMAP'] = dlg.getData()
+            self.updatePars()
+
+        dlg.closed.connect(updatePar)
+        dlg.show()
+
     def loadRaster(self,rasterPath, rasterName, layGroup):
         proj = QgsProject.instance()
 
-        # if rasterPath[0]=='.':
-        #     rasterPath = os.path.join(proj.absolutePath(),rasterPath[2:])
-        #
-        # if not os.path.exists(rasterPath):
-        #     rasterPath = 'GPKG:' + os.path.join(proj.absolutePath(),rasterPath)
-        rasterPath = 'GPKG:' + self.DBM.DBName+':'+rasterName
-        # load in project if not in the list
-        #print('outDtmFile',outDtmFile)
-        #rlayer =  self.getRasterLayerBySource(outDtmFile)
+        if not rasterName:
+            return
+
         oldlayer = self.getLayerByName(rasterName)
+        if oldlayer and oldlayer.type() == QgsMapLayer.RasterLayer and oldlayer.isValid():
+            return
+
+        rasterPath = 'GPKG:' + self.DBM.DBName+':'+rasterName
         rlayer = QgsRasterLayer(rasterPath, rasterName, 'gdal')
 
         if rlayer.isValid():
@@ -3431,7 +3866,7 @@ class IdrAgraTools():
         from .forms.import_raster_dialog import ImportRasterDialog
         dlg = ImportRasterDialog(self.iface)
         dlg.show()
-        result = dlg.exec_()
+        result = dlg.exec()
         # See if OK was pressed
         if result == 1:
             res = dlg.getData()
@@ -3448,8 +3883,9 @@ class IdrAgraTools():
         print('Simulation options')
         print(self.SIMDIC)
 
-    def test(self):
-        pass
+    def test(self,progress):
+        EGV = ExportGeodataVector(None,self.SIMDIC,progress,self.tr)
+        EGV.exportGeodata()
 
     def test2(self):
         from .tools.get_timeseries_consistency import getTimeSeriesConsistency
@@ -3479,6 +3915,44 @@ class IdrAgraTools():
                                        weatStatList=weatStatList, watSourceList=watSourceList,
                                        feedback=progress,tr=self.tr)
         print(res)
+
+    def createImageMap(self):
+        from tools.layout_to_image import layoutToImage
+
+        layerNames = ['idr_weather_stations','idr_distrmap','idr_soilmap']
+        layerList = []
+        for layName in layerNames:
+            layerList.append(self.getVectorLayerByName(layName))
+
+        fileName = r'C:\examples\test_img\test.png'
+        #mapToImage(layerList,fileName)
+        layoutToImage(layerList,fileName)
+
+        # from data_manager.chart_widget import ChartWidget
+        # fileName = r'C:\examples\test_img\test_chart.png'
+        #
+        # cw = ChartWidget(None, '', False, False, None)
+        # cw.setAxis(pos=111, secondAxis=False, label=['test'])
+        # cw.addPieChart()
+        # cw.saveToFile(fileName,400,400)
+
+    def generateReport(self,repIndex, progress=None):
+        # run algorithm
+        self.HTMLFILE = None
+        algResults = processing.run("idragratools:IdragraReportOverview",
+                       {'SIM_FOLDER': self.SIMDIC['OUTPUTPATH'], 'OUTPUT': 'TEMPORARY_OUTPUT',
+                        'REPORT_FORMAT':repIndex},
+                                         context=None, feedback=progress, is_child_algorithm=False)
+        self.HTMLFILE = algResults['OUTPUT']
+        return algResults['OUTPUT']
+
+    def showReportExplorer(self, htmlFile=None):
+        if not htmlFile: htmlFile = self.HTMLFILE
+
+        if htmlFile:
+            self.dlg = ReportDialog(self.iface.mainWindow())
+            self.dlg.loadReport(htmlFile)
+            self.dlg.show()
 
     def createHeatMap(self):
         pass

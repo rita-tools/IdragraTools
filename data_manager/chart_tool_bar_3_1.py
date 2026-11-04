@@ -1,6 +1,6 @@
 import matplotlib
-from PyQt5.QtWidgets import *
-from PyQt5 import uic
+from qgis.PyQt.QtWidgets import *
+from qgis.PyQt import uic
 from datetime import datetime
 from datetime import timedelta
 import os
@@ -12,43 +12,73 @@ from qgis.PyQt import QtWidgets, QtCore
 
 
 class ChartToolBar(NavigationToolbar2QT):
-	def __init__(self, canvas, parent):
-		self.toolitems = (
-						('Home', 'Reset original view', 'Home', 'home'),
-						('Back', 'Back to previous view', 'Back', 'back'),
-						('Forward', 'Forward to next view', 'Forward', 'forward'),
-						(None, None, None, None),
-						('Pan', 'Pan axes with left mouse, zoom with right', 'Move', 'pan'),
-						('Zoom', 'Zoom to rectangle', 'ZoomToRect', 'zoom'),
-						('Notes','Add notes','Notes','add_notes'),
-						('NotesRemove', 'Delete notes', 'NotesRemove', 'remove_notes'),
-						(None, None, None, None),
-						('Subplots', 'Configure subplots', 'Subplots', 'configure_subplots'),
-						('Customize', 'Edit axis, curve and image parameters', 'Customize', 'edit_parameters'),
-						(None, None, None, None),
-						('Save', 'Save the figure', 'Filesave', 'save_figure'),
-						)
-		#self.addNotesFlg = False
-		#self.removeNotesFlg = False
-		self.digits = True # before parent initialization
+	def __init__(self, canvas, parent, advanced = False, digits = False):
+		self.digits = digits  # before parent initialization
+		self.ADVANCED = advanced
 
 		NavigationToolbar2QT.__init__(self, canvas, parent)
+
+		self.toolitems = (
+			('Home', 'Reset original view', 'Home', 'home'),
+			('Back', 'Back to previous view', 'Back', 'back'),
+			('Forward', 'Forward to next view', 'Forward', 'forward'),
+			(None, None, None, None),
+			('Pan', 'Pan axes with left mouse, zoom with right', 'Move', 'pan'),
+			('Zoom', 'Zoom to rectangle', 'ZoomToRect', 'zoom'),
+			(None, None, None, None),
+			('Subplots', 'Configure subplots', 'Subplots', 'configure_subplots'),
+			(None, None, None, None),
+			('Save', 'Save the figure', 'Filesave', 'save_figure'),
+		)
+
+		if self.ADVANCED:
+			self.toolitems = (
+				('Home', 'Reset original view', 'Home', 'home'),
+				('Back', 'Back to previous view', 'Back', 'back'),
+				('Forward', 'Forward to next view', 'Forward', 'forward'),
+				(None, None, None, None),
+				('Pan', 'Pan axes with left mouse, zoom with right', 'Move', 'pan'),
+				('Zoom', 'Zoom to rectangle', 'ZoomToRect', 'zoom'),
+				('Notes', 'Add notes', 'Notes', 'add_notes'),
+				('NotesRemove', 'Delete notes', 'NotesRemove', 'remove_notes'),
+				(None, None, None, None),
+				('Subplots', 'Configure subplots', 'Subplots', 'configure_subplots'),
+				('EditLegend', 'Edit legend', 'Editlegend', 'edit_legend'),
+				# ('Customize', 'Edit axis, curve and image parameters', 'Customize', 'edit_parameters'),
+				(None, None, None, None),
+				('Save', 'Save the figure', 'Filesave', 'save_figure'),
+			)
+
 		self.canvas = canvas
 		self.ann_list = []
 
-		self.cid_deltext = self.canvas.mpl_connect('button_press_event', self.delTextFromPlot)
-		self.cid_addtext = self.canvas.mpl_connect('pick_event', self.addTextToPlot)
+		if self.ADVANCED:
+			self.cid_deltext = self.canvas.mpl_connect('button_press_event', self.delTextFromPlot)
+			self.cid_addtext = self.canvas.mpl_connect('pick_event', self.addTextToPlot)
+
 		self.coordinates = False
+
+		# replace icons, it works but is not enough
+		# self.basedir = os.path.join(os.path.dirname(__file__), 'icons')
+		# for text, tooltip_text, image_file, callback in self.toolitems:
+		# 	if callback:
+		# 		self._actions[callback].setIcon(self._icon(os.path.join(self.basedir,image_file + '.svg')))
+		#
+		# print('OK __init__')
 
 
 	def _init_toolbar(self):
+		#print('in new _init_toolbar', self.basedir)
 		self.basedir = os.path.join(os.path.dirname(__file__), 'icons')
+		#print('load image:', os.path.join(self.basedir, image_file + '.svg'))
 
 		for text, tooltip_text, image_file, callback in self.toolitems:
+			#print('load image:',os.path.join(self.basedir,image_file + '.svg'))
+
 			if text is None:
 				self.addSeparator()
 			else:
-				a = self.addAction(self._icon(image_file + '.svg'),
+				a = self.addAction(self._icon(os.path.join(self.basedir,image_file + '.svg')),
 								   text, getattr(self, callback))
 				self._actions[callback] = a
 				if callback in ['zoom', 'pan','add_notes','remove_notes']:
@@ -56,7 +86,7 @@ class ChartToolBar(NavigationToolbar2QT):
 				if tooltip_text is not None:
 					a.setToolTip(tooltip_text)
 				if text == '__Subplots':
-					a = self.addAction(self._icon(image_file + '.svg'),
+					a = self.addAction(self._icon(os.path.join(self.basedir,image_file + '.svg')),
 									   'Customize', self.edit_parameters)
 					a.setToolTip('Edit axis, curve and image parameters')
 
@@ -99,8 +129,9 @@ class ChartToolBar(NavigationToolbar2QT):
 		#print('CALL _update_buttons_checked')
 		self._actions['pan'].setChecked(self._active == 'PAN')
 		self._actions['zoom'].setChecked(self._active == 'ZOOM')
-		self._actions['remove_notes'].setChecked(self._active == 'REMOVE_NOTES')
-		self._actions['add_notes'].setChecked(self._active == 'ADD_NOTES')
+		if self.ADVANCED:
+			self._actions['remove_notes'].setChecked(self._active == 'REMOVE_NOTES')
+			self._actions['add_notes'].setChecked(self._active == 'ADD_NOTES')
 
 	def add_notes(self):
 		#print('before is',self.addNotesFlg)
@@ -123,7 +154,6 @@ class ChartToolBar(NavigationToolbar2QT):
 			self.canvas.widgetlock.release(self)
 
 	def addTextToPlot(self,event):
-		print('addTextToPlot')
 		numOfDig = 10
 		if self.digits:
 			numOfDig = self.digitSB.value()

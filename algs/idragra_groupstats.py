@@ -32,9 +32,9 @@ import glob
 from math import tan, radians
 
 import qgis
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import QCoreApplication, QVariant, QDate
-from qgis._analysis import QgsZonalStatistics
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import QCoreApplication, QVariant, QDate
+from qgis.analysis import QgsZonalStatistics
 from qgis.core import (QgsProcessing,
 					   QgsFeatureSink,
 					   QgsProcessingException,
@@ -101,6 +101,7 @@ class IdragraGroupStats(QgsProcessingAlgorithm):
 	
 	IDRAGRAFILE= 'IDRAGRA_FILE'
 	AGGRLAY = 'AGGR_LAY'
+	MERGE = 'MERGE'
 	AGGRFLD = 'AGGR_FLD'
 	AGGRVAR = 'AGGR_VAR'
 	AGGRFUN = 'AGGR_FUN'
@@ -166,6 +167,7 @@ class IdragraGroupStats(QgsProcessingAlgorithm):
 						<b>Parameters:</b>
 						IdrAgra file: the parameters file used for the IdrAgra simulation (*.txt) [IDRAGRA_FILE]
 						Aggregation map: the vector layer that define aggregation areas [AGGR_LAY]
+						Merge: merge shapes by field value [MERGE]
 						Aggregation field: the field that define aggregation groups [AGGR_FLD]
 						Aggregation variable: the variable to be aggregated [AGGR_VAR]
 						Aggregation function: the function to be used for aggregation [AGGR_FUN]
@@ -201,8 +203,11 @@ class IdragraGroupStats(QgsProcessingAlgorithm):
 		self.addParameter(QgsProcessingParameterFeatureSource(self.AGGRLAY, self.tr('Aggregation map'),
 															  [], None, True))
 
+		self.addParameter(QgsProcessingParameterBoolean(self.MERGE, self.tr('Merge'),
+														True, True))
+
 		self.addParameter(QgsProcessingParameterField(self.AGGRFLD, self.tr('Aggregation field'), 'fid', self.AGGRLAY,
-													  QgsProcessingParameterField.Numeric))
+													  QgsProcessingParameterField.Any))
 
 		self.addParameter(QgsProcessingParameterEnum(self.AGGRVAR, self.tr('Aggregation variable'),
 													 list(self.STEPNAME.values())))
@@ -222,6 +227,8 @@ class IdragraGroupStats(QgsProcessingAlgorithm):
 		idragraFile = self.parameterAsFile(parameters, self.IDRAGRAFILE, context)
 
 		aggrLay = self.parameterAsVectorLayer(parameters, self.AGGRLAY, context)
+
+		merge = self.parameterAsBoolean(parameters, self.MERGE, context)
 
 		aggrFld = self.parameterAsFields(parameters, self.AGGRFLD, context)[0]
 
@@ -248,6 +255,18 @@ class IdragraGroupStats(QgsProcessingAlgorithm):
 			aggrLay.wkbType(),
 			aggrLay.sourceCrs()
 		)
+
+		if merge:
+			dissolvedFile = QgsProcessingUtils.generateTempFilename('dissolved.gpkg')
+			# dissolve element by selected field
+			res = processing.run("native:dissolve", {'INPUT': aggrLay.source(),
+													'FIELD': [aggrFld],
+													 'OUTPUT': dissolvedFile},
+								 context=None,
+								 feedback=None,
+								 is_child_algorithm=True)
+		else:
+			dissolvedFile = aggrLay.source()
 
 		# loop in the idragra project file
 
@@ -329,7 +348,7 @@ class IdragraGroupStats(QgsProcessingAlgorithm):
 				# apply zonal statistics
 				#'TEMPORARY_OUTPUT'
 				tempFile = QgsProcessingUtils.generateTempFilename('aggrOutput.gpkg')
-				res = processing.run("native:zonalstatisticsfb", {'INPUT': aggrLay.source(),
+				res = processing.run("native:zonalstatisticsfb", {'INPUT': dissolvedFile,
 															'INPUT_RASTER': f,
 															'RASTER_BAND': 1, 'COLUMN_PREFIX': '_',
 															'STATISTICS': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],

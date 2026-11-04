@@ -33,7 +33,7 @@ import numpy as np
 
 import scipy.io as sio
 
-from PyQt5.QtCore import QObject
+from qgis.PyQt.QtCore import QObject
 
 from qgis.PyQt.QtCore import QVariant
 from qgis.core import QgsVectorLayer,QgsField,QgsPoint,QgsFeature,QgsGeometry,QgsProject

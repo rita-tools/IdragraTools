@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import *
-from PyQt5 import uic
+from qgis.PyQt.QtWidgets import *
+from qgis.PyQt import uic
 from datetime import datetime
 from datetime import timedelta
 import os

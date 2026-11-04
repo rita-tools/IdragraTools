@@ -28,10 +28,10 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QDate
-from PyQt5.QtWidgets import QWidget, QLabel, QLineEdit, QGridLayout, QComboBox, QListWidget, QPushButton, QCheckBox, \
-	QFileDialog, QSpacerItem, QToolButton, QDateTimeEdit
+from qgis.PyQt import QtCore, QtGui
+from qgis.PyQt.QtCore import QDate
+from qgis.PyQt.QtWidgets import QWidget, QLabel, QLineEdit, QGridLayout, QComboBox, QListWidget, QPushButton, QCheckBox, \
+	QFileDialog, QSpacerItem, QToolButton, QDateTimeEdit, QPlainTextEdit
 import os.path as osp
 from os import sep as oss
 
@@ -39,6 +39,31 @@ from qgis.core import *
 from qgis.gui import *
 
 from ast import literal_eval
+
+
+class CRSInput(QWidget):
+
+	def __init__(self, objName, labelString, defaultValue, descr=''):
+		super(CRSInput, self).__init__()
+		self.setObjectName(objName)
+		self.setWhatsThis(descr + ' [key: ' + objName + ']')
+		self.label = QLabel(labelString)
+		self.input = QgsProjectionSelectionWidget()
+		self.setValue(defaultValue)
+
+		grid = QGridLayout()
+		grid.setSpacing(10)
+		grid.addWidget(self.label, 0, 0)
+		grid.addWidget(self.input, 0, 1)
+
+		self.setLayout(grid)
+
+	def getValue(self):
+		return self.input.crs().postgisSrid()
+
+	def setValue(self, crsCode):
+		crs = QgsCoordinateReferenceSystem("POSTGIS:%s"%crsCode)
+		self.input.setCrs(crs)
 
 class StringInput(QWidget):
 	
@@ -341,7 +366,8 @@ class FileOutput(QWidget):
 		# link action
 		if (type == '*.mat'): self.button.clicked.connect(lambda: self.saveFile(filter='Matlab (*.mat)'))
 		if (type == '*.gpkg'): self.button.clicked.connect(lambda: self.saveFile(filter='Geopackage (*.gpkg)'))
-		
+		if (type == '*.idb'): self.button.clicked.connect(lambda: self.saveFile(filter='IdrAgra DB (*.idb)'))
+
 	def getValue(self):
 		return self.input.text()
 	
@@ -407,7 +433,8 @@ class FileInput(QWidget):
 		if (type == '*.dbf'): self.button.clicked.connect(lambda: self.openFile(filter='database (*.dbf)'))
 		if (type == '*.mat'): self.button.clicked.connect(lambda: self.openFile(filter='Matlab (*.mat)'))
 		if (type == '*.txt'): self.button.clicked.connect(lambda: self.openFile(filter='Text file (*.txt)'))
-		if (type == '*.gpkg'): self.button.clicked.connect(lambda: self.openFile(filter='Geopackege file (*.gpkg)'))
+		if (type == '*.gpkg'): self.button.clicked.connect(lambda: self.openFile(filter='Geopackage file (*.gpkg)'))
+		if (type == '*.idb'): self.button.clicked.connect(lambda: self.openFile(filter='IdrAgra DB (*.idb)'))
 		if (type == 'None'): self.button.clicked.connect(lambda: self.openFile(filter=None))
 		
 	def updateLayerList(self):

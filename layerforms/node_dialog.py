@@ -30,14 +30,15 @@ __revision__ = '$Format:%H$'
 
 import sys
 import os
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5 import uic
-from PyQt5 import QtSql
+from qgis.PyQt.QtCore import *
+from qgis.PyQt.QtGui import *
+from qgis.PyQt.QtWidgets import *
+from qgis.PyQt import uic
+from qgis.PyQt import QtSql
 
 from IdragraTools.layerforms.utils import *
 from IdragraTools.tools.array_table_model import ArrayTableModel
+from IdragraTools.data_manager.chart_widget import ChartWidget
 
 from layerforms.utils import updateLineEdit, updateSelected, updateComboItems
 
@@ -174,7 +175,7 @@ def showEditDialog():
     dlg.resize(0.5 * myDialog.geometry().width(), myDialog.geometry().height())
     #dlg.finished.connect(updateTableValues)
     dlg.show()
-    result = dlg.exec_()
+    result = dlg.exec()
     # See if OK was pressed
     if result == 1:
         updateTableValues()
@@ -186,11 +187,11 @@ def updateTableValues():
 
 def plotActualDischarge(wsId,name):
     # make a dialog
-    from IdragraTools.layerforms.chart_dialog import ChartDialog
+    #from IdragraTools.layerforms.chart_dialog import ChartDialog
     tr = qgis.utils.plugins['IdragraTools'].tr
 
-    dlg = ChartDialog(myDialog, tr('Measured discharges from %s'%name))
-    dlg.setAxis(pos=111, secondAxis=False, label=[tr('Main plot')])
+    cw = ChartWidget(myDialog, tr('Measured discharges from %s'%name),False,False)
+    cw.setAxis(pos=111, secondAxis=False, label=[tr('Main plot')])
 
     # add timeseries
     plotList = [
@@ -205,7 +206,7 @@ def plotActualDischarge(wsId,name):
         shadow = False
         # get data
         dateTimeList, values = qgis.utils.plugins['IdragraTools'].DBM.getTimeSeries(p['table'],p['id'])
-        dlg.addTimeSerie(dateTimeList,values,lineType='-',color=p['color'],name = p['name'],yaxis = p['axes'],shadow= shadow)
+        cw.addTimeSerie(dateTimeList,values,lineType='-',color=p['color'],name = p['name'],yaxis = p['axes'],shadow= shadow)
         if p['axes']=='y': y1Title.append(p['name'])
         if p['axes']=='y2': y2Title.append(p['name'])
 
@@ -215,10 +216,13 @@ def plotActualDischarge(wsId,name):
         y2Title = ', '.join(y2Title)
 
     # set title
-    dlg.setTitles(xlabs = None, ylabs = None, xTitle = None, yTitle = ', '.join(y1Title),
+    cw.setTitles(xlabs = None, ylabs = None, xTitle = None, yTitle = ', '.join(y1Title),
                   y2Title = y2Title, mainTitle = None)
 
     # add data to the chart
+    # add chart to dialog
+    dlg = QMainWindow(myDialog)
+    dlg.setCentralWidget(cw)
     dlg.show()
 
 

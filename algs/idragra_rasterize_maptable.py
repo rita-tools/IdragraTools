@@ -28,8 +28,8 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import QCoreApplication,QVariant
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from qgis.core import (QgsProcessing,
 					   QgsFeatureSink,
 					   QgsProcessingException,
@@ -274,7 +274,7 @@ class IdragraRasterizeMaptable(QgsProcessingAlgorithm):
 								'WIDTH':dx,
 								'HEIGHT':dy,
 								'EXTENT':rasterExt,
-								'NODATA':-9,
+								'NODATA':-9999,
 								'OPTIONS':'',
 								'DATA_TYPE':fldType,
 								'INIT':None,

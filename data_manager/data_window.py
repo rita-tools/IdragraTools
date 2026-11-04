@@ -29,8 +29,8 @@ __revision__ = '$Format:%H$'
 
 from datetime import datetime
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMdiSubWindow, QTableView
+from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtWidgets import QMdiSubWindow, QTableView
 from qgis.PyQt import QtSql
 
 from data_manager.chart_widget import ChartWidget
@@ -94,8 +94,8 @@ class DataWindow(QMdiSubWindow):
 
     def createPlot(self, plotConf=[]):
         # ['name','plot','color','style','axes','query']
-        self.CHART = ChartWidget(self, '')
-        self.CHART.resize(0.9 * self.geometry().width(), self.geometry().height())
+        self.CHART = ChartWidget(self, '',advanced = True, digits = True)
+        self.CHART.resize(int(0.9 * self.geometry().width()), self.geometry().height())
         self.CHART.setAxis(111, False)
 
         # get all data from query

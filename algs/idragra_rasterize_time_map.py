@@ -28,8 +28,9 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import QCoreApplication,QVariant
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import QCoreApplication,QVariant
+from plugins import processing
 from qgis.core import (QgsProcessing,
 						QgsFeatureSink,
 						QgsProcessingException,
@@ -63,12 +64,6 @@ from qgis.core import (QgsProcessing,
 						QgsProject,
 						NULL)
 
-import processing
-
-from numpy import array
-
-from datetime import datetime
-
 import os
 
 class IdragraRasterizeTimeMap(QgsProcessingAlgorithm):
@@ -97,6 +92,7 @@ class IdragraRasterizeTimeMap(QgsProcessingAlgorithm):
 	CELLDIM = 'CELL_DIM'
 	YEARLIST = 'YEAR_LIST'
 	DESTFOLDER = 'DEST_FOLDER'
+	INITVALUE = 'INIT_VALUE'
 
 	FEEDBACK = None
 
@@ -160,6 +156,7 @@ class IdragraRasterizeTimeMap(QgsProcessingAlgorithm):
 						Base name: use as format for output name [NAME_FORMAT]
 						Raster extension: the maximum extension of the raster domain map (min x, max x, min y, max y) [RASTER_EXT]
 						Raster cell dimension: the dimension of the squared cell in map units [CELL_DIM]
+						Init value: the value to assign as base [INIT_VALUE]
 						Year list: spase separated list of year to be exported (e.g. 2000 2001 2002 ...). If empty, export all available years [YEAR_LIST]
 						Output folder: the complete path of the output file [DEST_FOLDER]
 						"""
@@ -191,6 +188,8 @@ class IdragraRasterizeTimeMap(QgsProcessingAlgorithm):
 
 		self.addParameter(QgsProcessingParameterNumber(self.CELLDIM, self.tr('Raster cell dimension')))
 
+		self.addParameter(QgsProcessingParameterNumber(self.INITVALUE, self.tr('Init value'),defaultValue = -9999))
+
 		self.addParameter(QgsProcessingParameterString(self.YEARLIST, self.tr('Year list'),'', False, True))
 
 		self.addParameter(QgsProcessingParameterFile(self.DESTFOLDER, self.tr('Output folder'),
@@ -212,6 +211,7 @@ class IdragraRasterizeTimeMap(QgsProcessingAlgorithm):
 		nameFormat = self.parameterAsString(parameters,self.NAMEFORMAT,context)
 		rasterExt = self.parameterAsExtent(parameters, self.RASTEREXT, context)
 		cellDim = self.parameterAsDouble(parameters, self.CELLDIM, context)
+		initValue = self.parameterAsDouble(parameters, self.INITVALUE, context)
 
 		yearList = self.parameterAsString(parameters, self.YEARLIST, context)
 		yearList = yearList.split(' ')
@@ -227,10 +227,12 @@ class IdragraRasterizeTimeMap(QgsProcessingAlgorithm):
 		if field.type() in [1, 2, 3]:
 			fieldType = 4  # int32 in GDAL
 			digits = 0
+			initValue = int(initValue)
 
 		# loop in yearList and make a selection of elements
 		res = []
 		yearList.sort()
+		algResults = None
 
 		for y in yearList:
 			feedback.pushInfo(self.tr('Processing year: %s' % y))
@@ -249,9 +251,12 @@ class IdragraRasterizeTimeMap(QgsProcessingAlgorithm):
 				selection = vectorLay.getFeatures(QgsFeatureRequest(yearQuery))
 				ids = ([k.id() for k in selection])
 
+			use_default = False
 			if len(ids)==0:
 				# stop algorithm because missing data
-				self.FEEDBACK.reportError (self.tr('Unable to find undateable shapes too ... map will be set as empty!'),False)
+				self.FEEDBACK.reportError (self.tr('Unable to find undateable shapes too ... map will be set to default value!'),False)
+				yearQuery = QgsExpression("True") # seleziona tutto
+				if not algResults: use_default = True #use default value only if it is the first year
 
 			newLayName = processing.QgsProcessingUtils.generateTempFilename('%s_%s.gpkg' %(nameFormat,y))
 
@@ -262,8 +267,13 @@ class IdragraRasterizeTimeMap(QgsProcessingAlgorithm):
 			else:
 				# loop and write
 				selection = vectorLay.getFeatures(QgsFeatureRequest(yearQuery))
-				for s in selection:
-					writer.addFeature(s)
+				if use_default:
+					for s in selection:
+						s[dataFld] = initValue
+						writer.addFeature(s)
+				else:
+					for s in selection:
+						writer.addFeature(s)
 
 			del writer
 
@@ -272,22 +282,47 @@ class IdragraRasterizeTimeMap(QgsProcessingAlgorithm):
 			else:
 				destFile = os.path.join(destFolder, nameFormat + '_%s.asc'%y)
 
-			# rasterize
-			algResults = processing.run("gdal:rasterize",
-										{'INPUT': newLayName, 'FIELD': dataFld, 'BURN': 0,
-										 'UNITS': 1, 'WIDTH': cellDim, 'HEIGHT': cellDim,
-										 'EXTENT': rasterExt,
-										 'NODATA': -9, 'OPTIONS': '', 'DATA_TYPE': fieldType, 'INIT': -9,
-										 'INVERT': False,
-										 'EXTRA': '',
-										 'OUTPUT': 'TEMPORARY_OUTPUT'},
-										context=None, feedback=feedback, is_child_algorithm=False
-										)
+			# first year rasterization
+			if not algResults:
+				algResults = processing.run("gdal:rasterize",
+											{'INPUT': newLayName, 'FIELD': dataFld, 'BURN': 0,
+											 'UNITS': 1, 'WIDTH': cellDim, 'HEIGHT': cellDim,
+											 'EXTENT': rasterExt,
+											 'NODATA': -9999, 'OPTIONS': '', 'DATA_TYPE': fieldType, 'INIT': -9999,
+											 'INVERT': False,
+											 'EXTRA': '',
+											 'OUTPUT': 'TEMPORARY_OUTPUT'},
+											context=None, feedback=feedback, is_child_algorithm=False
+											)
+			else:
+				# replace first year value for the following years
+				algResults = processing.run("gdal:rasterize_over",
+											{'INPUT': newLayName,
+											 'INPUT_RASTER': algResults['OUTPUT'],
+											 'FIELD': dataFld, 'ADD': False, 'EXTRA': ''},
+											context=None, feedback=feedback, is_child_algorithm=False)
 
+			# export to ascii
 			processing.run("idragratools:IdragraSaveAscii",
-						   {'INPUT': algResults['OUTPUT'], 'DIGITS': digits,
-							'OUTPUT': destFile},
-						   context=None, feedback=feedback, is_child_algorithm=False)
+							{'INPUT': algResults['OUTPUT'], 'DIGITS': digits,
+							 'OUTPUT': destFile},
+							context=None, feedback=feedback, is_child_algorithm=False)
+			# replace rasterization with over burn
+
+			# algResults = processing.run("gdal:rasterize",
+			# 							{'INPUT': newLayName, 'FIELD': dataFld, 'BURN': 0,
+			# 							 'UNITS': 1, 'WIDTH': cellDim, 'HEIGHT': cellDim,
+			# 							 'EXTENT': rasterExt,
+			# 							 'NODATA': -9999, 'OPTIONS': '', 'DATA_TYPE': fieldType, 'INIT': initValue,
+			# 							 'INVERT': False,
+			# 							 'EXTRA': '',
+			# 							 'OUTPUT': 'TEMPORARY_OUTPUT'},
+			# 							context=None, feedback=feedback, is_child_algorithm=False
+			# 							)
+
+
+
+
 
 			res.append(destFile)
 

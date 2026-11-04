@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>510</width>
-    <height>286</height>
+    <width>515</width>
+    <height>372</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,20 +20,20 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>2</number>
+      <number>3</number>
      </property>
      <widget class="QWidget" name="tab">
       <attribute name="title">
        <string>Base properties</string>
       </attribute>
-      <layout class="QFormLayout" name="formLayout_3">
+      <layout class="QFormLayout" name="formLayout_2">
        <item row="0" column="0">
         <widget class="QLabel" name="id_LBL">
          <property name="toolTip">
           <string>The name of the irrigation method</string>
          </property>
          <property name="text">
-          <string>id</string>
+          <string>Id [id]</string>
          </property>
         </widget>
        </item>
@@ -53,7 +53,7 @@
           <string>The name of the irrigation method</string>
          </property>
          <property name="text">
-          <string>Name</string>
+          <string>Name [name]</string>
          </property>
         </widget>
        </item>
@@ -70,7 +70,7 @@
           <string>Irrigation water depth (mm)</string>
          </property>
          <property name="text">
-          <string>Irrigation water depth</string>
+          <string>Irrigation water depth [qadaq]</string>
          </property>
         </widget>
        </item>
@@ -87,7 +87,7 @@
           <string>Water stress coefficient for the activation of irrigation from water diversions</string>
          </property>
          <property name="text">
-          <string>Start irrigation at (diversions)</string>
+          <string>Start irrigation at (diversions) [k_stress]</string>
          </property>
         </widget>
        </item>
@@ -104,7 +104,7 @@
           <string>Water stress coefficient for the activation of irrigation from private wells</string>
          </property>
          <property name="text">
-          <string>Start irrigation at (wells)</string>
+          <string>Start irrigation at (wells) [k_stresswells]</string>
          </property>
         </widget>
        </item>
@@ -116,13 +116,26 @@
         </widget>
        </item>
        <item row="5" column="0">
-        <widget class="QLabel" name="irr_eff_LBL">
+        <widget class="QLabel" name="fw_LBL">
+         <property name="toolTip">
+          <string>Exposed and wetted soil fraction influenses evaporation processes</string>
+         </property>
          <property name="text">
-          <string>Irrigation efficiency</string>
+          <string>Exposed and wetted soil fraction [fw]</string>
          </property>
         </widget>
        </item>
        <item row="5" column="1">
+        <widget class="QLineEdit" name="fw"/>
+       </item>
+       <item row="6" column="0">
+        <widget class="QLabel" name="irr_eff_LBL">
+         <property name="text">
+          <string>Irrigation efficiency [irr_eff]</string>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="1">
         <widget class="QLineEdit" name="irr_eff"/>
        </item>
       </layout>
@@ -138,7 +151,7 @@
           <string>Parameter of the percolation model</string>
          </property>
          <property name="text">
-          <string>Par. a</string>
+          <string>Par. a [min_a, max_a]</string>
          </property>
         </widget>
        </item>
@@ -178,7 +191,7 @@
           <string>Parameter of the percolation model</string>
          </property>
          <property name="text">
-          <string>Par. b</string>
+          <string>Par. b [min_b, max_b]</string>
          </property>
         </widget>
        </item>
@@ -252,7 +265,7 @@
           <string>Parameter of the irrigation losses model</string>
          </property>
          <property name="text">
-          <string>Par. a</string>
+          <string>Par. a [losses_a]</string>
          </property>
         </widget>
        </item>
@@ -269,7 +282,7 @@
           <string>Parameter of the irrigation losses model</string>
          </property>
          <property name="text">
-          <string>Par. b</string>
+          <string>Par. b [losses_b]</string>
          </property>
         </widget>
        </item>
@@ -286,7 +299,7 @@
           <string>Parameter of the irrigation losses model</string>
          </property>
          <property name="text">
-          <string>Par. c</string>
+          <string>Par. c [losses_c]</string>
          </property>
         </widget>
        </item>
@@ -303,7 +316,28 @@
        <item row="4" column="0">
         <widget class="QCheckBox" name="f_interception">
          <property name="text">
-          <string>Irrigation water is intercepted by foliage</string>
+          <string>Irrigation water is intercepted by foliage [f_interception]</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_4">
+      <attribute name="title">
+       <string>Advanced</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <widget class="QLabel" name="adv_opts_lbl">
+         <property name="text">
+          <string>Advanced text option</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QTextEdit" name="adv_opts">
+         <property name="placeholderText">
+          <string>add here advanced simulation options ad par_nane = value couples separated by semicolon (e.g. PAR1=VAL1; PAR2 = VAL2; ecc.).</string>
          </property>
         </widget>
        </item>

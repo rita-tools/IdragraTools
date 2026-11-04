@@ -28,10 +28,9 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import QCoreApplication,QVariant
-from qgis._analysis import QgsRasterCalculatorEntry, QgsRasterCalculator
-from processing.algs.gdal import GdalUtils
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import QCoreApplication,QVariant
+from qgis.analysis import QgsRasterCalculatorEntry, QgsRasterCalculator
 from qgis.core import (QgsProcessing,
 					   QgsFeatureSink,
 					   QgsProcessingException,
@@ -260,7 +259,7 @@ class IdragraRasterQuality(QgsProcessingAlgorithm):
 									{'INPUT': vectorLay, 'FIELD': fieldName, 'BURN': 0,
 									 'UNITS': 1, 'WIDTH': cellDim, 'HEIGHT': cellDim,
 									 'EXTENT': rasterExt,
-									 'NODATA': -9, 'OPTIONS': '', 'DATA_TYPE': fieldType, 'INIT': -9, 'INVERT': False,
+									 'NODATA': -9999, 'OPTIONS': '', 'DATA_TYPE': fieldType, 'INIT': -9999, 'INVERT': False,
 									 'EXTRA': '',
 									 'OUTPUT': 'TEMPORARY_OUTPUT'},
 									context=None, feedback=feedback, is_child_algorithm=False
@@ -274,7 +273,7 @@ class IdragraRasterQuality(QgsProcessingAlgorithm):
 					   				{'INPUT': maskLay, 'FIELD': '', 'BURN': 1,
 									'UNITS': 1, 'WIDTH': cellDim, 'HEIGHT': cellDim,
 									'EXTENT': rasterExt,
-									'NODATA': -9, 'OPTIONS': '', 'DATA_TYPE': fieldType, 'INIT': -9, 'INVERT': False, 'EXTRA': '',
+									'NODATA': -9999, 'OPTIONS': '', 'DATA_TYPE': fieldType, 'INIT': -9999, 'INVERT': False, 'EXTRA': '',
 									'OUTPUT': 'TEMPORARY_OUTPUT'},
 									context=None, feedback=feedback, is_child_algorithm=False
 									)
@@ -309,7 +308,7 @@ class IdragraRasterQuality(QgsProcessingAlgorithm):
 
 		expression = '"base@1"*"mask@1"'
 		rasterMaskedBaseMap = QgsProcessingUtils.generateTempFilename('rasterMaskedBaseMap.tif')
-		driverName = GdalUtils.GdalUtils.getFormatShortNameFromFilename(rasterMaskedBaseMap)
+		driverName = QgsRasterFileWriter.driverForExtension(os.path.splitext(rasterMaskedBaseMap)[1])
 
 		calc = QgsRasterCalculator(expression,
 								   rasterMaskedBaseMap,
@@ -410,6 +409,6 @@ class IdragraRasterQuality(QgsProcessingAlgorithm):
 
 		qIndex = round(100*RMSE/tot_area,2)
 
-		self.FEEDBACK.pushInfo(self.tr('Quality index between raster and vector areas (RMSE/mask_area): %s %s' % (qIndex,'%')))
+		self.FEEDBACK.pushInfo(self.tr('Average error between raster and vector areas (RMSE/mask_area): %s %s' % (qIndex,'%')))
 
-		return {self.DESTFILE: dest_id}
+		return {self.DESTFILE: dest_id, 'ERROR':qIndex}

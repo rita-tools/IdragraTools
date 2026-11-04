@@ -1,0 +1,124 @@
+<a id="iu_[%irr_unit_id%]"><h3>Irrigation unit [%irr_unit_id%]</h3></a>
+<a id="lu_[%irr_unit_id%]"><h4>Land use distribution</h4></a>
+<div>
+    <div class="image_container">
+        <img src="[%lu_image%]">
+    </div>
+    <div>
+        <p class="caption">Table [%tbl_num%]: land uses</p>
+        [%landuse_table%]
+    </div>
+</div>
+
+<a id="so_[%irr_unit_id%]"><h4>Soil parameters</h4></a>
+<div>
+    <p class="caption">Table [%tbl_num%]: first layer parameters</p>
+    [%soil_first_table%]
+</div>
+<div>
+    <p class="caption">Table [%tbl_num%]: second layer parameters</p>
+    [%soil_second_table%]
+</div>
+<div>
+    <p class="caption">Table [%tbl_num%]: deep layer parameters</p>
+    [%soil_deep_table%]
+</div>
+<div>
+    <p class="caption">Table [%tbl_num%]: other soil hydrological parameters</p>
+    [%soil_hydro_table%]
+
+    <div class="notes">
+        <p><strong>HSG - Hydrological Soil Group</strong></p>
+        <p>1: group A, 2: groub B, 3: group C, 4: group D</p>
+        <p><strong>Texture class</strong></p>
+        <p>101: sand, 102: loamy sand, 103: sandy loam, 104: loam, 105: silt loam, 106: silt, 107: sandy clay loam, 108: clay loam, 109: silty clay loam, 110: sandy clay, 111: silty clay, 112: clay</p>
+    </div>
+</div>
+
+<a id="im_[%irr_unit_id%]"><h4>Irrigation method distribution</h4></a>
+<div>
+    <div class="image_container">
+        <img src="[%im_image%]">
+    </div>
+    <div>
+        <p class="caption">Table [%tbl_num%]: irrigation methods</p>
+        [%irrmeth_table%]
+    </div>
+</div>
+
+<a id="wf_[%irr_unit_id%]"><h4>Water fluxes</h4></a>
+<div>
+    <p><strong>Water balance by year</strong></p>
+    <div class="image_container">
+        <img src="[%annual_fluxes%]">
+    </div>
+    <div class="notes">
+        <p><strong>Notation:</strong></p>
+        <p>P: Cumulative precipitation (mm), I: Cumulative irrigation (mm),
+           L: Irrigation application losses (mm), E: Cumulative actual evaporation (mm)*,
+           T: Cumulative actual transpiration (mm), R: Cumulative runoff (mm),
+           N: Net flux to groundwater (mm)</p>
+        <p>Inflows to the control volume are positive values whereas outflows are negative.</p>
+        <p>(*) Only crop season.</p>
+    </div>
+    </br>
+    <p><strong>Water balance by [%stepname%] and year</strong></p>
+    <div class="image_container">
+        <img src="[%step_fluxes%]">
+    </div>
+    <div class="notes">
+        <p><strong>Notation:</strong></p>
+        <p>[%step_notes%]</p>
+        <p>Inflows to the control volume are positive values whereas outflows are negative.</p>
+    </div>
+    </br>
+
+    <p><strong>[%stepname%] water balance</strong></p>
+    <div>
+        <p class="caption">Table [%tbl_num%]: water fluxes</p>
+        [%step_fluxes_table%]
+    </div>
+
+    <p><strong>Total water balance</strong></p>
+    <div>
+        <p class="caption">Table [%tbl_num%]: inflows (flux to ground water can be also income-negative in case of capillary rise)</p>
+        [%wbf_income_table%]
+    </div>
+
+    <div>
+        <p class="caption">Table [%tbl_num%]: outflows</p>
+        [%wbf_outcome_table%]
+    </div>
+
+    <div>
+        <p class="caption">Table [%tbl_num%]: water management indicators</p>
+        [%wm_table%]
+    </div>
+>
+    <div>
+        <p class="caption">Table [%tbl_num%]: monitored VS estimated volumes</p>
+        [%step_vol_table%]
+    </div>
+</div>
+
+
+<a id="cp_[%irr_unit_id%]"><h4>Crop production</h4></a>
+<div>
+    <div>
+        <p class="caption">Table [%tbl_num%]: first crop</p>
+        [%fcp_table%]
+    </div>
+</div>
+
+<div>
+    <div>
+        <p class="caption">Table [%tbl_num%]: second crop</p>
+        [%scp_table%]
+    </div>
+</div>
+
+<div class="warnings">
+    <p><strong>Warnings:</strong></p>
+    <p>Mean value is the be intended as arithmetic mean while average (aver.) is weighted arithmetic by area.</p>
+    <p>Irrigation efficiency is calculated as (Actual Evaporation + Actual transpiration)/(Precipitation + Irrigation) during the crop season</p>
+</div>

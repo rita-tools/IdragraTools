@@ -42,11 +42,13 @@ from datetime import datetime
 
 from qgis.core import QgsVectorLayerCache,QgsVectorLayer
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5 import QtSql
-from PyQt5 import uic
+from qgis.PyQt.QtCore import *
+from qgis.PyQt.QtGui import *
+from qgis.PyQt.QtWidgets import *
+from qgis.PyQt import QtSql
+from qgis.PyQt import uic
+
+from ..qt_compat import QAction
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
@@ -66,10 +68,6 @@ class DataManagerMainwindow(QMainWindow):#(QDialog)QMainWindow:
 		self.installation_dir = os.path.dirname(__file__)
 		#self.installation_dir = 'C:/Users/enrico/AppData/Roaming/QGIS/QGIS3/profiles/default/python/plugins/IdragraTools/data_manager'
 		#~ self.model = QStandardItemModel(parent)
-		#~ self.cbDelegate = CheckBoxDelegateQt(parent)
-		#~ self.pbDelegate = PushButtonDelegateQt(parent)
-		#~ self.lDelegate = ComboBoxDelegateQt(['solid','dotted','dashed','dasdot','bars'],parent)
-		#~ self.cDelegate = ComboBoxDelegateQt(['y','y2'],parent)
 		
 		self.dbFile = dbFile
 
@@ -217,8 +215,10 @@ class DataManagerMainwindow(QMainWindow):#(QDialog)QMainWindow:
 				winList.append(window)
 		
 		nOfWin = len(winList)
+		if nOfWin == 0:
+			return
 		
-		hWin = self.MDI_AREA.height() / nOfWin
+		hWin = self.MDI_AREA.height() // nOfWin
 		wWin = self.MDI_AREA.width() 
 		for window in winList:
 			window.setGeometry(0,0,wWin,hWin)
@@ -425,7 +425,7 @@ class DataManagerMainwindow(QMainWindow):#(QDialog)QMainWindow:
 		from .dialogs.import_data import ImportData
 		dlg = ImportData(self,varName,self.s)
 		dlg.show()
-		result = dlg.exec_() 
+		result = dlg.exec()
 		# See if OK was pressed
 		res = []
 		if result == 1: 
@@ -448,7 +448,7 @@ class DataManagerMainwindow(QMainWindow):#(QDialog)QMainWindow:
 		from .dialogs.import_data import ImportData
 		dlg = ImportData(self, varName, self.s)
 		dlg.show()
-		result = dlg.exec_()
+		result = dlg.exec()
 		# See if OK was pressed
 		res = []
 		if result == 1:
@@ -473,7 +473,7 @@ class DataManagerMainwindow(QMainWindow):#(QDialog)QMainWindow:
 		from .dialogs.remove_data import RemoveData
 		dlg = RemoveData(self,varName,self.s)
 		dlg.show()
-		result = dlg.exec_() 
+		result = dlg.exec()
 		# See if OK was pressed
 		res = []
 		if result == 1: 
@@ -624,7 +624,7 @@ class DataManagerMainwindow(QMainWindow):#(QDialog)QMainWindow:
 			msg.setText('Please add a table or plot to the view')
 			msg.setWindowTitle('IdragraTools')
 			msg.setStandardButtons(QMessageBox.Ok)
-			ret = msg.exec_()
+			ret = msg.exec()
 			return
 			
 		# ask for file name
@@ -643,14 +643,14 @@ class DataManagerMainwindow(QMainWindow):#(QDialog)QMainWindow:
 			msg.setText(self.tr('An error occured while exporting data: %s')%res)
 			msg.setWindowTitle('IdragraTools')
 			msg.setStandardButtons(QMessageBox.Ok)
-			ret = msg.exec_()
+			ret = msg.exec()
 		else:
 			msg = QMessageBox()
 			msg.setIcon(QMessageBox.Information)
 			msg.setText(self.tr('Data are exported to: %s')%filePath)
 			msg.setWindowTitle('IdragraTools')
 			msg.setStandardButtons(QMessageBox.Ok)
-			ret = msg.exec_()
+			ret = msg.exec()
 			
 
 

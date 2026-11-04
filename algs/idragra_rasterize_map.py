@@ -28,8 +28,8 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import QCoreApplication,QVariant
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from qgis.core import (QgsProcessing,
 						QgsFeatureSink,
 						QgsProcessingException,
@@ -213,7 +213,7 @@ class IdragraRasterizeMap(QgsProcessingAlgorithm):
 									{'INPUT': vectorLay, 'FIELD': fieldName, 'BURN': 0,
 									 'UNITS': 1, 'WIDTH': cellDim, 'HEIGHT': cellDim,
 									 'EXTENT': rasterExt,
-									 'NODATA': -9, 'OPTIONS': '', 'DATA_TYPE': fieldType, 'INIT': -9, 'INVERT': False,
+									 'NODATA': -9999, 'OPTIONS': '', 'DATA_TYPE': fieldType, 'INIT': -9999, 'INVERT': False,
 									 'EXTRA': '',
 									 'OUTPUT': 'TEMPORARY_OUTPUT'},
 									context=None, feedback=feedback, is_child_algorithm=False

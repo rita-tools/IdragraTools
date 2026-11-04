@@ -23,7 +23,7 @@
       <string>The name of the station</string>
      </property>
      <property name="text">
-      <string>Name</string>
+      <string>Name [name]</string>
      </property>
     </widget>
    </item>
@@ -33,7 +33,7 @@
       <string>The name of the station</string>
      </property>
      <property name="text">
-      <string>Winter end</string>
+      <string>Winter end [win_end]</string>
      </property>
     </widget>
    </item>
@@ -43,7 +43,7 @@
       <string>The name of the station</string>
      </property>
      <property name="text">
-      <string>Summer discharge (m^3/s)</string>
+      <string>Summer discharge (m^3/s)  [q_sum]</string>
      </property>
     </widget>
    </item>
@@ -84,7 +84,7 @@
       <string>The name of the station</string>
      </property>
      <property name="text">
-      <string>Winter start</string>
+      <string>Winter start [win_start]</string>
      </property>
     </widget>
    </item>
@@ -118,7 +118,7 @@
       <string>The name of the station</string>
      </property>
      <property name="text">
-      <string>Summer start</string>
+      <string>Summer start [sum_start]</string>
      </property>
     </widget>
    </item>
@@ -138,7 +138,7 @@
       <string>The name of the station</string>
      </property>
      <property name="text">
-      <string>Node type</string>
+      <string>Node type [node_type]</string>
      </property>
     </widget>
    </item>
@@ -148,7 +148,7 @@
       <string>The name of the station</string>
      </property>
      <property name="text">
-      <string>Summer end</string>
+      <string>Summer end [sum_end]</string>
      </property>
     </widget>
    </item>
@@ -161,7 +161,7 @@
       <string>The name of the station</string>
      </property>
      <property name="text">
-      <string>Winter discharge (m^3/s)</string>
+      <string>Winter discharge (m^3/s) [q_win]</string>
      </property>
     </widget>
    </item>
@@ -171,7 +171,7 @@
       <string>The node identifier</string>
      </property>
      <property name="text">
-      <string>Id</string>
+      <string>Id [id]</string>
      </property>
     </widget>
    </item>

@@ -34,7 +34,7 @@
       <string>The fraction of water lost along the link path</string>
      </property>
      <property name="text">
-      <string>Infiltration losses</string>
+      <string>Infiltration losses [inf_losses]</string>
      </property>
     </widget>
    </item>
@@ -51,7 +51,7 @@
       <string>The name of the link</string>
      </property>
      <property name="text">
-      <string>Name</string>
+      <string>Name [name]</string>
      </property>
     </widget>
    </item>
@@ -61,7 +61,7 @@
       <string>The fraction of water conveyed from the inlet node</string>
      </property>
      <property name="text">
-      <string>Flow rate</string>
+      <string>Flow rate [flow_rate]</string>
      </property>
     </widget>
    </item>
@@ -91,7 +91,7 @@
       <string>The feature id of the outlet node</string>
      </property>
      <property name="text">
-      <string>Outlet node</string>
+      <string>Outlet node [outlet_node]</string>
      </property>
     </widget>
    </item>
@@ -101,7 +101,7 @@
       <string>The feature id of the inlet node</string>
      </property>
      <property name="text">
-      <string>Inlet node</string>
+      <string>Inlet node [inlet_node]</string>
      </property>
     </widget>
    </item>
@@ -121,7 +121,7 @@
       <string>Unique feature identifier</string>
      </property>
      <property name="text">
-      <string>Id</string>
+      <string>Id [id]</string>
      </property>
     </widget>
    </item>

@@ -28,7 +28,7 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from PyQt5.QtWidgets import QMessageBox
+from qgis.PyQt.QtWidgets import QMessageBox
 
 
 def showCriticalMessageBox(text, infoText, detailText, title = 'IdrAgraTools'):
@@ -39,7 +39,7 @@ def showCriticalMessageBox(text, infoText, detailText, title = 'IdrAgraTools'):
     msg.setWindowTitle(title)
     msg.setDetailedText(detailText)
     msg.setStandardButtons(QMessageBox.Ok)
-    msg.exec_()
+    msg.exec()
 
 def showInfoMessageBox(text, infoText,title = 'IdrAgraTools'):
     msg = QMessageBox()
@@ -48,4 +48,4 @@ def showInfoMessageBox(text, infoText,title = 'IdrAgraTools'):
     msg.setInformativeText(infoText)
     msg.setWindowTitle(title)
     msg.setStandardButtons(QMessageBox.Ok)
-    msg.exec_()
+    msg.exec()

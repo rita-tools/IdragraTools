@@ -29,7 +29,7 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 
-from PyQt5.QtCore import QThread
+from qgis.PyQt.QtCore import QThread
 from time import sleep
 
 class StoppableThread(QThread):

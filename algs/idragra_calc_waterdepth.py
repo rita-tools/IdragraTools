@@ -28,10 +28,9 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import QCoreApplication,QVariant
-from processing.algs.gdal.GdalUtils import GdalUtils
-from qgis._analysis import QgsRasterCalculatorEntry, QgsRasterCalculator
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import QCoreApplication,QVariant
+from qgis.analysis import QgsRasterCalculatorEntry, QgsRasterCalculator
 from qgis.core import (QgsProcessing,
 					   QgsFeatureSink,
 					   QgsProcessingException,
@@ -309,7 +308,7 @@ class IdragraCalcWaterDepth(QgsProcessingAlgorithm):
 		entries.append(raster2)
 
 		wtdepth = QgsProcessingUtils.generateTempFilename('wtdepth.tif')
-		driverName = GdalUtils.getFormatShortNameFromFilename(wtdepth)
+		driverName = QgsRasterFileWriter.driverForExtension(os.path.splitext(wtdepth)[1])
 		# Process calculation with input extent and resolution
 		# TODO: update extention
 		xllcorner = extension.xMinimum()
@@ -330,8 +329,14 @@ class IdragraCalcWaterDepth(QgsProcessingAlgorithm):
 		feedback.pushInfo(self.tr('GeoInfo for water table depth: %s %s %s %s %s %s %s %s' % (
 		xllcorner, yllcorner, xurcorner, yurcorner, ncols, nrows, dx, dy)))
 
-		calc = QgsRasterCalculator('"elevation@1"-"watertable@1"', wtdepth, driverName, newExt,
-								   ncols, nrows, entries)
+		#calc = QgsRasterCalculator('"elevation@1"-"watertable@1"', wtdepth, driverName, newExt,
+		#						   ncols, nrows, entries)
+
+		calc = QgsRasterCalculator(
+			'(("elevation@1"-0.5) > "watertable@1") * ("elevation@1" - "watertable@1") + (("elevation@1"-0.5) <= "watertable@1") * (1.0/2.0)',
+			wtdepth, driverName, newExt,
+			ncols, nrows, entries)
+
 		res = calc.processCalculation(self.FEEDBACK)
 		if res > 0: self.FEEDBACK.error(self.tr('Unable to resolve the formula'))
 		# save file

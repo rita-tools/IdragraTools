@@ -28,7 +28,7 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from PyQt5.QtWidgets import *
+from qgis.PyQt.QtWidgets import *
 
 from IdragraTools.layerforms.utils import *
 from IdragraTools.tools.array_table_model import ArrayTableModel
@@ -87,7 +87,7 @@ def showEditDialog():
 	# set size from qgis habits
 	dlg.resize(0.5*myDialog.geometry().width(),myDialog.geometry().height())
 	dlg.show()
-	result = dlg.exec_()
+	result = dlg.exec()
 	# See if OK was pressed
 	res = []
 	if result == 1:

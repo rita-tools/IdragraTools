@@ -39,7 +39,7 @@ import os
 
 import scipy.io as sio
 
-from PyQt5.QtCore import QObject
+from qgis.PyQt.QtCore import QObject
 
 from qgis.core import (Qgis,
 									QgsRasterBlock,
@@ -92,7 +92,7 @@ class GisGrid(QObject):
 		self.rows = np.arange(self.nrows)
 		self.rows = np.array([self.rows,]*self.ncols).transpose()
 		# create an empty numpy 2d-array to store value
-		self.data = np.zeros((self.nrows,self.ncols), dtype=np.float)+self.nodata
+		self.data = np.zeros((self.nrows,self.ncols), dtype=float)+self.nodata
 		self.extent = QgsRectangle(xcell, ycell, xcell+dx*ncols, ycell+dy*nrows)
 		self.CRS = QgsCoordinateReferenceSystem()
 		self.EPSGid = EPSGid
@@ -330,6 +330,12 @@ class GisGrid(QObject):
 		itemIndex = np.nonzero(self.data==item)
 		itemIndex = self.sub2ind(array_shape = None, rows = itemIndex[0][0], cols = itemIndex[1][0])
 		return itemIndex
+
+	def getUniqueValues(self):
+		uniqueVals = np.unique(self.data).tolist()
+		# remove nodata
+		uniqueVals.remove(self.nodata)
+		return uniqueVals
 
 	def saveAsGDAL(self, outputFile,dataType = Qgis.Float32):
 		# create raster with array data

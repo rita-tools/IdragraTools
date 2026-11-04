@@ -28,8 +28,8 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import QCoreApplication,QVariant
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from qgis.core import (QgsProcessing,
 					   QgsFeatureSink,
 					   QgsProcessingException,
@@ -289,7 +289,7 @@ class IdragraCreateCapriseTable(QgsProcessingAlgorithm):
 			'CapRisePar_a4': [7.55, 4.6, 1.11],
 			'CapRisePar_b4': [-2.03, -0.65, -0.98]
 		}
-
+		# TODO: check a4, b1, !!!
 		(sink, dest_id) = self.parameterAsSink(
 			parameters,
 			self.OUT_TABLE,

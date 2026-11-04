@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>369</width>
-    <height>239</height>
+    <height>246</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -23,7 +23,7 @@
       <string>Unique feature identifier</string>
      </property>
      <property name="text">
-      <string>Id</string>
+      <string>Id [id]</string>
      </property>
     </widget>
    </item>
@@ -43,7 +43,7 @@
       <string>The name of the link</string>
      </property>
      <property name="text">
-      <string>Name</string>
+      <string>Name [name]</string>
      </property>
     </widget>
    </item>
@@ -60,7 +60,7 @@
       <string>The feature id of the inlet node</string>
      </property>
      <property name="text">
-      <string>Inlet node</string>
+      <string>Inlet node [node]</string>
      </property>
     </widget>
    </item>
@@ -80,7 +80,7 @@
       <string>The feature id of the inlet node</string>
      </property>
      <property name="text">
-      <string>Outlet node</string>
+      <string>Outlet node [outlet_node]</string>
      </property>
     </widget>
    </item>
@@ -100,7 +100,7 @@
       <string>The feature id of the inlet node</string>
      </property>
      <property name="text">
-      <string>Internal distribution efficiency</string>
+      <string>Internal distribution efficiency [distr_eff]</string>
      </property>
     </widget>
    </item>
@@ -113,7 +113,7 @@
       <string>The feature id of the inlet node</string>
      </property>
      <property name="text">
-      <string>Rotation period multiplier</string>
+      <string>Rotation period multiplier [expl_fact]</string>
      </property>
     </widget>
    </item>
@@ -130,7 +130,7 @@
       <string>The feature id of the inlet node</string>
      </property>
      <property name="text">
-      <string>Water distribution shift</string>
+      <string>Water distribution shift [wat_shift]</string>
      </property>
     </widget>
    </item>

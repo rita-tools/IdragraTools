@@ -29,18 +29,20 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
+from qgis.PyQt.QtCore import *
+from qgis.PyQt.QtGui import *
 
-from PyQt5 import uic
+from qgis.PyQt import uic
 
-from PyQt5.QtWidgets import QDialog, QToolBox, QWidget, QVBoxLayout, QFileDialog, QListWidgetItem, QSpinBox, \
+from qgis.PyQt.QtWidgets import QDialog, QToolBox, QWidget, QVBoxLayout, QFileDialog, QListWidgetItem, QSpinBox, \
 	QCalendarWidget, QToolButton, QLabel, QCheckBox, QMainWindow
 
 import os
 
-from qgis._core import QgsCoordinateReferenceSystem, QgsRectangle, QgsProject, QgsPoint, QgsGeometry, QgsPointXY
-from qgis._gui import QgsDateTimeEdit, QgsRubberBand, QgsVertexMarker
+from qgis import processing
+from qgis.core import QgsCoordinateReferenceSystem, QgsRectangle, QgsProject, QgsPoint, QgsGeometry, QgsPointXY, \
+	QgsWkbTypes
+from qgis.gui import QgsDateTimeEdit, QgsRubberBand, QgsVertexMarker
 
 from ..tools.utils import returnExtent
 
@@ -77,7 +79,7 @@ class SetSimulationDialog(QMainWindow):
 	VARLIST = {}
 	FUNLIST = {}
 	
-	def __init__(self, parent=None, yearList=[],modeList = [], simSettings = {}):
+	def __init__(self, parent=None, yearList=[],modeList = [], simSettings = {}, defLuDict = {},defImDict={}):
 		QMainWindow.__init__(self, parent.mainWindow())
 		# Set up the user interface from Designer.
 		uiFilePath = os.path.abspath(os.path.join(os.path.dirname(__file__), 'set_simulation_dialog.ui'))
@@ -89,6 +91,8 @@ class SetSimulationDialog(QMainWindow):
 		#self.allCaseYearList = allCaseYearList
 		#self.consumeYearList = consumeYearList
 		self.yearList = yearList
+		self.defLuDict = defLuDict
+		self.defImDict = defImDict
 
 		# init irrigation page
 		self.IRRSTART_LB = QLabel(self.tr('Irrigation season starts at'), self)
@@ -125,6 +129,18 @@ class SetSimulationDialog(QMainWindow):
 			self.MODE_CB.setCurrentText(modeList[simSettings['MODE']])
 			self.MODE_CB.currentIndexChanged.emit(simSettings['MODE'])
 
+		self.DEF_LU_CB.addItems(list(self.defLuDict.values()))
+		#print('self.defLuDict.keys:',list(self.defLuDict.keys()),'selected:',simSettings['DEFAULT_LU'])
+		if simSettings['DEFAULT_LU'] in list(self.defLuDict.keys()):
+			self.DEF_LU_CB.setCurrentText(self.defLuDict[simSettings['DEFAULT_LU']])
+
+		self.DEF_IM_CB.addItems(list(self.defImDict.values()))
+		if simSettings['DEFAULT_IM'] in list(self.defImDict.keys()):
+			self.DEF_IM_CB.setCurrentText(self.defImDict[simSettings['DEFAULT_IM']])
+
+		# sowing window
+		self.RANDWIND_SB.setValue(simSettings['RANDWIND'])
+
 		# yearly maps
 		if simSettings['SOILUSEVARFLAG'] == 'T':
 			self.SOILUSEVARFLAG_CB.setChecked(True)
@@ -154,15 +170,30 @@ class SetSimulationDialog(QMainWindow):
 		self.updateLastYear()
 
 		### set spatial resolution
+		print('simSettings:',simSettings)
+		if simSettings['VECTOR_MODE']:
+			#print('vector mode is selected')
+			self.VECTOR_MODE.setChecked(True)
+			self.enableGridDomain()
+		else:
+			#print('grid mode is selected')
+			self.GRID_MODE.setChecked(True)
+			self.enableGridDomain()
+
+
 		self.DOMAINEXT.setMapCanvas(self.canvas)
+		#print('Set_simulation, CRS', simSettings['CRS'])
 		try:
 			crsCode = float(simSettings['CRS'])
+			crs = QgsCoordinateReferenceSystem()
+			# crs.createFromSrid(self.SIMDIC['CRS']) deprecated since 3.10
+			crs.createFromSrsId(crsCode)
 		except:
-			print('CRS', simSettings['CRS'])
-			crsCode = 32632
+			crsCode = simSettings['CRS']
+			crs = QgsCoordinateReferenceSystem(crsCode)
 
-		crs = QgsCoordinateReferenceSystem()
-		crs.createFromSrsId(crsCode)
+		#crs = QgsCoordinateReferenceSystem()
+		#crs.createFromSrsId(crsCode)
 
 		# xmin,ymin : xmax,ymax
 		extStr = simSettings['EXTENT']
@@ -213,13 +244,31 @@ class SetSimulationDialog(QMainWindow):
 
 		self.FROM_CB.currentTextChanged.connect(self.updateLastYear)
 
-		self.DRAW_GRID_BT.clicked.connect(self.drawGrid)
+		# connect gridded domain options
+		self.GRID_MODE.toggled.connect(self.enableGridDomain)
+
+		# connect preview function
+		self.conn_canvas = self.canvas.extentsChanged.connect(self.drawGrid)
+		self.DOMAINEXT.extentChanged.connect(self.drawGrid)
+		self.CELLSIZE_SB.valueChanged.connect(self.drawGrid)
+		self.DRAW_GRID_CB.toggled.connect(self.drawGrid)
+
 
 		self.buttonBox.accepted.connect(self.accept)
 		self.buttonBox.rejected.connect(self.reject)
 		#QObject.connect(self.buttonBox, SIGNAL("accepted()"), self.accept)
 		#QObject.connect(self.buttonBox, SIGNAL("rejected()"), self.reject)
 		QMetaObject.connectSlotsByName(self)
+
+	def close(self):
+		try:
+			self.disconnect(self.conn_canvas)
+		except:
+			self.canvas.extentsChanged.disconnect(self.drawGrid)
+
+		self.deleteGrid()
+		super().close()
+
 
 	def accept(self):
 		self.close()
@@ -262,11 +311,22 @@ class SetSimulationDialog(QMainWindow):
 		self.STEPDATE_SB.setEnabled(flag)
 
 	def closeEvent(self, event):
-		self.deleteGrid()
+		# self.disconnect(self.conn_canvas)
+		# self.deleteGrid()
 		self.closed.emit()
 
-	def drawGrid(self):
+	def enableGridDomain(self):
+		if self.GRID_MODE.isChecked():
+			self.SETDOMAIN_GB.setEnabled(True)
+		else:
+			self.SETDOMAIN_GB.setEnabled(False)
+			self.DRAW_GRID_CB.setChecked(False)
+
+	def drawGrid(self,val=None):
 		self.deleteGrid()
+		if not self.DRAW_GRID_CB.isChecked():
+			#print('Update preview not checked',self.DRAW_GRID_CB.isChecked(),val)
+			return
 
 		col = QColor(153,153,153) # gray color
 
@@ -286,53 +346,81 @@ class SetSimulationDialog(QMainWindow):
 		# yurcorner = yllcorner+nrows*outputCellSize
 		yllcorner = yurcorner - nrows * cellDim
 
-		cellsize = self.CELLSIZE_SB.value()
 
-		xList = [xllcorner+i*cellDim for i in range(0,ncols+1)]
-		yList = [yllcorner+i*cellDim for i in range(0,nrows+1)]
-		# draw vertical lines
-		for x in xList:
-			r = QgsRubberBand(self.canvas, False)  # False = not a polygon
-			r.setColor(col)
-			r.setWidth(3)
-			points = [QgsPoint(x, yllcorner), QgsPoint(x, yurcorner), QgsPoint(x, yllcorner)]
-			r.setToGeometry(QgsGeometry.fromPolyline(points), None)
-			self.rbList.append(r)
-		# draw horizontal lines
-		for y in yList:
-			r = QgsRubberBand(self.canvas, False)  # False = not a polygon
-			r.setColor(col)
-			r.setWidth(3)
-			points = [QgsPoint(xllcorner, y), QgsPoint(xurcorner, y), QgsPoint(xllcorner, y)]
-			r.setToGeometry(QgsGeometry.fromPolyline(points), None)
-			self.rbList.append(r)
+		viewExt = self.canvas.extent()
+		nOfCells = viewExt.area()/(cellDim*cellDim)
 
-		for x in xList[:-1]:
-			for y in yList[:-1]:
-				m = QgsVertexMarker(self.canvas)
-				m.setCenter(QgsPointXY(x+0.5*cellsize, y+0.5*cellsize))
-				m.setColor(col)
-				m.setIconSize(5)
-				m.setIconType(QgsVertexMarker.ICON_CROSS)  # or ICON_CROSS, ICON_X, ICON_BOX
-				m.setPenWidth(3)
-				self.rbList.append(m)
+		if nOfCells>1000:
+			# draw only the edge
+			xList = [xllcorner,xurcorner]
+			yList = [yllcorner, yurcorner]
+			# draw polygon
+			r = QgsRubberBand(self.canvas, QgsWkbTypes.PolygonGeometry)
+			r.setStrokeColor(col)
+			r.setFillColor(QColor(153,153,153,60))
+			r.setWidth(3)
+			geom = QgsGeometry().fromRect(rasterExt)  # QgsGeometry object
+			# set rubber band to geometry
+			r.setToGeometry(geom)
+			self.rbList.append(r)
+		else:
+			xList = [xllcorner+i*cellDim for i in range(0,ncols+1)]
+			yList = [yllcorner+i*cellDim for i in range(0,nrows+1)]
+			# filter coordinates
+			view_xmin = viewExt.xMinimum() - cellDim
+			view_xmax = viewExt.xMaximum() + cellDim
+			view_ymin = viewExt.yMinimum() - cellDim
+			view_ymax = viewExt.yMaximum() + cellDim
+			xList = list(filter(lambda x: (x >= view_xmin) and (x<=view_xmax), xList))
+			yList = list(filter(lambda y: (y >= view_ymin) and (y <= view_ymax), yList))
+
+			# draw vertical lines
+			for x in xList:
+				r = QgsRubberBand(self.canvas, False)  # False = not a polygon
+				r.setColor(col)
+				r.setWidth(3)
+				points = [QgsPoint(x, yllcorner), QgsPoint(x, yurcorner), QgsPoint(x, yllcorner)]
+				r.setToGeometry(QgsGeometry.fromPolyline(points), None)
+				self.rbList.append(r)
+			# draw horizontal lines
+			for y in yList:
+				r = QgsRubberBand(self.canvas, False)  # False = not a polygon
+				r.setColor(col)
+				r.setWidth(3)
+				points = [QgsPoint(xllcorner, y), QgsPoint(xurcorner, y), QgsPoint(xllcorner, y)]
+				r.setToGeometry(QgsGeometry.fromPolyline(points), None)
+				self.rbList.append(r)
+
+			for x in xList[:-1]:
+				for y in yList[:-1]:
+					m = QgsVertexMarker(self.canvas)
+					m.setCenter(QgsPointXY(x+0.5*cellDim, y+0.5*cellDim))
+					m.setColor(col)
+					m.setIconSize(5)
+					m.setIconType(QgsVertexMarker.ICON_CROSS)  # or ICON_CROSS, ICON_X, ICON_BOX
+					m.setPenWidth(3)
+					self.rbList.append(m)
 
 	def deleteGrid(self):
 		#print('deleteGrid')
 		for r in self.rbList:
 			self.canvas.scene().removeItem(r)
 
-	
 	def getData(self):
 		### get output path
 		outfolder = self.OUTFOLDER_FW.filePath()
 		useYearlyMaps = ['F', 'T'][int(self.SOILUSEVARFLAG_CB.isChecked())]
+		### get options
+		randWind = self.RANDWIND_SB.value()
 		### get simulation period
 		fromYear = int(self.FROM_CB.currentText())
 		toYear = int(self.TO_CB.currentText())
 		### get spatial resolution
+		vector_mode = 0
+		if self.VECTOR_MODE.isChecked(): vector_mode = 1
 		dtmExtent = self.DOMAINEXT.outputExtent()
 		crs = self.DOMAINEXT.outputCrs()
+		#print('crs_from get',crs)
 		cellsize = self.CELLSIZE_SB.value()
 		### get hydrological model
 		zevalay = self.EVALAY_SB.value()
@@ -350,8 +438,13 @@ class SetSimulationDialog(QMainWindow):
 		outEndDate = self.ENDDATE_TE.value()
 		outStep = self.STEPDATE_SB.value()
 
-		return {'outfolder':outfolder,'simMode':simMode,'useyearlymaps':useYearlyMaps, 'from':fromYear, 'to':toYear,
-				'extent':dtmExtent, 'crs':crs, 'cellsize':cellsize,
+		defLU = list(self.defLuDict.keys())[self.DEF_LU_CB.currentIndex()]
+		defIM = list(self.defImDict.keys())[self.DEF_IM_CB.currentIndex()]
+
+		return {'outfolder':outfolder,'simMode':simMode,'randWind':randWind,
+				'defLU': defLU, 'defIM':defIM,
+				'useyearlymaps':useYearlyMaps, 'from':fromYear, 'to':toYear,
+				'vectorMode':vector_mode,'extent':dtmExtent, 'crs':crs, 'cellsize':cellsize,
 				'zevalay':zevalay,'ztranslay':ztranslay,'capRise':capRise,'minSlope':minSlope, 'maxSlope':maxSlope,
 				'irrStart':irrStart, 'irrEnd':irrEnd,
 				'outMonth':outMonth, 'outStartDate': outStartDate, 'outEndDate': outEndDate, 'outStep': outStep

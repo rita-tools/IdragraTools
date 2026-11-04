@@ -36,9 +36,9 @@ import io
 from datetime import datetime,date
 import pandas as pd
 
-from qgis._core import QgsFeatureRequest
-from qgis.core import QgsVectorLayer,QgsField,QgsVectorFileWriter
-from qgis.PyQt.QtCore import QVariant, QObject
+from qgis.core import QgsFeatureRequest
+from qgis.core import Qgis, QgsVectorLayer, QgsField, QgsVectorFileWriter, QgsCoordinateTransformContext
+from qgis.PyQt.QtCore import QVariant, QObject, QMetaType
 
 
 def adapt_array(arr):
@@ -55,11 +55,26 @@ def convert_array(text):
 	out.seek(0)
 	return np.load(out)
 
+def null_date_converter(value):
+	"""
+	https://github.com/mkleehammer/pyodbc/issues/475
+	"""
+	try:
+		# test if it is a valid date string
+		valueStr = value.decode('utf-8')
+		valueStr = datetime.strptime(valueStr, "%Y-%m-%d").date().strftime("%Y-%m-%d")
+	except:
+		valueStr = 'NULL'
+
+	return valueStr
+
+
 # Converts np.array to TEXT when inserting
 sqlite.register_adapter(np.ndarray, adapt_array)
 
 # Converts TEXT to np.array when selecting
 sqlite.register_converter("ARRAY", convert_array)
+sqlite.register_converter("DATE", null_date_converter)
 
 class MyProgress():
 	
@@ -84,6 +99,7 @@ class SQLiteDriver(QObject):
 		self.conn = None
 		self.cur = None
 		self.DBName = filename
+		#print('in sqlDriver',filename)
 		if progress is None:
 			self.progress = MyProgress()
 		else:
@@ -106,8 +122,12 @@ class SQLiteDriver(QObject):
 					pass
 		except Exception as e:
 			self.progress.setInfo(str(e),True)
+			raise
 
-		self.resetCounter()
+		try:
+			self.resetCounter()
+		except Exception as e:
+			self.progress.reportError('Unable to reset counter in %s (%s)'%(filename,str(e)), False)
 
 	def resetCounter(self):
 		sql = "UPDATE 'sqlite_sequence' SET 'seq' = 0;"
@@ -119,39 +139,43 @@ class SQLiteDriver(QObject):
 		STdefList = [{'type':'MultiPoint',
 							'name':'idr_weather_stations',
 							'fldNames':['id','name','lat','alt'],
-							'fldTypes':[QVariant.Int,QVariant.String,QVariant.Double,QVariant.Double]},
+							'fldTypes':[QMetaType.Type.Int,QMetaType.Type.QString,QMetaType.Type.Double,QMetaType.Type.Double]},
 						{'type':'MultiPoint',
 							'name':'idr_gw_wells',
 							'fldNames':['id','name','alt','type'],
-							'fldTypes':[QVariant.Int,QVariant.String,QVariant.Double,QVariant.Int]},
+							'fldTypes':[QMetaType.Type.Int,QMetaType.Type.QString,QMetaType.Type.Double,QMetaType.Type.Int]},
 					 {'type': 'MultiPoint',
 					  'name': 'idr_control_points',
 					  'fldNames': ['id','name', 'descr'],
-					  'fldTypes': [QVariant.Int, QVariant.String, QVariant.String]},
+					  'fldTypes': [QMetaType.Type.Int, QMetaType.Type.QString, QMetaType.Type.QString]},
 						{'type':'MultiLinestring',
 							'name':'idr_links',
 							'fldNames':['id','name','inlet_node','outlet_node','flow_rate','inf_losses'],
-							'fldTypes':[QVariant.Int,QVariant.String,QVariant.Int,QVariant.Int,QVariant.Double,QVariant.Double]},
+							'fldTypes':[QMetaType.Type.Int,QMetaType.Type.QString,QMetaType.Type.Int,QMetaType.Type.Int,QMetaType.Type.Double,QMetaType.Type.Double]},
 						{'type':'MultiPoint',
 							'name':'idr_nodes',
 							'fldNames':['id','name','node_type','q_sum','q_win','sum_start','sum_end','win_start','win_end','act_trshold','act_ratio'],
-							'fldTypes':[QVariant.Int,QVariant.String,QVariant.Int,QVariant.Double,QVariant.Double,QVariant.Int,QVariant.Int,QVariant.Int,QVariant.Int,QVariant.String,QVariant.String]},
+							'fldTypes':[QMetaType.Type.Int,QMetaType.Type.QString,QMetaType.Type.Int,QMetaType.Type.Double,QMetaType.Type.Double,QMetaType.Type.Int,QMetaType.Type.Int,QMetaType.Type.Int,QMetaType.Type.Int,QMetaType.Type.QString,QMetaType.Type.QString]},
 						{'type': 'MultiPolygon',
 							'name': 'idr_soilmap',
 							'fldNames': ['id','name','extid','date'],
-							'fldTypes': [QVariant.Int, QVariant.String, QVariant.Int, QVariant.Date]},
+							'fldTypes': [QMetaType.Type.Int, QMetaType.Type.QString, QMetaType.Type.Int, QMetaType.Type.QDate]},
 						{'type': 'MultiPolygon',
 							'name': 'idr_usemap',
 							'fldNames': ['id','name','extid', 'date'],
-							'fldTypes': [QVariant.Int, QVariant.String, QVariant.Int, QVariant.Date]},
+							'fldTypes': [QMetaType.Type.Int, QMetaType.Type.QString, QMetaType.Type.Int, QMetaType.Type.QDate]},
 						{'type': 'MultiPolygon',
 							'name': 'idr_irrmap',
 							'fldNames': ['id','name','extid', 'date'],
-							'fldTypes': [QVariant.Int, QVariant.String,QVariant.Int, QVariant.Date]},
+							'fldTypes': [QMetaType.Type.Int, QMetaType.Type.QString,QMetaType.Type.Int, QMetaType.Type.QDate]},
 						{'type': 'MultiPolygon',
 							'name': 'idr_distrmap',
 							'fldNames': ['id', 'name','inlet_node','outlet_node','distr_eff','expl_factor','wat_shift'],
-							'fldTypes': [QVariant.Int,QVariant.String,QVariant.Int,QVariant.Int,QVariant.Double,QVariant.Int,QVariant.Int]}
+							'fldTypes': [QMetaType.Type.Int,QMetaType.Type.QString,QMetaType.Type.Int,QMetaType.Type.Int,QMetaType.Type.Double,QMetaType.Type.Int,QMetaType.Type.Int]},
+						{'type': 'MultiPolygon',
+							'name': 'idr_domainmap',
+							'fldNames': ['id', 'name','area_m2'],
+							'fldTypes': [QMetaType.Type.Int, QMetaType.Type.QString, QMetaType.Type.Double]}
 					 ]
 		
 		firstt = True
@@ -160,11 +184,16 @@ class SQLiteDriver(QObject):
 		for STdef in STdefList:
 			self.progress.pushInfo(self.tr('Processing %s'%STdef['name']))
 			lyr =  QgsVectorLayer(STdef['type'], STdef['name'], "memory")
+			if not lyr.isValid():
+				raise RuntimeError(self.tr('Unable to create temporary layer %s') % STdef['name'])
 			if crs: lyr.setCrs(crs)
 			
 			pr = lyr.dataProvider()
 			attrList = []
 			for n, t in zip(STdef['fldNames'], STdef['fldTypes']):
+				# Before QGIS 3.38 QgsField requires QVariant.Type instead of QMetaType.Type.
+				if Qgis.QGIS_VERSION_INT < 33800:
+					t = QVariant.Type(int(t))
 				newField = QgsField(n,t)
 				# if n == 'id':
 				# 	cons = newField.constraints()
@@ -182,8 +211,23 @@ class SQLiteDriver(QObject):
 				options.EditionCapability = QgsVectorFileWriter.CanAddNewLayer 
 				
 			options.layerName = lyr.name()
-			_writer = QgsVectorFileWriter.writeAsVectorFormat(lyr, gpkgPath, options )
-			#print(options.layerName,_writer)
+
+			writerResult = QgsVectorFileWriter.writeAsVectorFormatV3(
+				lyr, gpkgPath, QgsCoordinateTransformContext(), options
+			)
+
+			if isinstance(writerResult, (tuple, list)):
+				writerError = writerResult[0]
+				errorMessage = writerResult[1] if len(writerResult) > 1 else ''
+			else:
+				writerError = writerResult
+				errorMessage = ''
+
+			if writerError != QgsVectorFileWriter.NoError:
+				raise RuntimeError(
+					self.tr('Unable to create layer %s (writer error %s): %s') %
+					(STdef['name'], writerError, errorMessage)
+				)
 
 		# replace id field with constrained by sql command
 		# for STdef in STdefList:
@@ -286,7 +330,8 @@ class SQLiteDriver(QObject):
 																kcb text,
 																lai text,
 																hc text,
-																sr text
+																sr text,
+																adv_opts text
 																);
 					
 								DROP TABLE IF EXISTS  idr_irrmet_types;
@@ -297,6 +342,7 @@ class SQLiteDriver(QObject):
 																qadaq double,
 																k_stress double,
 																k_stresswells double,
+																fw double,
 																min_a double,
 																max_a double,
 																min_b double,
@@ -307,7 +353,8 @@ class SQLiteDriver(QObject):
 																f_interception integer,
 																irr_time text,
 																irr_fraction text,
-																irr_eff double
+																irr_eff double,
+																adv_opts text
 																);
 							"""
 		self.executeSQL(initTableSQL)
@@ -403,6 +450,8 @@ class SQLiteDriver(QObject):
 	def startConnection(self):
 		# start connection
 		self.conn = sqlite.connect(self.DBName,detect_types=sqlite.PARSE_DECLTYPES)
+		self.conn.enable_load_extension(True)
+		self.conn.execute('SELECT load_extension("mod_spatialite")')
 		# creating a Cursor
 		self.cur = self.conn.cursor()
 		
@@ -412,14 +461,19 @@ class SQLiteDriver(QObject):
 		#self.cur.execute('VACUUM')
 		self.conn.close()
 	
-	def executeSQL(self,sql):
+	def executeSQL(self,sql,data=None):
 		msg=''
 		try:
 			self.startConnection()
-			self.cur.executescript(sql)
+			#self.cur.execute('SELECT load_extension("mod_spatialite");')
+			if data:
+				self.cur.executemany(sql,data)
+				self.conn.commit()
+			else:
+				self.cur.executescript(sql)
 		except Exception as e:
 			msg = str(e)
-			self.progress.reportError(self.tr('SQL error at %s: %s') %(sql,msg),True)
+			self.progress.reportError(self.tr('SQL error at %s: %s \nwith data%s') %(sql,msg,str(data)),True)
 		finally:
 			self.stopConnection()
 			
@@ -977,7 +1031,35 @@ class SQLiteDriver(QObject):
 			self.stopConnection()
 
 		return data
-		
+
+	def getRecordAsDict(self,tableName,fieldsList,filterFld='', filterValue = None,orderBy = ''):
+		data = {}
+		if isinstance(fieldsList, list):
+			fieldsList = ','.join(fieldsList)
+
+		if fieldsList == '': fieldsList = '*'
+
+		try:
+			self.startConnection()
+			if filterFld == '':
+				sql = "SELECT %s FROM %s" % (fieldsList, tableName)
+			else:
+				sql = "SELECT %s FROM %s WHERE %s = '%s'" % (fieldsList, tableName, filterFld, filterValue)
+			if orderBy != '': sql += ' ORDER BY ' + orderBy
+			sql += ';'  # close query
+			# TODO: check the use of apex in sql formula. It seems to not have effect on type of value filtered
+			# print('sql',sql)
+			df = pd.read_sql_query(sql, self.conn)
+			data = df.to_dict(orient='records')
+		# data = self.cur.fetchone()
+
+		except Exception as e:
+			self.progress.setInfo('SQL error %s at %s' % (str(e), sql), True)
+		finally:
+			self.stopConnection()
+
+		return data
+
 	def getRecord(self,tableName,fieldsList,filterFld='', filterValue = None,orderBy = ''):
 		data = []
 		if isinstance(fieldsList,list):
@@ -1210,6 +1292,24 @@ class SQLiteDriver(QObject):
 
 		return {'nodeList':wsNode,'ratioList':wsRatio}
 
+	def getDictFromTable(self,table,keyFld,valueFld):
+		res = {}
+		try:
+			self.startConnection()
+			# sql = "SELECT links.OBJ_ID FROM links WHERE links.NODE_START IN (SELECT nodes.OBJ_ID FROM nodes, links WHERE nodes.OBJ_ID = links.NODE_END);"
+			sql = "SELECT %s,%s FROM %s;" % (keyFld,valueFld,table)
+			self.cur.execute(sql)
+			data = self.cur.fetchall()
+			for d in data:
+				res[d[0]] = d[1]
+
+		except Exception as e:
+			self.progress.setInfo('SQL error %s at %s' % (str(e), sql), True)
+		finally:
+			self.stopConnection()
+
+		return res
+
 	def getAllFollowingLink(self,nodeStart = 'NODE_START',nodeEnd ='NODE_END',downStream = False):
 		if not downStream:
 			nodeStart = 'NODE_END'
@@ -1421,7 +1521,7 @@ class SQLiteDriver(QObject):
 		
 		
 	def getTimeSeries(self,tableName, wsId):
-		sql = 'select timestamp,recval from %s where wsid = %s'%(tableName, wsId)
+		sql = 'select timestamp,recval from %s where wsid = %s order by timestamp'%(tableName, wsId)
 		data = []
 		try:
 			self.startConnection()
@@ -1601,7 +1701,7 @@ if __name__ == '__console__':
 	pr.addAttributes([QgsField("id", QVariant.String),
 								QgsField("name",  QVariant.String)])
 	ws_lyr.updateFields()
-	_writer = QgsVectorFileWriter.writeAsVectorFormat(ws_lyr, gpkgPath, options)
+	_writer = QgsVectorFileWriter.writeAsVectorFormatV3(ws_lyr, gpkgPath, QgsCoordinateTransformContext(), options)
 	print(_writer)
 	
 	options2 = QgsVectorFileWriter.SaveVectorOptions()
@@ -1618,6 +1718,6 @@ if __name__ == '__console__':
 								QgsField("id_soil",  QVariant.String),
 								QgsField("id_soiluse",  QVariant.String)])
 	field_lyr.updateFields()
-	_writer = QgsVectorFileWriter.writeAsVectorFormat(field_lyr, gpkgPath,  options2)
+	_writer = QgsVectorFileWriter.writeAsVectorFormatV3(field_lyr, gpkgPath, QgsCoordinateTransformContext(), options2)
 	print(_writer)
 	print('OK')

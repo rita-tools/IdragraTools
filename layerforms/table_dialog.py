@@ -30,9 +30,9 @@ __revision__ = '$Format:%H$'
 
 import os
 
-from PyQt5 import QtGui, uic
-from PyQt5.QtCore import QMetaObject, Qt, QVariant
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTableView, QPushButton, QAbstractItemView, QItemDelegate, QComboBox, \
+from qgis.PyQt import QtGui, uic
+from qgis.PyQt.QtCore import QMetaObject, Qt, QVariant
+from qgis.PyQt.QtWidgets import QDialog, QVBoxLayout, QTableView, QPushButton, QAbstractItemView, QItemDelegate, QComboBox, \
 	QApplication, QStyleOptionComboBox, QStyle, QHeaderView
 
 

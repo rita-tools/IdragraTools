@@ -28,38 +28,20 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-import sys
-from PyQt5 import QtGui
-from PyQt5.QtWidgets import QDialog,QAction,QMenu,QMessageBox,QPushButton,QVBoxLayout,QWidget,Qlabel
+def speakingName(origName,repSpace='_',maxLen=10):
+    newName = origName.replace(' ', repSpace)
 
-from matplotlib.backends.backend_qt5agg  import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-import matplotlib
-matplotlib.use('Qt5Agg')
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdt
-from matplotlib.patches import Polygon
+    if len(newName) > maxLen:
+        newName = newName[:maxLen]
+    else:
+        newName = newName + ''.join([repSpace] * (maxLen - len(newName)))
+
+    return newName
 
 
-import numpy as np
+if __name__ == '__main__':
+    oldName = 'ab3 gsh4 pski   111'
+    print('newName long', speakingName(oldName))
 
-import random
-from datetime import datetime
-
-
-class TextWidget(QWidget):
-	def __init__(self, parent=None):
-		QWidget.__init__(self,parent)
-
-		self.myLabel = Qlabel()
-		layout = QVBoxLayout()
-		layout.addWidget(self.myLabel)
-		self.setLayout(layout)
-	
-	def setText(self,value):
-		myLabel.setText(value)
-		
-	def getText(self):
-		return myLabel.text()
-		
-	text = pyqtProperty(str, fget=getText, fset=setText)
+    oldName = 'ab3'
+    print('newName shirt', speakingName(oldName))

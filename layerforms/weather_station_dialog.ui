@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>299</width>
+    <width>315</width>
     <height>475</height>
    </rect>
   </property>
@@ -23,7 +23,7 @@
       <string>The station id</string>
      </property>
      <property name="text">
-      <string>Id</string>
+      <string>Id [id]</string>
      </property>
     </widget>
    </item>
@@ -40,7 +40,7 @@
       <string>The name of the station</string>
      </property>
      <property name="text">
-      <string>Name</string>
+      <string>Name [name]</string>
      </property>
     </widget>
    </item>
@@ -57,7 +57,7 @@
       <string>Longitude in decimal degree (ET0)</string>
      </property>
      <property name="text">
-      <string>Latitude (decimal degree)</string>
+      <string>Latitude (decimal degree) [lat]</string>
      </property>
     </widget>
    </item>
@@ -81,7 +81,7 @@
       <string>Set altitude in meters above sea level (ET0)</string>
      </property>
      <property name="text">
-      <string>Altitude (m)</string>
+      <string>Altitude (m) [alt]</string>
      </property>
     </widget>
    </item>

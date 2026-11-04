@@ -31,8 +31,12 @@ __revision__ = '$Format:%H$'
 import os
 
 def writeParsToTemplate(outfile, parsDict, templateName):
+	content = ''
 	try:
-		templateFileName = os.path.join(os.path.dirname(__file__),'..','templates',templateName)
+		templateFileName = templateName
+		if not os.path.exists(templateName):
+			templateFileName = os.path.join(os.path.dirname(__file__),'..','templates',templateName)
+
 		# open template file
 		f = open(templateFileName)
 		template = f.read()
@@ -40,9 +44,13 @@ def writeParsToTemplate(outfile, parsDict, templateName):
 		# replace value from the dictionary
 		for k,v in parsDict.items():
 			template = template.replace('[%'+k+'%]', str(v))
+		content = template
 		# save file
-		f = open(outfile, "w")
-		f.write(template)
-		f.close()
+		if outfile:
+			f = open(outfile, "w")
+			f.write(content)
+			f.close()
 	except Exception as e:
 		print('error',str(e))
+
+	return content

@@ -28,10 +28,12 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
+from qgis.PyQt.QtCore import *
+from qgis.PyQt.QtGui import *
+from qgis.PyQt.QtWidgets import *
 from qgis.gui import *
+
+from IdragraTools.qt_compat import QAction
 
 #from QWaDiS.layerforms.utils import *
 

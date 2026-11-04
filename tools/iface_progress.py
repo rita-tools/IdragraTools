@@ -28,10 +28,10 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from PyQt5.QtCore import QObject
-from PyQt5.QtWidgets import QProgressBar
-from qgis._core import Qgis, QgsMessageLog
-from qgis._gui import QgsMessageBar
+from qgis.PyQt.QtCore import QObject
+from qgis.PyQt.QtWidgets import QProgressBar
+from qgis.core import Qgis, QgsMessageLog
+from qgis.gui import QgsMessageBar
 
 # TODO: manage error message
 
@@ -59,21 +59,22 @@ class IfaceProgress(QObject):
 		self.iface.messageBar().pushMessage("Error", text, level=Qgis.Critical)
 
 	def setProgress(self,val):
-		self.progressBar.setValue(val)
+		self.progressBar.setValue(int(val))
 		if val >=100:
 			self.iface.messageBar().clearWidgets()
 
 	def setPercentage(self,val,printPerc = False):
+		progressValue = int(val)
 		if printPerc:
-			nblock = int(val/10)
+			nblock = int(progressValue/10)
 			blocks = ['#']*nblock
 			lines = ['_']*(10-nblock)
 			bar = 'PROGRESS: '+blocks+lines
 			print(bar, end="\r")
-			self.progressBar.setValue(val)
+			self.progressBar.setValue(progressValue)
 		else:
-			print('PERC: %s' %int(val))
-			self.progressBar.setValue(val)
+			print('PERC: %s' % progressValue)
+			self.progressBar.setValue(progressValue)
 
 		if val >=100:
 			self.iface.messageBar().clearWidgets()
@@ -99,7 +100,3 @@ class IfaceProgress(QObject):
 
 		else:
 			self.iface.messageBar().pushMessage("Warning", text, level=Qgis.Warning)
-
-
-		
-		

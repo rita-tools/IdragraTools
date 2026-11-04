@@ -29,7 +29,7 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 
-from PyQt5.QtCore import QObject
+from qgis.PyQt.QtCore import QObject
 import pandas as pd
 
 class Node(QObject):
@@ -145,16 +145,21 @@ class NetworkAnalyst(QObject):
                 # consider also node internal efficiency
                 node.Qirr.iloc[:, 0] = QirrDF['Source_'+str(node.id)]/node.nodeEfficiency
             if QprivateDF is not None:
-                #print('QprivateDistr',node.id,'\n',QprivateDF['Source_'+str(node.id)])
                 # consider also node internal efficiency
                 node.Qprivate.iloc[:, 0] = QprivateDF['Source_'+str(node.id)]/node.nodeEfficiency
+            if QcrsDF is not None:
+                # consider also node internal efficiency
+                node.Qcrs.iloc[:, 0] = QcrsDF['Source_' + str(node.id)] / node.nodeEfficiency
 
-        # update discharges at each cr source
-        if QcrsDF is not None:
-            for n in self.crsList:
-                node = self.nodeDict[n]
-                # node efficiency will be considered later
-                node.Qcrs.iloc[:, 0] = QcrsDF['Source_' + str(node.id)]
+        # # update discharges at each cr source
+        # if QcrsDF is not None:
+        #     print('self.crsList:',self.crsList)
+        #     for n in self.crsList:
+        #         node = self.nodeDict[n]
+        #         # node efficiency will be considered later
+        #         print("QcrsDF['Source_' + str(node.id)", QcrsDF['Source_' + str(node.id)])
+        #
+        #         node.Qcrs.iloc[:, 0] = QcrsDF['Source_' + str(node.id)]
 
         # update discharges at each runoff collector source
         if QcollDF is not None:

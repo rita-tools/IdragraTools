@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>435</width>
+    <height>247</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <layout class="QFormLayout" name="formLayout">
+   <item row="0" column="0">
+    <widget class="QLabel" name="fid_LBL">
+     <property name="toolTip">
+      <string>Unique feature identifier</string>
+     </property>
+     <property name="text">
+      <string>Id [id]</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QLineEdit" name="fid">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="toolTip">
+      <string>Unique soil layer identifier</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="soilid_LBL">
+     <property name="toolTip">
+      <string>The id of the soil profile</string>
+     </property>
+     <property name="text">
+      <string>Soil id [soilid]</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QLineEdit" name="soilid">
+     <property name="toolTip">
+      <string>Id of the soil profile</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="maxdepth_LBL">
+     <property name="text">
+      <string>Maximum depth (m) [maxdepth]</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QLineEdit" name="maxdepth">
+     <property name="toolTip">
+      <string>Maximum depth of the soil layer from the top </string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0">
+    <widget class="QLabel" name="ksat_LBL">
+     <property name="text">
+      <string>Hydraulic conductivity (cm h^-1) [ksat]</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="1">
+    <widget class="QLineEdit" name="ksat">
+     <property name="toolTip">
+      <string>Hydraulic conductivity at saturation in centimeters per hours</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <widget class="QLabel" name="theta_fc_LBL">
+     <property name="text">
+      <string>Theta FC (-) [theta_fc]</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="1">
+    <widget class="QLineEdit" name="theta_fc">
+     <property name="toolTip">
+      <string>Soil humidity at field capacity (adimensional)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="0">
+    <widget class="QLabel" name="theta_wp_LBL">
+     <property name="text">
+      <string>Theta WP (-) [theta_wp]</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="1">
+    <widget class="QLineEdit" name="theta_wp">
+     <property name="toolTip">
+      <string>Soil humidity at wilting point (adimensional)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="0">
+    <widget class="QLabel" name="theta_sat_LBL">
+     <property name="text">
+      <string>Theta SAT (-) [theta_sat]</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="1">
+    <widget class="QLineEdit" name="theta_sat">
+     <property name="toolTip">
+      <string>Soil humidity at saturation (adimensional)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="0">
+    <widget class="QLabel" name="theta_r_LBL">
+     <property name="text">
+      <string>Theta R (-) [theta_r]</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="1">
+    <widget class="QLineEdit" name="theta_r">
+     <property name="toolTip">
+      <string>Residual soil humidity (adimensional)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="0">
+    <widget class="QLabel" name="txtr_code_LBL">
+     <property name="text">
+      <string>Texture code [txtr_code]</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="1">
+    <widget class="QLineEdit" name="txtr_code">
+     <property name="toolTip">
+      <string>1:sand, 2:Loamy sand, 3:sandy loam, 4:loam, 5:silt loam, 6:silt, 7:sandy clay loam, 8: clay loam, 9: silty clay loam, 10: sandy clay, 11: silty clay, 12:clay</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

@@ -31,6 +31,10 @@ pRAW		= [%PRAW%] 	# parameter to compute RAW
 aInterception	= [%AINTERCEPTION%] 	# parameter to calculate interception
 cl_CN		= [%CL_CN%] 	# CN class
 Irrigation	= [%IRRIGATION%]     # irrigation (1 = Yes, 0 = No)
+
+# Add here extra option(s)
+[%ADV_OPTS%]
+
 # table of GDD [°C], Kcb [-], LAI [-], crop height [m], root depth [m]; missing values are entered as * 
 [%CROPTABLE%]
 endTable

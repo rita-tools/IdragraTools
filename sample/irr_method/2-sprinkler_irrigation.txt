@@ -11,6 +11,8 @@ qadaq = 50 # Qadaq: irrigation water depth [mm]
 k_stress = 0.7 # K_stress: water stress coefficient for the activation of irrigation from water diversions
 k_stresswells = 0.8 # K_stresspozzi: water stress coefficient for the activation of irrigation from private wells
 
+fw = 1.0 # fw: exposed and wetted soil fraction
+
 # parameters of percolation model
 min_a = 90.0
 max_a = 116.0 

@@ -30,9 +30,9 @@ __revision__ = '$Format:%H$'
 
 import os
 import sys
-from PyQt5 import QtGui
-from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import QDialog,QAction,QMenu,QMessageBox,QPushButton,QVBoxLayout
+from qgis.PyQt import QtGui
+from qgis.PyQt.QtCore import pyqtSignal
+from qgis.PyQt.QtWidgets import QDialog,QMenu,QMessageBox,QPushButton,QVBoxLayout
 
 from matplotlib.backends.backend_qt5agg  import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
@@ -109,7 +109,9 @@ class ChartDialog(QDialog):
 		if mainTitle is not None: self.ax.set_title(mainTitle)
 		if xTitle is not None: self.ax.set_xlabel(xTitle)
 		if yTitle is not None: self.ax.set_ylabel(yTitle)
-		if y2Title is not None: self.ax2.set_ylabel(y2Title)
+		print('in setTitles:',y2Title)
+		if y2Title is not None:
+			self.ax2.set_ylabel(y2Title)
 		
 		#ax.set_xticks(ind + width / 2)
 		#plt.tight_layout()
@@ -129,7 +131,8 @@ class ChartDialog(QDialog):
 			dates = mdt.date2num(dateTimeList)
 					
 			if yaxis in [1,'y']:
-				lines, = self.ax.plot_date(dates,values, lineType,color=color,label=name)
+				self.ax.xaxis_date()
+				lines, = self.ax.plot(dates,values, lineType,color=color,label=name)
 				if shadow:
 					verts = [(dates[0], 0), *zip(dates,values), (dates[-1], 0)]
 					poly = Polygon(verts, facecolor=shadow, edgecolor=color)
@@ -140,7 +143,8 @@ class ChartDialog(QDialog):
 				self.l.append(name)
 			
 			else:
-				lines, = self.ax2.plot_date(dates,values, lineType,color=color,label=name)
+				self.ax2.xaxis_date()
+				lines, = self.ax2.plot(dates,values, lineType,color=color,label=name)
 				if shadow:
 					verts = [(dates[0], 0), *zip(dates,values), (dates[-1], 0)]
 					poly = Polygon(verts, facecolor=shadow, edgecolor=color)
@@ -275,4 +279,4 @@ if __name__ == '__console__':
 	main = Window()
 	main.show()
 
-	#sys.exit(app.exec_())
+	#sys.exit(app.exec())

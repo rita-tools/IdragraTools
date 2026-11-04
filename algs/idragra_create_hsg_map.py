@@ -28,8 +28,8 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import QCoreApplication,QVariant
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from qgis.analysis import QgsRasterCalculatorEntry, QgsRasterCalculator
 from qgis.core import (QgsRasterLayer,
 					   QgsProcessing,
@@ -38,7 +38,8 @@ from qgis.core import (QgsRasterLayer,
 					   QgsProcessingParameterRasterLayer,
 					   QgsProcessingUtils,
 					   QgsProcessingParameterField,
-					   QgsProcessingParameterRasterDestination)
+					   QgsProcessingParameterRasterDestination,
+					   QgsRasterFileWriter)
 						
 import processing
 
@@ -48,8 +49,6 @@ import os
 
 from ..tools.gis_grid import GisGrid
 from ..tools.compact_dataset import getRasterInfos
-
-from processing.algs.gdal.GdalUtils import GdalUtils
 
 class IdragraCreateHSGMap(QgsProcessingAlgorithm):
 	"""
@@ -234,7 +233,7 @@ class IdragraCreateHSGMap(QgsProcessingAlgorithm):
 		# make max depth map
 		algResults = processing.run("native:reclassifybytable",
 					   {'INPUT_RASTER': soilmap, 'RASTER_BAND': 1,
-						'TABLE': maxDepthLT, 'NO_DATA': -9, 'RANGE_BOUNDARIES': 2,
+						'TABLE': maxDepthLT, 'NO_DATA': -9999, 'RANGE_BOUNDARIES': 2,
 						'NODATA_FOR_MISSING': True, 'DATA_TYPE': 5, 'OUTPUT': 'TEMPORARY_OUTPUT'},
 									context=context, feedback=feedback, is_child_algorithm=True)
 		maxDepthLay = algResults['OUTPUT']
@@ -242,7 +241,7 @@ class IdragraCreateHSGMap(QgsProcessingAlgorithm):
 		# make max ksat 50 map
 		algResults = processing.run("native:reclassifybytable",
 					   {'INPUT_RASTER': soilmap, 'RASTER_BAND': 1,
-						'TABLE': minksat50LT, 'NO_DATA': -9, 'RANGE_BOUNDARIES': 2,
+						'TABLE': minksat50LT, 'NO_DATA': -9999, 'RANGE_BOUNDARIES': 2,
 						'NODATA_FOR_MISSING': True, 'DATA_TYPE': 5, 'OUTPUT': 'TEMPORARY_OUTPUT'},
 									context=context, feedback=feedback, is_child_algorithm=True)
 		minksat50Lay = algResults['OUTPUT']
@@ -250,7 +249,7 @@ class IdragraCreateHSGMap(QgsProcessingAlgorithm):
 		# make max ksat 60 map
 		algResults = processing.run("native:reclassifybytable",
 									{'INPUT_RASTER': soilmap, 'RASTER_BAND': 1,
-									 'TABLE': minksat60LT, 'NO_DATA': -9, 'RANGE_BOUNDARIES': 2,
+									 'TABLE': minksat60LT, 'NO_DATA': -9999, 'RANGE_BOUNDARIES': 2,
 									 'NODATA_FOR_MISSING': True, 'DATA_TYPE': 5, 'OUTPUT': 'TEMPORARY_OUTPUT'},
 									context=context, feedback=feedback, is_child_algorithm=True)
 		minksat60Lay = algResults['OUTPUT']
@@ -258,7 +257,7 @@ class IdragraCreateHSGMap(QgsProcessingAlgorithm):
 		# make max ksat 100 map
 		algResults = processing.run("native:reclassifybytable",
 									{'INPUT_RASTER': soilmap, 'RASTER_BAND': 1,
-									 'TABLE': minksat100LT, 'NO_DATA': -9, 'RANGE_BOUNDARIES': 2,
+									 'TABLE': minksat100LT, 'NO_DATA': -9999, 'RANGE_BOUNDARIES': 2,
 									 'NODATA_FOR_MISSING': True, 'DATA_TYPE': 5, 'OUTPUT': 'TEMPORARY_OUTPUT'},
 									context=context, feedback=feedback, is_child_algorithm=True)
 		minksat100Lay = algResults['OUTPUT']
@@ -284,7 +283,7 @@ class IdragraCreateHSGMap(QgsProcessingAlgorithm):
 			entries.append(raster2)
 
 			wtdepth = QgsProcessingUtils.generateTempFilename('wtdepth.tif')
-			driverName = GdalUtils.getFormatShortNameFromFilename(wtdepth)
+			driverName = QgsRasterFileWriter.driverForExtension(os.path.splitext(wtdepth)[1])
 			# Process calculation with input extent and resolution
 
 			calc = QgsRasterCalculator('"elevation@1"-"watertable@1"', wtdepth, driverName, soilmap.extent(),
@@ -330,11 +329,11 @@ class IdragraCreateHSGMap(QgsProcessingAlgorithm):
 		feedback.setProgress(75)
 		# assign HSG code:
 		# A=1, B=2, C=3 and D=4
-		hsgArray = np.zeros(maxDepthArray.shape,np.float32)-9
+		hsgArray = np.zeros(maxDepthArray.shape,np.float32)-9999
 		# ---------------------------
-		hsgArray[maxDepthArray < 50.0 * cm2m] = 4
+		hsgArray[(maxDepthArray < 50.0 * cm2m)*(maxDepthArray >=0)] = 4
 		# ---------------------------
-		hsgArray[wtDepthArray < 60.0 * cm2m] = 4
+		hsgArray[(wtDepthArray < 60.0 * cm2m)*(maxDepthArray >=0)] = 4
 		# ---------------------------
 		hsgArray[(maxDepthArray >= 50.0 * cm2m)*(maxDepthArray <= 100.0 * cm2m) *
 				(wtDepthArray >= 60.0 * cm2m)*(minksat50Array > 40.0 * nms2cmh)] = 1
@@ -403,7 +402,7 @@ class IdragraCreateHSGMap(QgsProcessingAlgorithm):
 		self.nrows = geoDict['nrows']
 		self.xllcorner = geoDict['xllcorner']
 		self.yllcorner = geoDict['yllcorner']
-		self.nodata = -9
+		self.nodata = -9999
 		self.data = hsgArray
 		# xurcorner = geoDict['xllcorner'] + ncols * geoDict['dx']
 		# yurcorner = geoDict['yllcorner'] - nrows * geoDict['dy']

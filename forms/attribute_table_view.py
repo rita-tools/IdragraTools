@@ -29,7 +29,7 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 from qgis.gui import QgsDualView, QgsAttributeEditorContext
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QMenu
+from qgis.PyQt.QtWidgets import QDialog, QVBoxLayout, QMenu
 
 class AttributesTableView(QDialog):
     """

@@ -28,8 +28,8 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import QCoreApplication,QVariant
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from qgis.core import (QgsProcessing,
 						QgsFeatureSink,
 						QgsProcessingException,
@@ -204,7 +204,7 @@ class IdragraSaveAscii(QgsProcessingAlgorithm):
 		self.nrows = geoDict['nrows']
 		self.xllcorner = geoDict['xllcorner']
 		self.yllcorner = geoDict['yllcorner']
-		self.nodata = -9
+		self.nodata = -9999
 
 		# xurcorner = geoDict['xllcorner'] + self.ncols * geoDict['dx']
 		# yurcorner = geoDict['yllcorner'] - self.nrows * geoDict['dy']

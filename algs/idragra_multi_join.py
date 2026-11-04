@@ -28,8 +28,9 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import QCoreApplication,QVariant
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import QCoreApplication,QVariant
+from qgis.core import QgsProcessingParameterRasterDestination
 from qgis.core import (QgsProcessing,
 					   QgsFeatureSink,
 					   QgsProcessingException,
@@ -46,8 +47,6 @@ from qgis.core import (QgsProcessing,
 					   QgsProcessingParameterNumber,
 					   QgsProcessingParameterBoolean,
 					   QgsProcessingParameterField,
-					   QgsProcessingParameterExtent,
-					   QgsProcessingParameterRasterDestination,
 					   QgsExpression,
 					   QgsFeatureRequest,
 					   QgsCoordinateReferenceSystem,
@@ -61,21 +60,20 @@ from qgis.core import (QgsProcessing,
 					   QgsVectorLayer,
 					   QgsRasterLayer,
 					   QgsProject,
-					   NULL, QgsRectangle)
-						
-import processing
+					   NULL, QgsFeature, QgsProcessingOutputRasterLayer, QgsGeometry)
 
-from numpy import array
+import numpy as np
 
 from datetime import datetime
 
 import os
 
-from ..tools.write_pars_to_template import writeParsToTemplate
-from ..tools.gis_grid import GisGrid
+from ..tools.make_weight_matrix import makeWeightMatrix_WW
+from ..tools.import_from_csv import *
+from ..tools.compact_dataset import getRasterInfos
 
 
-class IdragraExportControlPoints(QgsProcessingAlgorithm):
+class IdragraMultiJoin(QgsProcessingAlgorithm):
 	"""
 	This is an example algorithm that takes a vector layer and
 	creates a new identical one.
@@ -92,12 +90,14 @@ class IdragraExportControlPoints(QgsProcessingAlgorithm):
 	# Constants used to refer to parameters and outputs. They will be
 	# used when calling the algorithm from another algorithm, or when
 	# calling from the QGIS console.
-	
-	VECTORLAY= 'VECTOR_LAY'
-	RASTEREXT = 'RASTER_EXT'
-	CELLDIM = 'CELL_DIM'
-	DESTFILE = 'DEST_FILE'
-		
+
+	BASE_LAY = 'BASE_LAY'
+	ATTR_LAY = 'ATTR_LAY'
+	ATTR_FLD = 'ATTR_FIELD'
+	SEP = 'SEP'
+
+	OUT_LAY = 'OUT_LAY'
+
 	FEEDBACK = None
 	
 
@@ -108,7 +108,7 @@ class IdragraExportControlPoints(QgsProcessingAlgorithm):
 		return QCoreApplication.translate('Processing', string)
 
 	def createInstance(self):
-		return IdragraExportControlPoints()
+		return IdragraMultiJoin()
 
 	def name(self):
 		"""
@@ -118,21 +118,21 @@ class IdragraExportControlPoints(QgsProcessingAlgorithm):
 		lowercase alphanumeric characters only and no spaces or other
 		formatting characters.
 		"""
-		return 'IdragraExportControlPoints'
+		return 'IdragraMultiJoin'
 
 	def displayName(self):
 		"""
 		Returns the translated algorithm name, which should be used for any
 		user-visible display of the algorithm name.
 		"""
-		return self.tr('Control points')
+		return self.tr('Make multiple join by position')
 
 	def group(self):
 		"""
 		Returns the name of the group this algorithm belongs to. This string
 		should be localised.
 		"""
-		return self.tr('Export')
+		return self.tr('Create')
 
 	def groupId(self):
 		"""
@@ -142,7 +142,7 @@ class IdragraExportControlPoints(QgsProcessingAlgorithm):
 		contain lowercase alphanumeric characters only and no spaces or other
 		formatting characters.
 		"""
-		return 'IdragraExport'
+		return 'IdragraCreate'
 
 	def shortHelpString(self):
 		"""
@@ -152,12 +152,14 @@ class IdragraExportControlPoints(QgsProcessingAlgorithm):
 		"""
 		
 		helpStr = """
-						The algorithm creates a file with the list of the cells where save detailed output. 
+						The algorithm create a new table with data referred to each field.
 						<b>Parameters:</b>
-						Source vector layer: the vector layer of control points (points) [VECTOR_LAY]
-						Raster extension: the maximum extension of the raster domain map (min x, max x, min y, max y) [RASTER_EXT]
-						Raster cell dimension: the dimension of the squared cell in map units [CELL_DIM]
-						Output file: the complete path of the output file (*.txt) [DESTFILE]
+						Base map: the base map to join to [BASE_LAY]
+						Attributes map: the map with the attributes to join [ATTR_LAY]
+						Attributes field: the column containing the attribute [LU_COL]
+						Output: the file path to the output map [OUT_LAY]
+						
+						<b>Notes</b>
 						"""
 		
 		return self.tr(helpStr)
@@ -172,78 +174,109 @@ class IdragraExportControlPoints(QgsProcessingAlgorithm):
 		Here we define the inputs and output of the algorithm, along
 		with some other properties.
 		"""
-	
-		self.addParameter(QgsProcessingParameterVectorLayer(self.VECTORLAY, self.tr('Source vector layer'), [QgsProcessing.TypeVectorPoint ]))
 
-		self.addParameter(QgsProcessingParameterExtent(self.RASTEREXT, self.tr('Raster extension')))
-		
-		self.addParameter(QgsProcessingParameterNumber(self.CELLDIM, self.tr('Raster cell dimension')))
-		
-		self.addParameter(QgsProcessingParameterFileDestination(self.DESTFILE, self.tr('Output file'), self.tr('text file (*.txt)')))
-		
-		
+		self.addParameter(QgsProcessingParameterFeatureSource(self.BASE_LAY, self.tr('Base map'),
+															  [QgsProcessing.TypeVectorAnyGeometry], None, False))
+
+		self.addParameter(QgsProcessingParameterFeatureSource(self.ATTR_LAY, self.tr('Attributes map'),
+															  [QgsProcessing.TypeVectorPolygon], None, False))
+		self.addParameter(QgsProcessingParameterField(self.ATTR_FLD, self.tr('Attributes field'), 'extid', self.ATTR_LAY,
+													  QgsProcessingParameterField.Any))
+
+		self.addParameter(QgsProcessingParameterString(self.SEP, self.tr('Separator'), ' ', False,False))
+
+		self.addParameter(
+			QgsProcessingParameterFeatureSink(self.OUT_LAY, self.tr('Output layer'), QgsProcessing.TypeVectorPolygon))
+
 	def processAlgorithm(self, parameters, context, feedback):
 		"""
 		Here is where the processing itself takes place.
 		"""
 		self.FEEDBACK = feedback
 		# get params
-		vectorLay = self.parameterAsVectorLayer(parameters, self.VECTORLAY, context)
-		rasterExt = self.parameterAsExtent(parameters, self.RASTEREXT, context)
-		cellDim = self.parameterAsDouble(parameters, self.CELLDIM, context)
-		filename = self.parameterAsFileOutput(parameters,	self.DESTFILE,	context)
+		base_lay = self.parameterAsVectorLayer(parameters, self.BASE_LAY, context)
 
+		attr_lay = self.parameterAsVectorLayer(parameters, self.ATTR_LAY, context)
+		attr_fld = self.parameterAsFields(parameters, self.ATTR_FLD, context)[0]
 
-		# calculate extension
-		xllcorner = rasterExt.xMinimum()
-		# yllcorner = extension.yMinimum()
-		yurcorner = rasterExt.yMaximum()
-		h = rasterExt.height()
-		w = rasterExt.width()
+		sep = self.parameterAsString(parameters,self.SEP,context)
 
-		nrows = round(h / cellDim)
-		ncols = round(w / cellDim)
+		# prepare the output layer
+		fldList = base_lay.fields()
+		fldList.append(QgsField('joined', QVariant.String))
 
-		xurcorner = xllcorner + ncols * cellDim
-		# yurcorner = yllcorner+nrows*outputCellSize
-		yllcorner = yurcorner - nrows * cellDim
+		(sink, dest_id) = self.parameterAsSink(
+			parameters,
+			self.OUT_LAY,
+			context,
+			fldList,
+			base_lay.wkbType(),
+			base_lay.sourceCrs()
+		)
 
-		newExt = QgsRectangle(xllcorner, yllcorner, xurcorner, yurcorner)
-
-		# make a grid object
-		self.aGrid = GisGrid()
-		self.aGrid.fitToExtent(newExt,cellDim,cellDim)
-
-		# loop in layer and get point coordinates
-		nOfCP = 0
-		recs = ['ID\tX\tY']
-		nFeats = vectorLay.featureCount()
-		n = 0
-		for feature in vectorLay.getFeatures():
-			x = feature.geometry().asMultiPoint()[0].x()
-			y = feature.geometry().asMultiPoint()[0].y()
-			c, r = self.aGrid.coordToCell(x, y)
-			# coordinates are one-based
+		# get value from source table
+		c = 0
+		nFeat = base_lay.featureCount()
+		for feat in base_lay.getFeatures():
 			c+=1
-			r+=1
-			if (c<1) or (c>ncols) or (r<1) or (r>nrows):
-				self.FEEDBACK.reportError(
-					self.tr('Control point named %s is outside the extension') %
-					(feature['name']))
+			self.FEEDBACK.setProgress(100.0 * c / nFeat)
+
+			# get geometry and geometry data
+			geom = feat.geometry()
+			#c_geom = geom.centroid()
+			c_geom = geom.pointOnSurface()
+
+			# get id from other maps (maximum covered area)
+			attr_list, gidx_list = self.selectByLocation(inputLayer=attr_lay, refGeom=c_geom, inputFld=attr_fld)
+			attr_joined = sep.join([str(x) for x in attr_list])
+
+			attr_list =feat.attributes()+\
+					   [attr_joined]
+
+			new_feat = QgsFeature(fldList)
+			new_feat.setGeometry(geom)
+			new_feat.setAttributes(attr_list)
+
+			sink.addFeature(new_feat, QgsFeatureSink.FastInsert)
+
+		return {self.OUT_LAY: dest_id}
+
+	def calcGeomIndex(self, aGeom, refGeom, refArea, refLen):
+		xGeom = refGeom.intersection(aGeom)
+		geomIndex = 0.0
+		try:
+			xArea = xGeom.area()
+			xLen = xGeom.length()
+			if refArea > 0:
+				geomIndex = round(100 * xArea / refArea, 2)  # it's a polygon
+			elif refLen > 0:
+				geomIndex = round(100 * xLen / refLen, 2)  # it's a line
 			else:
-				recs.append('%s\t%s\t%s'%(n+1,r,c)) #flipped
-				nOfCP += 1
+				geomIndex = 100.0  # it's a point
+		except Exception as e:
+			print('Error in calcGeomIndex, %s' % str(e))
 
-			n+=1
-			self.FEEDBACK.setProgress(100. * n / nFeats)
-
-		tableTxt = '\n'.join(recs)
-		cpDict = {'NUMCELL':nOfCP, 'CELLTABLE':tableTxt}
-
-		writeParsToTemplate(outfile=filename,
-							parsDict=cpDict,
-							templateName='cells.txt')
+		return geomIndex
 
 
-		return {'OUTPUT':cpDict}
-		
+	def selectByLocation(self, inputLayer, refGeom, inputFld,filter_string = ''):
+
+		# set a filter
+		refArea = refGeom.area()
+		refLen = 0  # unused
+		target_ids = []
+		gidxs = [] # list of geometry indexes
+		if filter_string:
+			req = QgsFeatureRequest().setFilterRect(refGeom.boundingBox()).setFilterExpression(filter_string)
+		else:
+			req = QgsFeatureRequest().setFilterRect(refGeom.boundingBox())
+
+		for feature in inputLayer.getFeatures(req):
+			aGeom = feature.geometry()
+			geomIndex = self.calcGeomIndex(aGeom, refGeom, refArea, refLen)
+			if geomIndex > 0:
+				gidxs.append(geomIndex)
+				#print('inputFld', inputFld)
+				target_ids.append(feature[inputFld])
+
+		return target_ids, gidxs
