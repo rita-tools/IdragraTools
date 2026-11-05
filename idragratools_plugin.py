@@ -52,7 +52,6 @@ from tools.export_geodata_vector import ExportGeodataVector
 from .forms.report_view import ReportDialog
 from .tools.show_message import showInfoMessageBox, showCriticalMessageBox
 from .tools.network_analyst import NetworkAnalyst
-from .tools.check_matlab_installed import checkMatlabInstalled
 from .data_manager.chart_widget import ChartWidget
 from .tools.gis_grid import GisGrid
 from .tools.iface_progress import IfaceProgress
@@ -63,7 +62,7 @@ from .tools.export_irrigation_method import exportIrrigationMethod
 from .forms.attribute_table_view import AttributesTableView
 from .forms.new_db_dialog import NewDbDialog
 from .tools.utils import returnExtent
-from .tools.export_bat import exportCropCoefBat, exportIdrAgraBat
+from .tools.export_bat import exportIdrAgraBat
 from .tools.export_land_use import exportLandUse
 from .tools.export_water_sources import makeDischSerie, exportWaterSources
 from .tools.write_pars_to_template import writeParsToTemplate
@@ -79,7 +78,7 @@ from qgis.PyQt.QtCore import QVariant, QUrl
 
 from qgis.PyQt.QtCore import qVersion, QCoreApplication, QLocale, QSettings, QTranslator, QThread, Qt, QTimer
 from qgis.PyQt.QtGui import QIcon, QColor, QPixmap
-from qgis.PyQt.QtWidgets import QMenu, QMessageBox, QProgressBar, QDialog
+from qgis.PyQt.QtWidgets import QMenu, QMessageBox, QProgressBar, QDialog, QFileDialog
 
 from .qt_compat import QAction
 
@@ -161,12 +160,9 @@ class IdrAgraTools():
         # add processing provider
         self.provider = IdrAgraToolsProvider()
 
-        # TODO: check the latest version of idragra and cropcoef
         self.s = QSettings('UNIMI-DISAA', 'IdrAgraTools')
-        if self.s.value('idragraPath','')=='': self.s.setValue('idragraPath', os.path.join(self.plugin_dir,'bin','idragra.exe'))
-        if self.s.value('cropcoeffPath','')=='': self.s.setValue('cropcoeffPath', os.path.join(self.plugin_dir,'bin','cropcoef.exe'))
-        if self.s.value('MCRpath', '') == '': self.s.setValue('MCRpath',checkMatlabInstalled(version= '9.9'))
-        #if self.s.value('MinGWPath', '') == '': self.s.setValue('MinGWPath', checkMatlabInstalled(version='9.9'))
+        # Use a separate setting so an existing 2.x configuration cannot select the old engine.
+        if self.s.value('idragra3Path','')=='': self.s.setValue('idragra3Path', os.path.join(self.plugin_dir,'bin','idragra.exe'))
 
         self.PRJNAME = 'Idragra simulation'
         self.FILEFORMAT = 'Geopackage file (*.gpkg)'#'Idragra db (*.idb)'
@@ -407,12 +403,10 @@ class IdrAgraTools():
                         'OUTPUTFOLDER':'simout',
                         'SPATIALFOLDER':'geodata',
                         'METEOFOLDER':'meteodata',
-                        'PHENOFOLDER':'pheno',
                         'IRRFOLDER':'irrmethods',
                         'WATSOURFOLDER':'wsources',
                         'WSFOLDER':'meteodata',
                         'WSFILE':'weather_stations.dat',
-                        'CANOPYRESMOD':1,
                         'CO2FILE': 'CO2_conc.dat',
                         'MODE':0,
                         'CAPILLARYFLAG':'F',
@@ -456,12 +450,14 @@ class IdrAgraTools():
                         'VECTOR_MODE':0
                        }
 
-        self.PHENOVARS = {'CNvalue':self.tr('CN value'),
-                         'H':self.tr('Plant height'),
-                         'Kcb':self.tr('Crop coefficient'),
-                         'LAI': self.tr('Leaf area index'),
-                         'Sr': self.tr('Root depth')
-                         }
+        self.CONTROL_PHENO_VARS = {
+            'kcb': (self.tr('Basal crop coefficient'), 'cell', 'kcb'),
+            'lai': (self.tr('Leaf area index'), 'cell', 'lai'),
+            'height': (self.tr('Plant height (m)'), 'cellevaporation', 'h'),
+            'cn': (self.tr('Curve number (CN II)'), 'cellrunoff', 'cn2_pheno'),
+            'type': (self.tr('Phenology type'), 'cellrunoff', 'pheno_type'),
+            'phase': (self.tr('Phenology phase'), 'cellrunoff', 'pheno_phase'),
+        }
 
         # supported report types
         self.REPORT_TYPES = {'general': self.tr('Simulation overview'),
@@ -566,9 +562,6 @@ class IdrAgraTools():
 
         self._addmenuitem(self.simulationMenu, 'Step5', self.tr('Export water sources data'), self.exportWaterSourcesData, False)
         self._addmenuitem(self.simulationMenu, 'Step6', self.tr('Export simulation project'), self.exportSimProj, False)
-        self._addmenuitem(self.simulationMenu, 'Step7', self.tr('Run CropCoef module'),
-                          lambda: self.runAsThread(self.execBatFile, batFile ='run_cropcoef.bat'), False)
-
         self._addmenuitem(self.simulationMenu, 'Step8', self.tr('Run IdrAgra'),
                           lambda: self.runAsThread(self.execBatFile, batFile ='run_idragra.bat'), False)
 
@@ -613,7 +606,8 @@ class IdrAgraTools():
         self.mainMenu.addMenu(self.analysisMenu)
 
         self.advancedMenu = self._addmenu(self.mainMenu, 'Advanced', self.tr('Advanced'), True)
-        self._addmenuitem(self.advancedMenu, 'Options', self.tr('Options'), self.setOptions,True)
+        self._addmenuitem(self.advancedMenu, 'Options', self.tr('Specify IdrAgra executable...'),
+                          self.setIdragraExecutable, True)
         #self._addmenuitem(self.advancedMenu, 'Test', self.tr('test'), lambda: self.runAsThread(self.test),True)
         #self._addmenuitem(self.advancedMenu, 'testexport', self.tr('Test esport'), self.createImageMap, True)
 
@@ -749,21 +743,13 @@ class IdrAgraTools():
         else:
             self.CRS = int(s.value('crsId'))
 
-    def setOptions(self):
-        # show dialog to set options
-        from .forms.common_settings import CommonSettings
-        dlg = CommonSettings(self.iface)
-
-        result = dlg.exec()
-        # See if OK was pressed
-        if result:
-            res = dlg.getData()
-            ### set executable path
-            s = QSettings('UNIMI-DISAA', 'IdrAgraTools')
-            s.setValue('idragraPath', res['idragraPath'])
-            s.setValue('cropcoeffPath', res['cropcoeffPath'])
-            s.setValue('MCRpath', res['MCRpath'])
-            s.setValue('MinGWPath', res['MinGWPath'])
+    def setIdragraExecutable(self):
+        settings = QSettings('UNIMI-DISAA', 'IdrAgraTools')
+        filename, _ = QFileDialog.getOpenFileName(
+            self.iface.mainWindow(), self.tr('Select IdrAgra 3.x executable'),
+            settings.value('idragra3Path', ''), self.tr('Executable (*.exe)'))
+        if filename:
+            settings.setValue('idragra3Path', filename)
 
 
     def extractDateTime(self, text, dateFormat='state_%d%m%y_%H%M.mat'):
@@ -1901,7 +1887,6 @@ class IdrAgraTools():
         self.updatePars()
 
         self.exportSimProjTH(progress)
-        self.execBatFile('run_cropcoef.bat',progress)
         self.execBatFile('run_idragra.bat',progress)
 
     def setSimulation(self, callback = None):
@@ -2016,13 +2001,6 @@ class IdrAgraTools():
         self.runAsThread(function = self.exportMeteoDataTH, onFinished = self.updatePars)
 
     def exportMeteoDataTH(self,progress):
-        # make output directory
-        path2Pheno = os.path.join(self.SIMDIC['OUTPUTPATH'], self.SIMDIC['PHENOFOLDER'])
-        if not os.path.exists(path2Pheno):
-            os.makedirs(path2Pheno)
-        else:
-            progress.pushInfo('Directory %s already exists' % path2Pheno, False)
-
         path2Meteodata = os.path.join(self.SIMDIC['OUTPUTPATH'], self.SIMDIC['METEOFOLDER'])
         if not os.path.exists(path2Meteodata):
             os.makedirs(path2Meteodata)
@@ -2085,17 +2063,6 @@ class IdrAgraTools():
         self.SIMDIC['NOFSOILUSES'] = numOfLanduses
         self.SIMDIC['SOILUSESLIST'] = ' '.join(soiluseIds)
 
-        # setup cropcoeff par file
-        writeParsToTemplate(outfile=os.path.join(self.SIMDIC['OUTPUTPATH'], 'cropcoef.txt'),
-                            parsDict={
-                                'WSFILENAME': self.SIMDIC['WSFILE'],
-                                'METEOFOLDER': self.SIMDIC['METEOFOLDER'],
-                                'CROPFOLDER': self.SIMDIC['LANDUSES'],
-                                'OUTPUTFOLDER': self.SIMDIC['PHENOFOLDER'],
-                                'CANOPYRESMOD': self.SIMDIC['CANOPYRESMOD']
-                            },
-                            templateName='cropcoef.txt')
-
         progress.setPercentage(100.)
 
     def exportWaterSourcesData(self, progress):
@@ -2140,14 +2107,10 @@ class IdrAgraTools():
                             parsDict=self.SIMDIC,
                             templateName='idragra_parameters.txt')
 
-        progress.setPercentage(75.)
-        progress.setText(self.tr('Export Cropcoeff simulation parameters'))
-
         # export bat/sh file
         progress.setPercentage(100.)
         progress.setText(self.tr('Export bat file'))
 
-        exportCropCoefBat(self.SIMDIC['OUTPUTPATH'])
         exportIdrAgraBat(self.SIMDIC['OUTPUTPATH'])
 
     def exportSpatialData(self,progress):
@@ -2235,9 +2198,6 @@ class IdrAgraTools():
         if progress: progress.setPercentage(0.0)
 
         # update here *.bat file
-        if batFile == 'run_cropcoef.bat':
-            exportCropCoefBat(self.SIMDIC['OUTPUTPATH'])
-
         if batFile == 'run_idragra.bat':
             exportIdrAgraBat(self.SIMDIC['OUTPUTPATH'])
 
@@ -2252,19 +2212,6 @@ class IdrAgraTools():
         execPath = os.path.join(self.SIMDIC['OUTPUTPATH'], batFile)
         # print execPath,arg1,arg2
         if progress: progress.setText('%s' % (execPath))
-
-        s = QSettings('UNIMI-DISAA', 'IdrAgraTools')
-        # C:/Program Files/MATLAB/R2020b/runtime/win64
-        MCRpath = s.value('MCRpath', '')
-        # C:/MinGW/bin
-        MinGWPath = s.value('MinGWPath', '')
-
-        toks = os.environ['PATH'].split(';')
-        if not MCRpath in toks:
-            os.environ['PATH'] = os.environ['PATH'] + ';' + MCRpath
-
-        if not MinGWPath in toks:
-            os.environ['PATH'] = os.environ['PATH'] + ';' + MinGWPath
 
         try:
             # progress.setText('%s'%os.environ['PATH'])
@@ -2285,7 +2232,7 @@ class IdrAgraTools():
             currentYear = -1
             year = -1
 
-            while checkTread(t):
+            while checkTread(t) or not q.empty():
                 try:
                     line = q.get(timeout=.1)  # q.get_nowait() # or #TODO_check performance
                     #line = q.get_nowait()
@@ -2328,43 +2275,14 @@ class IdrAgraTools():
                             progress.setText(self.tr('Current year: %s')%currentYear)
 
 
-        except Exception as e:
-            progress.setInfo('Processing error: %s' % (str(e)), True)
+            returnCode = proc.wait()
+            if returnCode != 0:
+                raise RuntimeError(self.tr('IdrAgra failed with exit code %s') % returnCode)
+
+        except OSError as error:
+            raise RuntimeError(self.tr('Unable to run IdrAgra: %s') % error) from error
 
         #if progress: progress.setText(self.tr('Process concluded'))
-
-    def readCropCoefReasults(self,varId, wsId,yearList = []):
-        import pandas as pd
-        msg = ''
-        df = None
-        if len(yearList) == 0:
-            yearList = self.SIMDIC['YEARS']
-
-        fileName = os.path.join(self.SIMDIC['OUTPUTPATH'],
-                                self.SIMDIC['PHENOFOLDER'],
-                                'Pheno_%s' % wsId, '%s.dat' % varId)
-
-        # get date list
-        if len(yearList)>0:
-            dateList = pd.date_range(datetime.strptime('%s0101' % yearList[0], '%Y%m%d'),
-                                     datetime.strptime('%s1231' % yearList[-1], '%Y%m%d'),
-                                     freq='d').tolist()
-
-        try:
-            soiluseNames = self.DBM.getColumnValues(fieldName ='("[" || id || "] " || name) AS label' ,
-                                                    tableName='idr_soiluses ORDER BY id')
-
-            # this output are for matlab cropcoef
-            # df = pd.read_csv(fileName, sep='\t', names = soiluseNames+['timestamp'],
-            #                  engine='python', skiprows=1)
-            df = pd.read_csv(fileName, sep=r'\s* \s*', names=soiluseNames + ['timestamp'],
-                             skiprows=1)
-
-            df['timestamp']=dateList
-        except Exception as e:
-            msg += str(e) + '\n'
-
-        return df, msg
 
     def readControlPointsParams(self, r, c, yearList=[],varList = []):
         import pandas as pd
@@ -2406,7 +2324,7 @@ class IdrAgraTools():
 
         return finalDF,msg
 
-    def readControlPointsResults(self,r,c,yearList=None,columList = None):
+    def readControlPointsResults(self,r,c,yearList=None,columList = None, fileKind='cell'):
         import pandas as pd
         msg = ''
         if yearList is None:
@@ -2415,7 +2333,7 @@ class IdrAgraTools():
         finalDF = None
         for year in yearList:
             csvFile = os.path.join(self.SIMDIC['OUTPUTPATH'], self.SIMDIC['OUTPUTFOLDER'],
-                                   '%s_cell_%s_%s.csv' % (year, r, c))
+                                   '%s_%s_%s_%s.csv' % (year, fileKind, r, c))
 
             try:
                 # open csv file as dataframe

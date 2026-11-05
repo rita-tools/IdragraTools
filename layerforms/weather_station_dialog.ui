@@ -136,9 +136,6 @@
        <widget class="QComboBox" name="PLOT_HEATMAP_CB"/>
       </item>
       <item>
-       <widget class="QComboBox" name="PLOT_PHENO_VARS_CB"/>
-      </item>
-      <item>
        <spacer name="horizontalSpacer">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>

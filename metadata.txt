@@ -15,7 +15,7 @@ description=Prepare inputs and visualize outputs for the IdrAgra model
 author=Enrico A. Chiaradia, Paolo Soffietti
 email=enrico.chiaradia@unimi.it
 
-about=Tools to prepare inputs, run simulations and visualize outputs for IdrAgra. Compatible with IdrAgra 2.x. Tested on Windows with QGIS 3.34.3 and 3.44.15.
+about=Tools to prepare inputs, run simulations and visualize outputs for IdrAgra. Compatible with IdrAgra 3.x. Tested on Windows with QGIS 3.34.3 and 3.44.15.
 
 tracker=https://github.com/rita-tools/IdragraTools/issues
 repository=https://github.com/rita-tools/IdragraTools

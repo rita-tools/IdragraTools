@@ -28,7 +28,8 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from qgis.PyQt.QtWidgets import QPushButton, QLineEdit, QDialog, QMainWindow, QLabel
+import qgis.utils
+from qgis.PyQt.QtWidgets import QPushButton, QLineEdit, QDialog, QMainWindow, QLabel, QComboBox
 
 from data_manager.chart_widget import ChartWidget
 
@@ -78,12 +79,16 @@ def formOpen(dialog,layerid,featureid):
 			int(myDialog.findChild(QLineEdit, 'id').text()),
 			myDialog.findChild(QLineEdit, 'name').text()))
 
-	PLOT_CROP_VARS = myDialog.findChild(QPushButton, 'PLOT_CROP_VARS')
-	# for some reason, forms are initialized twice ...
-	if PLOT_CROP_VARS.receivers(PLOT_CROP_VARS.clicked) == 0:
-		PLOT_CROP_VARS.clicked.connect(lambda: plotCropVars(
-			int(myDialog.findChild(QLineEdit, 'id').text()),
-			myDialog.findChild(QLineEdit, 'name').text()))
+	phenology = myDialog.findChild(QComboBox, 'PLOT_PHENO_VARS_CB')
+	plugin = qgis.utils.plugins['IdragraTools']
+	phenology.blockSignals(True)
+	phenology.clear()
+	phenology.addItem(plugin.tr('Plot phenology...'), None)
+	for key, (label, fileKind, column) in plugin.CONTROL_PHENO_VARS.items():
+		phenology.addItem(label, key)
+	phenology.blockSignals(False)
+	if phenology.receivers(phenology.currentIndexChanged) == 0:
+		phenology.currentIndexChanged.connect(lambda: plotPhenology(phenology))
 
 	#setInfoLabel()
 	INFO_LBL = myDialog.findChild(QLabel, 'INFO_LBL')
@@ -95,7 +100,7 @@ def formOpen(dialog,layerid,featureid):
 		PLOT_EVA_VARS.setHidden(True)
 		PLOT_TRANS_WC.setHidden(True)
 		PLOT_TRANS_VARS.setHidden(True)
-		PLOT_CROP_VARS.setHidden(True)
+		phenology.setHidden(True)
 		INFO_LBL.setHidden(True)
 	else:
 		r, c = qgis.utils.plugins['IdragraTools'].getRowCol(feature)
@@ -483,72 +488,33 @@ def plotIrrEvents(wsId,name):
 	dlg.show()
 
 
-def plotCropVars(wsId,name):
-	tr = qgis.utils.plugins['IdragraTools'].tr
-
-	r, c = qgis.utils.plugins['IdragraTools'].getRowCol(feature)
-	df, msg = qgis.utils.plugins['IdragraTools'].readControlPointsResults(r, c,
-																		  None, ['Giulian_day', 'kcb', 'lai'])
-	if df is None:
-		showCriticalMessageBox(tr('It\'s like there is no data to plot'),tr('Please, check if file exist'),msg)
+def plotPhenology(selector):
+	plugin = qgis.utils.plugins['IdragraTools']
+	key = selector.currentData()
+	if key is None:
 		return
-
-	# make a dialog
-	tr = qgis.utils.plugins['IdragraTools'].tr
+	selector.setCurrentIndex(0)
+	label, fileKind, column = plugin.CONTROL_PHENO_VARS[key]
+	try:
+		r, c = plugin.getRowCol(feature)
+		df, msg = plugin.readControlPointsResults(r, c, None,
+			['Giulian_day', column], fileKind=fileKind)
+	except (OSError, ValueError) as error:
+		showCriticalMessageBox(plugin.tr('Unable to plot phenology'),
+			plugin.tr('Export the control points and run IdrAgra first.'), str(error))
+		return
+	if df is None or df.empty:
+		showCriticalMessageBox(plugin.tr('Unable to plot phenology'),
+			plugin.tr('Export the simulation project and run IdrAgra to generate control-point outputs.'), msg)
+		return
 	cw = ChartWidget(myDialog, '', False, False)
-	cw.setAxis(pos=211, secondAxis=False, label=['External vars'])
-
-	# add timeseries
-	plotList = [
-		{'name': qgis.utils.plugins['IdragraTools'].CPVARNAME['cp_kcb'], 'plot': 'True', 'color': '#c87137ff',
-		 'style': '-', 'axes': 'y', 'table': 'kcb', 'id': wsId},
-	]
-
-	y1Title = []
-	if df is not None:
-		for p in plotList:
-			shadow = False
-			if p['table'] == 'theta1_mm':
-				shadow = p['color'] + '29'
-				p['color'] = p['color'] + '00'
-			# get data
-			dateTimeList = df['Giulian_day'].values
-			values = df[p['table']].values
-			cw.addTimeSerie(dateTimeList, values, lineType='-', color=p['color'], name=p['name'], yaxis=p['axes'],
-							shadow=shadow)
-			if p['axes'] == 'y': y1Title.append(p['name'])
-
-	# set title
-	cw.setTitles(xlabs=None, ylabs=None, xTitle=None, yTitle=',\n'.join(y1Title), y2Title=None, mainTitle=None)
-
-	cw.setAxis(pos=212, secondAxis=False, label=['Internal vars'])
-
-	# add timeseries
-	plotList = [
-		{'name': qgis.utils.plugins['IdragraTools'].CPVARNAME['cp_lai'], 'plot': 'True', 'color': '#71c837ff',
-		 'style': '-', 'axes': 'y', 'table': 'lai', 'id': wsId}
-	]
-
-	y1Title = []
-	if df is not None:
-		for p in plotList:
-			shadow = False
-			if p['table'] == 'theta2_mm':
-				shadow = p['color'] + '29'
-				p['color'] = p['color'] + '00'
-			# get data
-			dateTimeList = df['Giulian_day'].values
-			values = df[p['table']].values
-			cw.addTimeSerie(dateTimeList, values, lineType='-', color=p['color'], name=p['name'], yaxis=p['axes'],
-							shadow=shadow)
-			if p['axes'] == 'y': y1Title.append(p['name'])
-
-	# set title
-	cw.setTitles(xlabs=None, ylabs=None, xTitle=None, yTitle=',\n'.join(y1Title), y2Title=None,
-				 mainTitle=None)
-
-	# add chart to dialog
+	cw.setAxis(pos=111, secondAxis=False, label=['Phenology'])
+	style = '-' if key not in ('type', 'phase') else '-o'
+	cw.addTimeSerie(df['Giulian_day'].values, df[column].values,
+		lineType=style, color='#4198AF', name=label, yaxis=1, shadow=False)
+	cw.setTitles(yTitle=label)
+	cw.fixLayout()
 	dlg = QMainWindow(myDialog)
-	dlg.setWindowTitle(tr('Crop vars.'))
+	dlg.setWindowTitle(plugin.tr('Phenology — control point %s') % feature['id'])
 	dlg.setCentralWidget(cw)
 	dlg.show()

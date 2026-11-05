@@ -622,9 +622,6 @@ class OverviewReportBuilder(ReportBuilder):
         idragraFile = os.path.join(simFolder, 'idragra_parameters.txt')
         simPar = self.readIdragraParameters(idragraFile, self.FEEDBACK, self.tr)
 
-        cropcoefFile = os.path.join(simFolder, 'cropcoef.txt')
-        cropcoefPar = self.readIdragraParameters(cropcoefFile, self.FEEDBACK, self.tr)
-
         self.FEEDBACK.setProgress(5.)
 
         ### PROCESS METEO DATA ###
@@ -684,8 +681,8 @@ class OverviewReportBuilder(ReportBuilder):
 
         ### PROCESS LAND USE DATA ###
         self.FEEDBACK.pushInfo(self.tr('Land use data processing ...'))
-        landusePath = os.path.join(simFolder, cropcoefPar['cropinputsfolder'])
-        cropsPath = os.path.join(landusePath, 'crop_parameters')
+        landusePath = os.path.join(simFolder, simPar['cropinputsfolder'])
+        cropsPath = os.path.join(simFolder, simPar['cropfolder'])
         # read crops parameters
         cropFileList = glob.glob(os.path.join(cropsPath, '*.tab'))
         # print('fileList',fileList)
@@ -694,7 +691,7 @@ class OverviewReportBuilder(ReportBuilder):
             cropPars[os.path.basename(cropFile)] = self.parseCropFile(cropFile)
 
         # read landuse table file
-        landuseFile = os.path.join(landusePath, 'soil_uses.txt')
+        landuseFile = os.path.join(landusePath, simPar['soilusesfilename'])
         res = self.parseLanduseFile(landuseFile)
 
         # make a list of used crop
@@ -744,6 +741,8 @@ class OverviewReportBuilder(ReportBuilder):
             y = int(nums[0]) if nums else None
 
             res = self.rasterStat(luFile, domainFile,areaFile)
+            if res.empty:
+                continue  # An unused fallback map may contain only NoData.
             # make pie plot
             temp_png = os.path.join(outImageFolder, 'lu_pie_%s.png' % (y if y is not None else 'general'))
             self.plotCatMap(temp_png, luFile, domainFile,areaFile,featFile)
@@ -807,6 +806,8 @@ class OverviewReportBuilder(ReportBuilder):
             y = int(nums[0]) if nums else None
 
             res = self.rasterStat(imFile, domainFile,areaFile)
+            if res.empty:
+                continue
             # make pie plot
             temp_png = os.path.join(outImageFolder, 'im_pie_%s.png' % (y if y is not None else 'general'))
             self.plotCatMap(temp_png, imFile, domainFile,areaFile,featFile)

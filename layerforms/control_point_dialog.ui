@@ -113,11 +113,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="PLOT_CROP_VARS">
-        <property name="text">
-         <string>Plot crop vars</string>
-        </property>
-       </widget>
+       <widget class="QComboBox" name="PLOT_PHENO_VARS_CB"/>
       </item>
      </layout>
     </widget>

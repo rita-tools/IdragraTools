@@ -197,9 +197,6 @@ class IrrunitTotalsReportBuilder(AnnualTotalsReportBuilder):
         idragraFile = os.path.join(simFolder, 'idragra_parameters.txt')
         simPar = self.readIdragraParameters(idragraFile, self.FEEDBACK, self.tr)
 
-        cropcoefFile = os.path.join(simFolder, 'cropcoef.txt')
-        cropcoefPar = self.readIdragraParameters(cropcoefFile, self.FEEDBACK, self.tr)
-
         # set domain file
         geodataPath = os.path.join(simFolder, simPar['inputpath'])
         domainFile = os.path.join(geodataPath, 'domain.asc')
@@ -229,9 +226,9 @@ class IrrunitTotalsReportBuilder(AnnualTotalsReportBuilder):
         self.FEEDBACK.pushInfo(str(iuList))
 
         # read landuse table file
-        landusePath = os.path.join(simFolder, cropcoefPar['cropinputsfolder'])
+        landusePath = os.path.join(simFolder, simPar['cropinputsfolder'])
 
-        landuseFile = os.path.join(landusePath, 'soil_uses.txt')
+        landuseFile = os.path.join(landusePath, simPar['soilusesfilename'])
         landusePar = self.parseLanduseFile(landuseFile)
         landusePar.sort_values(by='id', inplace=True)
         landusePar['new_id']= landusePar['id']

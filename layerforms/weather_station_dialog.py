@@ -126,20 +126,6 @@ def formOpen(dialog,layerid,featureid):
 																  myDialog.findChild(QLineEdit, 'name').text(),
 																				  int(x)))
 
-	global PLOT_PHENO_VARS_CB
-	PLOT_PHENO_VARS_CB = myDialog.findChild(QComboBox, 'PLOT_PHENO_VARS_CB')
-	# add items
-	inv_map = {qgis.utils.plugins['IdragraTools'].tr('Plot pheno vars...'): 'no_sel'}
-	for k, v in qgis.utils.plugins['IdragraTools'].PHENOVARS.items():
-		inv_map[v] = k
-
-	updateComboItems(PLOT_PHENO_VARS_CB, inv_map)
-	# for some reason, forms are initialized twice ...
-	if PLOT_PHENO_VARS_CB.receivers(PLOT_PHENO_VARS_CB.currentIndexChanged) == 0:
-		PLOT_PHENO_VARS_CB.currentIndexChanged.connect(
-			lambda x: plotPheno(int(myDialog.findChild(QLineEdit, 'id').text()),
-											int(x)))
-
 	# connect start edit button to setEditMode to get edit tool pressed
 	#qgis.utils.plugins['IdragraTools'].iface.actionToggleEditing().toggled[bool].connect(setEditMode)
 	try:
@@ -299,42 +285,6 @@ def plotSingleMeteoDistro(wsId,name,varIdx):
 	dlg.setCentralWidget(cw)
 	dlg.show()
 
-def plotPheno(wsId,varIdx):
-	tr = qgis.utils.plugins['IdragraTools'].tr
-	PLOT_PHENO_VARS_CB.setCurrentIndex(0)
-	# make a dialog
-	varIdx = varIdx-1 # delete first
-	if varIdx<0:
-		# no var case
-		return
-
-	import matplotlib.pyplot as plt
-	phenovars = qgis.utils.plugins['IdragraTools'].PHENOVARS
-	# get var id to plot, is the same name of the output file of cropcoef
-	varId = list(phenovars.keys())[varIdx]
-	phenos,msg = qgis.utils.plugins['IdragraTools'].readCropCoefReasults(varId,wsId)
-	if phenos is None:
-		showCriticalMessageBox(tr('It\'s like there is no data to plot'),tr('Please, check if the file exists and it is correctly formatted'),msg)
-		return
-
-	# make a plot
-	cw = ChartWidget(myDialog, '', False, False)
-	cw.setAxis(pos=111, secondAxis=False, label=['main chart'])
-	timestamp = phenos['timestamp'].values
-	nOfSeries = len(list(phenos.keys()))
-	colList = plt.get_cmap('tab20', nOfSeries)
-	for i,landuse in enumerate(list(phenos.keys())):
-		if landuse != 'timestamp':
-			cw.addTimeSerie(timestamp, phenos[landuse].values,'-',colList(i/nOfSeries),landuse,1,False)
-
-	cw.setTitles(yTitle=list(phenovars.values())[varIdx])
-
-	cw.fixLayout()
-
-	# add chart to dialog
-	dlg = QMainWindow(myDialog)
-	dlg.setCentralWidget(cw)
-	dlg.show()
 
 def createArray(wsId,tableName = 'ws_ptot'):
 

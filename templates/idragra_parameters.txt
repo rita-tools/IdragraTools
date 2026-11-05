@@ -23,10 +23,11 @@ MeteoPath = [%METEOFOLDER%]\\
 # MeteoFileName: file, located in root folder, in which meteorological filenames are stored (default: weather_stations.dat)
 MeteoFileName = weather_stations.dat
 
-# PhenoPath: path to phenological parameters folder (default: crop_series\\)
-PhenoPath = [%PHENOFOLDER%]\\
-# PhenoFileRoot: first part of the name of phenological parameters subfolders (labelled as PhenoFileRoot_MeteoNum.dat) (default: pheno_)
-PhenoFileRoot = pheno_
+# Crop inputs are read directly by IdrAgra 3.x.
+CropInputsFolder = [%LANDUSES%]\\
+SoilUsesFilename = soil_uses.txt
+CropFolder = [%LANDUSES%]\\crop_parameters\\
+CO2Filename = [%CO2FILE%]
 
 # IrrMethPath: path to irrigation methods folder (default: irrmeth_data\\)
 IrrMethPath = [%IRRFOLDER%]\\
@@ -47,6 +48,13 @@ WatSourPath = [%WATSOURFOLDER%]\\
 # Mode = 3 # simulation with irrigation, fixed volumes
 # Mode = 4 # fixed irrigation applications, data and volumes are specified in a file
 Mode = [%MODE%]
+
+StartSimulation = 01/01/[%STARTYEAR%]
+EndSimulation = 31/12/[%ENDYEAR%]
+
+# Daily control-point diagnostics used by the phenology plots.
+prt_cell_evaporation = y
+prt_cell_runoff = y
 
 # 1.2.2. Simulation conditions
 
@@ -74,10 +82,6 @@ MeteoStatWeightNum = [%NUMMETEOWEIGTH%]
 
 # 1.2.4. Soil uses inputs
 
-# SoilUsesNum: number of considered soil uses in each of phenological series
-SoilUsesNum = [%NOFSOILUSES%]
-# SimulatedSoilUses: list of soil uses to be simulated (e.g. 1 2 3 4 5 ...)
-SimulatedSoilUses = [%SOILUSESLIST%]
 # RandSowDaysWind: number of days of window for sowing date randomization
 RandSowDaysWind = [%RANDWIND%]
 
@@ -160,26 +164,3 @@ zEvap = [%ZEVALAY%]
 
 # zRoot: transpirative layer depth [m]
 zRoot = [%ZTRANSLAY%]
-
-### 3. DTx specifications ###
-
-# DTxMode: DTx calculation off [none], DTx statistical analysis [analysis] or DTx application [application]
-# DTxMode = none
-# DTxMode = analysis
-# DTxMode = application
-DTxMode = none
-
-# DTxNumXs: number of calculated indices (one for each integration period), i.e. elements of DTx_x
-DTxNumXs = 3 
-
-# DTx_x: integration period  (DT10 sums transpirative deficit of 10 days)
-DTx_x = 10 20 30
-
-# DTxDeltaDate: DTx calculation interval
-DTxDeltaDate = 10
-# DTxDelayDays: delay from the first day of year to start calculation 
-DTxDelayDays = 1 
-
-# if DTxMode = analysis, choose minimum cardinality (i.e. number of elements for a valid estimate)
-# DTxMinCard: minimum cardinality for statistical analysis
-DTxMinCard = 3 

@@ -480,11 +480,8 @@ class AnnualTotalsReportBuilder(OverviewReportBuilder):
         idragraFile = os.path.join(simFolder, 'idragra_parameters.txt')
         simPar = self.readIdragraParameters(idragraFile, self.FEEDBACK, self.tr)
 
-        # read cropcoef file
-        cropcoefFile = os.path.join(simFolder, 'cropcoef.txt')
-        cropcoefPar = self.readIdragraParameters(cropcoefFile, self.FEEDBACK, self.tr)
-        landusePath = os.path.join(simFolder, cropcoefPar['cropinputsfolder'])
-        landuseFile = os.path.join(landusePath, 'soil_uses.txt')
+        landusePath = os.path.join(simFolder, simPar['cropinputsfolder'])
+        landuseFile = os.path.join(landusePath, simPar['soilusesfilename'])
         landuse_df = self.parseLanduseFile(landuseFile)
         landuse_df = landuse_df.set_index(['id'])
         landuse_df = landuse_df.rename(columns={'cr_name':'name'})
