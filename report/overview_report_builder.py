@@ -564,7 +564,10 @@ class OverviewReportBuilder(ReportBuilder):
                          catFN = 'soilid.asc',catIds=[],
                          weightsFN = None):
 
-        catRL = self.loadASC(os.path.join(geodataFolder,catFN))
+        # Report callers may provide either a raster name relative to the
+        # geodata folder or an already resolved path.
+        catPath = catFN if os.path.isabs(catFN) else os.path.join(geodataFolder, catFN)
+        catRL = self.loadASC(catPath)
         if not catRL: return pd.DataFrame() # exit if file not loaded
 
         if len(catIds)==0:
@@ -847,9 +850,10 @@ class OverviewReportBuilder(ReportBuilder):
                                                statLabel,
                                                ['{:.0f}'] + ['{:.2f}'] * (len(list(sec_soil_par_table.columns)) - 1))
 
-        soilPar3FNList = ['CapRisePar_b1.asc', 'CapRisePar_b2.asc', 'CapRisePar_b3.asc', 'CapRisePar_b4.asc', 'CapRisePar_a3.asc','CapRisePar_b1.asc']
+        soilPar3FNList = ['CapRisePar_b1.asc', 'CapRisePar_b2.asc', 'CapRisePar_a3.asc',
+                          'CapRisePar_b3.asc', 'CapRisePar_a4.asc', 'CapRisePar_b4.asc']
 
-        soilParName = ['b1', 'b2', 'b3', 'b4', 'a4', 'a5']
+        soilParName = ['b1', 'b2', 'a3', 'b3', 'a4', 'b4']
         statLabel = ['min', 'mean', 'max']
 
         dep_soil_par_table = self.makeGroupedStats(geodataPath, soilPar3FNList, soilParName, statLabel)

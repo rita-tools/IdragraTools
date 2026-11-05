@@ -356,10 +356,10 @@ class IrrunitTotalsReportBuilder(AnnualTotalsReportBuilder):
                                                       ['{:.0f}'] + ['{:.2f}'] * (
                                                                   len(list(sec_soil_par_table.columns)) - 1))
 
-            soilPar3FNList = ['CapRisePar_b1.asc', 'CapRisePar_b2.asc', 'CapRisePar_b3.asc', 'CapRisePar_b4.asc',
-                              'CapRisePar_a3.asc', 'CapRisePar_b1.asc']
+            soilPar3FNList = ['CapRisePar_b1.asc', 'CapRisePar_b2.asc', 'CapRisePar_a3.asc',
+                              'CapRisePar_b3.asc', 'CapRisePar_a4.asc', 'CapRisePar_b4.asc']
 
-            soilParName = ['b1', 'b2', 'b3', 'b4', 'a4', 'a5']
+            soilParName = ['b1', 'b2', 'a3', 'b3', 'a4', 'b4']
             statLabel = ['min', 'mean', 'max']
 
             deep_soil_par_table = self.makeGroupedStats(geodataPath,
