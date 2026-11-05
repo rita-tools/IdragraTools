@@ -380,7 +380,7 @@ def plotIrrEvents(wsId,name):
 	df, msg = qgis.utils.plugins['IdragraTools'].readControlPointsResults(r, c,
 																		  None,
 																		  ['Giulian_day','rain_mm','pday','rawbig',
-																		   'rawinf','theta1_mm','theta_old_mm',
+																		   'theta1_mm','theta_old_mm',
 																		   'irrig_mm','thickness_II_m'])
 
 	if df is None:
