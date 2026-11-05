@@ -115,7 +115,7 @@ def plotEvaWC(wsId,name):
 	df, msg =  qgis.utils.plugins['IdragraTools'].readControlPointsResults(r,c,None,['Giulian_day','theta1_mm'])
 
 	if df is None:
-		showCriticalMessageBox(tr('It\'s like there is no data to plot'),tr('Please, check if file exist'),msg)
+		showCriticalMessageBox(tr('It seems like there is no data to plot'),tr('Please, check if file exist'),msg)
 		return
 
 	pars, msgPars =  qgis.utils.plugins['IdragraTools'].readControlPointsParams(r, c, [],['ThetaI_fc','ThetaI_wp'])
@@ -152,7 +152,7 @@ def plotTransWC(wsId,name):
 	pars, msgPars = qgis.utils.plugins['IdragraTools'].readControlPointsParams(r, c, [], ['ThetaII_fc', 'ThetaII_wp'])
 
 	if df is None:
-		showCriticalMessageBox(tr('It\'s like there is no data to plot'),tr('Please, check if file exists'),msg)
+		showCriticalMessageBox(tr('It seems like there is no data to plot'),tr('Please, check if file exists'),msg)
 		return
 
 	cw = ChartWidget(myDialog, '', False, False)
@@ -198,7 +198,7 @@ def plotEvaVars(wsId,name):
 																				 'runoff_mm','eva_mm','perc1_mm'])
 
 	if df is None:
-		showCriticalMessageBox(tr('It\'s like there is no data to plot'),tr('Please, check if file exist'),msg)
+		showCriticalMessageBox(tr('It seems like there is no data to plot'),tr('Please, check if file exist'),msg)
 		return
 
 	# make a dialog
@@ -288,7 +288,7 @@ def plotTransVars(wsId,name):
 	version = 2.
 
 	if df is None:
-		showCriticalMessageBox(tr('It\'s like there is no data to plot'),tr('Please, check if file exist'),msg)
+		showCriticalMessageBox(tr('It seems like there is no data to plot'),tr('Please, check if file exist'),msg)
 		return
 
 	# TODO: manage also older version with df['trasp_act_mm']
@@ -384,7 +384,7 @@ def plotIrrEvents(wsId,name):
 																		   'irrig_mm','thickness_II_m'])
 
 	if df is None:
-		showCriticalMessageBox(tr('It\'s like there is no data to plot'),tr('Please, check if file exist'),msg)
+		showCriticalMessageBox(tr('It seems like there is no data to plot'),tr('Please, check if file exist'),msg)
 		return
 
 	version = 2.
