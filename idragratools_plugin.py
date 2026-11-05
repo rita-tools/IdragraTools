@@ -2373,40 +2373,6 @@ class IdrAgraTools():
 
         return int(r), int(c)
 
-    def getRowCol_OLD(self,feature):
-        rasterExt = returnExtent(self.SIMDIC['EXTENT'])
-        c=-1
-        r=-1
-        if rasterExt:
-            cellDim = self.SIMDIC['CELLSIZE']
-            # calculate extension
-            xllcorner = rasterExt.xMinimum()
-            # yllcorner = extension.yMinimum()
-            yurcorner = rasterExt.yMaximum()
-            h = rasterExt.height()
-            w = rasterExt.width()
-
-            nrows = round(h / cellDim)
-            ncols = round(w / cellDim)
-
-            xurcorner = xllcorner + ncols * cellDim
-            # yurcorner = yllcorner+nrows*outputCellSize
-            yllcorner = yurcorner - nrows * cellDim
-
-            newExt = QgsRectangle(xllcorner, yllcorner, xurcorner, yurcorner)
-
-            # make a grid object
-            self.aGrid = GisGrid()
-            self.aGrid.fitToExtent(newExt, cellDim, cellDim)
-            if feature.geometry():
-                x = feature.geometry().asMultiPoint()[0].x()
-                y = feature.geometry().asMultiPoint()[0].y()
-                c, r = self.aGrid.coordToCell(x, y)
-                # fortran start form 1
-                c+=1
-                r+=1
-
-        return r,c
 
 
     def importControlPointsResults(self, progress=None):
@@ -2792,61 +2758,6 @@ class IdrAgraTools():
                                    )
 
 
-    def importDistrictData_OLD(self,varIndex,sourceTable,progress):
-        idragraFile = os.path.join(self.SIMDIC['OUTPUTPATH'], 'idragra_parameters.txt')
-        gpkg_layer = self.DBM.DBName + '|layername=' + 'idr_distrmap'
-        gpkg_layer = gpkg_layer.replace('\\', '/')
-
-        # TODO: add district area
-        # 'AGGR_FUN': 2 == mean [OK], 'AGGR_FUN': 1 == sum
-        # calculate irrigation timeserie from district and upload to stp_irr
-        tempFile = QgsProcessingUtils.generateTempFilename('aggrOutput.gpkg')
-        algResults = processing.run("idragratools:IdragraStatserie",
-                       {'IDRAGRA_FILE': idragraFile,
-                        'AGGR_LAY': gpkg_layer,
-                        'AGGR_FLD': 'id','AGGR_VAR': varIndex, 'AGGR_FUN': 2,
-                        'OUTPUT_TABLE': tempFile},
-                       context=None,
-                       feedback=progress,
-                       is_child_algorithm=False
-                       )
-
-        table = QgsVectorLayer(tempFile, 'temp', 'ogr')
-        # featList = list(table.getFeatures())
-
-        # clear data
-        sql = 'DELETE FROM %s;' % sourceTable
-        msg = self.DBM.executeSQL(sql)
-
-        sql = 'VACUUM;'
-        msg = self.DBM.executeSQL(sql)
-
-        if ((msg != '') and progress):
-            progress.setText(self.tr('Command stopped because the following error: %s') % msg)
-            return
-
-        gpkg_layer = self.DBM.DBName + '|layername=' + sourceTable
-
-        dbTable = QgsVectorLayer(gpkg_layer, 'temp', 'ogr')
-        # dbTable.dataProvider().addFeatures(featList)
-
-        toField = dbTable.dataProvider().fields()
-        newFeatList = []
-        for feat in table.getFeatures():
-            newFeat = QgsFeature(toField)
-            newFeat['timestamp']=datetime(feat['timestamp'].year(),
-                                          feat['timestamp'].month(),
-                                          feat['timestamp'].day()).strftime('%Y-%m-%d')
-            newFeat['wsid'] = feat['wsid']
-            #print('wsid',feat['wsid'])
-            #print('vals', distrDict[feat['wsid']])
-            # from mm to cubic meters
-            newFeat['recval'] = feat['recval']#*self.SIMDIC['CELLSIZE']*self.SIMDIC['CELLSIZE']/1000.0
-            newFeatList.append(newFeat)
-
-        dbTable.startEditing()
-        dbTable.addFeatures(newFeatList)
-        dbTable.commitChanges()
 
 
     def waterDemandAtNode(self, destTable, sourceTable, progress=None,mode = 1,exclNodeType = [13,14]):
@@ -3233,42 +3144,6 @@ class IdrAgraTools():
 
         return msg
 
-    def checkDataOLD(self, tList, sensorId,startDate=None, endDate=None):
-        firstDay = None
-        lastDay = None
-        errs = []
-        warns = []
-        res = 'varName\tstartDate\tendDate\tnOfExpDays\tnOfFilled\tfullness\tminVal\tmaxVal\tmeanVal\tcumVal\tperc25\tperc50\tperc75\n'
-
-        for i, table in enumerate(tList):
-            tableAlias = ''
-            if table in list(self.METEONAME.keys()):
-                tableAlias = self.METEONAME[table]
-            if table in list(self.WATERSOURCENAME.keys()):
-                tableAlias = self.WATERSOURCENAME[table]
-            if table in list(self.STEPNAME.keys()):
-                tableAlias = self.STEPNAME[table]
-
-            data = self.DBM.makeStatistics(table, sensorId,startDate, endDate)
-            res += '\t'.join([tableAlias]+[str(x) for x in data.values()])+'\n'
-
-            if i == 0:
-                firstDay = data['startDate']
-                lastDay = data['endDate']
-            else:
-                if firstDay != data['startDate']:
-                    errs.append(self.tr('Different start date for variable %s' % tableAlias))
-                if lastDay != data['endDate']:
-                    errs.append(self.tr('Different start date for variable %s' % tableAlias))
-
-        res += self.tr('No error message. Data are available from %s to %s' % (firstDay, lastDay))
-        if (firstDay is None) and (lastDay is None):
-            res = self.tr('Data are not available for this feature')
-
-        if len(errs) > 0:
-            res = '\n'.join(errs)
-
-        return res
 
     def updateVector(self, vLayer=None, dataList=None):
         with edit(vLayer):
@@ -3376,24 +3251,6 @@ class IdrAgraTools():
         self.count += 1
         if self.count > 1000: self.timer.stop()
 
-    def updateVectorOLD(self, vLayer=None, dataList=None):
-        print('update', self.count)
-        self.count += 1
-        if self.count > 1000: self.timer.stop()
-
-        if not vLayer: vLayer = self.VECTORLAYER
-
-        if not dataList:
-            numOfFeat = vLayer.featureCount()
-            dataList = random.sample(range(0, 100), numOfFeat)
-
-        if vLayer:
-            i = 0
-            with edit(vLayer):
-                for feat in vLayer.getFeatures():
-                    feat["tempValue"] = dataList[i]
-                    vLayer.updateFeature(feat)
-                    i += 1
 
     def getGroupIndex(self, group, onTop = False):
         # Get the layer tree object
