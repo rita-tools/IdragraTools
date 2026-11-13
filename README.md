@@ -2,7 +2,7 @@
 
 IdrAgraTools is a QGIS plugin designed to assist input preparation and output visualization for the [IdrAgra model](https://github.com/rita-tools/IdrAgra).
 
-IdrAgraTools is developed and tested on Windows with QGIS 3.34.3 and 3.44.15.
+IdrAgraTools is developed and tested on Windows with QGIS 3.34.3 and 3.44.15; MacOS support has been tentatively implemented but not thoroughly tested.
 
 ## Installation
 

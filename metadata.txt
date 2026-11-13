@@ -8,7 +8,7 @@
 
 [general]
 name=Idragra Tools
-version=0.5
+version=0.5.1
 qgisMinimumVersion=3.34.3
 qgisMaximumVersion=3.99
 description=Prepare inputs and visualize outputs for the IdrAgra model
