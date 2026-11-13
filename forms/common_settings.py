@@ -66,8 +66,9 @@ class CommonSettings(QDialog):
 		MCRpath = s.value('MCRpath', '')
 		MinGWPath = s.value('MinGWPath', '')
 
-		self.IDRAGRA_EXE.setFilter('Executable (*.exe)')
-		self.CROPCOEFF_EXE.setFilter('Executable (*.exe)')
+		executableFilter = 'Executable (*.exe)' if sys.platform == 'win32' else 'Executable (*)'
+		self.IDRAGRA_EXE.setFilter(executableFilter)
+		self.CROPCOEFF_EXE.setFilter(executableFilter)
 
 		self.IDRAGRA_EXE.setFilePath(path2Idragra)
 		self.CROPCOEFF_EXE.setFilePath(path2CropCoeff)

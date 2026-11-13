@@ -63,6 +63,7 @@ from .tools.export_irrigation_method import exportIrrigationMethod
 from .forms.attribute_table_view import AttributesTableView
 from .forms.new_db_dialog import NewDbDialog
 from .tools.utils import returnExtent
+from .tools.model_executable import bundled_model_executable_path, ensure_mac_executable
 from .tools.export_land_use import exportLandUse
 from .tools.export_water_sources import makeDischSerie, exportWaterSources
 from .tools.write_pars_to_template import writeParsToTemplate
@@ -162,8 +163,10 @@ class IdrAgraTools():
 
         # TODO: check the latest version of idragra and cropcoef
         self.s = QSettings('UNIMI-DISAA', 'IdrAgraTools')
-        if self.s.value('idragraPath','')=='': self.s.setValue('idragraPath', os.path.join(self.plugin_dir,'bin','idragra.exe'))
-        if self.s.value('cropcoeffPath','')=='': self.s.setValue('cropcoeffPath', os.path.join(self.plugin_dir,'bin','cropcoef.exe'))
+        if self.s.value('idragraPath','')=='':
+            self.s.setValue('idragraPath', bundled_model_executable_path(self.plugin_dir, 'idragra'))
+        if self.s.value('cropcoeffPath','')=='':
+            self.s.setValue('cropcoeffPath', bundled_model_executable_path(self.plugin_dir, 'cropcoef'))
         if self.s.value('MCRpath', '') == '': self.s.setValue('MCRpath',checkMatlabInstalled(version= '9.9'))
         #if self.s.value('MinGWPath', '') == '': self.s.setValue('MinGWPath', checkMatlabInstalled(version='9.9'))
 
@@ -2249,15 +2252,17 @@ class IdrAgraTools():
         # C:/MinGW/bin
         MinGWPath = s.value('MinGWPath', '')
 
-        toks = os.environ['PATH'].split(';')
-        if not MCRpath in toks:
-            os.environ['PATH'] = os.environ['PATH'] + ';' + MCRpath
+        if os.name == 'nt':
+            toks = os.environ.get('PATH', '').split(os.pathsep)
+            if MCRpath and MCRpath not in toks:
+                os.environ['PATH'] = os.environ.get('PATH', '') + os.pathsep + MCRpath
 
-        if not MinGWPath in toks:
-            os.environ['PATH'] = os.environ['PATH'] + ';' + MinGWPath
+            if MinGWPath and MinGWPath not in toks:
+                os.environ['PATH'] = os.environ.get('PATH', '') + os.pathsep + MinGWPath
 
         try:
             # progress.setText('%s'%os.environ['PATH'])
+            ensure_mac_executable(execPath)
             proc = Popen(command, cwd=self.SIMDIC['OUTPUTPATH'], shell=False, stdout=PIPE, stderr=PIPE)
 
             q = Queue()
