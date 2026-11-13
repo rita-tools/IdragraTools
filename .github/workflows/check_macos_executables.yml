@@ -1,0 +1,51 @@
+name: Check macOS executables
+
+on:
+  push:
+    paths:
+      - "bin/latest/*macOS*"
+      - "tools/model_executable.py"
+      - ".github/workflows/check_macos_executables.yml"
+  pull_request:
+    paths:
+      - "bin/latest/*macOS*"
+      - "tools/model_executable.py"
+      - ".github/workflows/check_macos_executables.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Check selection and execute permissions
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          import stat
+
+          from tools.model_executable import (
+              bundled_model_executable_path,
+              ensure_mac_executable,
+          )
+
+          root = os.getcwd()
+          for model in ('idragra', 'cropcoef'):
+              for architecture in ('arm64', 'x86_64'):
+                  path = bundled_model_executable_path(
+                      root, model, platform_name='darwin', machine=architecture)
+                  assert path, 'No %s executable found for %s' % (model, architecture)
+
+                  mode = os.stat(path).st_mode & ~stat.S_IXUSR
+                  os.chmod(path, mode)
+                  ensure_mac_executable(path)
+                  assert os.stat(path).st_mode & stat.S_IXUSR, path
+                  print('%s %s: %s' % (model, architecture, path))
+          PY
