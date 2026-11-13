@@ -63,7 +63,6 @@ from .tools.export_irrigation_method import exportIrrigationMethod
 from .forms.attribute_table_view import AttributesTableView
 from .forms.new_db_dialog import NewDbDialog
 from .tools.utils import returnExtent
-from .tools.export_bat import exportCropCoefBat, exportIdrAgraBat
 from .tools.export_land_use import exportLandUse
 from .tools.export_water_sources import makeDischSerie, exportWaterSources
 from .tools.write_pars_to_template import writeParsToTemplate
@@ -567,10 +566,10 @@ class IdrAgraTools():
         self._addmenuitem(self.simulationMenu, 'Step5', self.tr('Export water sources data'), self.exportWaterSourcesData, False)
         self._addmenuitem(self.simulationMenu, 'Step6', self.tr('Export simulation project'), self.exportSimProj, False)
         self._addmenuitem(self.simulationMenu, 'Step7', self.tr('Run CropCoef module'),
-                          lambda: self.runAsThread(self.execBatFile, batFile ='run_cropcoef.bat'), False)
+                          lambda: self.runAsThread(self.runModelExecutable, model='cropcoef'), False)
 
         self._addmenuitem(self.simulationMenu, 'Step8', self.tr('Run IdrAgra'),
-                          lambda: self.runAsThread(self.execBatFile, batFile ='run_idragra.bat'), False)
+                          lambda: self.runAsThread(self.runModelExecutable, model='idragra'), False)
 
         self.mainMenu.addMenu(self.simulationMenu)
 
@@ -1901,8 +1900,8 @@ class IdrAgraTools():
         self.updatePars()
 
         self.exportSimProjTH(progress)
-        self.execBatFile('run_cropcoef.bat',progress)
-        self.execBatFile('run_idragra.bat',progress)
+        self.runModelExecutable('cropcoef', progress)
+        self.runModelExecutable('idragra', progress)
 
     def setSimulation(self, callback = None):
         tNameList = list(self.METEONAME.keys()) + list(self.WATERSOURCENAME.keys())
@@ -2140,15 +2139,8 @@ class IdrAgraTools():
                             parsDict=self.SIMDIC,
                             templateName='idragra_parameters.txt')
 
-        progress.setPercentage(75.)
-        progress.setText(self.tr('Export Cropcoeff simulation parameters'))
-
-        # export bat/sh file
         progress.setPercentage(100.)
-        progress.setText(self.tr('Export bat file'))
-
-        exportCropCoefBat(self.SIMDIC['OUTPUTPATH'])
-        exportIdrAgraBat(self.SIMDIC['OUTPUTPATH'])
+        progress.setText(self.tr('Simulation project exported'))
 
     def exportSpatialData(self,progress):
         self.runAsThread(function = self.exportSpatialDataTH, onFinished = self.updatePars)
@@ -2212,10 +2204,9 @@ class IdrAgraTools():
 
         progress.setProgress(100.0)
 
-    def execBatFile(self, batFile, progress=None):
-        import sys
+    def runModelExecutable(self, model, progress=None):
         from subprocess import PIPE, Popen
-        from threading import Thread, stack_size
+        from threading import Thread
         import os
 
         try:
@@ -2234,26 +2225,25 @@ class IdrAgraTools():
 
         if progress: progress.setPercentage(0.0)
 
-        # update here *.bat file
-        if batFile == 'run_cropcoef.bat':
-            exportCropCoefBat(self.SIMDIC['OUTPUTPATH'])
-
-        if batFile == 'run_idragra.bat':
-            exportIdrAgraBat(self.SIMDIC['OUTPUTPATH'])
-
         # delete existing simulation TODO better fix
-        if batFile == 'run_idragra.bat':
+        if model == 'idragra':
             outputPath = os.path.join(self.SIMDIC['OUTPUTPATH'],self.SIMDIC['OUTPUTFOLDER'])
             if os.path.exists(outputPath):
                 if progress: progress.reportError(
                     self.tr('WARNING! output folder %s already exists and will be removed!')%outputPath,False)
                 shutil.rmtree(outputPath)
 
-        execPath = os.path.join(self.SIMDIC['OUTPUTPATH'], batFile)
+        modelSettings = {
+            'cropcoef': ('cropcoeffPath', ['cropcoef.txt']),
+            'idragra': ('idragraPath', ['-f', 'idragra_parameters.txt']),
+        }
+        settingName, arguments = modelSettings[model]
+        s = QSettings('UNIMI-DISAA', 'IdrAgraTools')
+        execPath = s.value(settingName, '')
+        command = [execPath] + arguments
         # print execPath,arg1,arg2
         if progress: progress.setText('%s' % (execPath))
 
-        s = QSettings('UNIMI-DISAA', 'IdrAgraTools')
         # C:/Program Files/MATLAB/R2020b/runtime/win64
         MCRpath = s.value('MCRpath', '')
         # C:/MinGW/bin
@@ -2268,13 +2258,9 @@ class IdrAgraTools():
 
         try:
             # progress.setText('%s'%os.environ['PATH'])
-            proc = Popen(([execPath]), shell=True, stdout=PIPE, stderr=PIPE)
+            proc = Popen(command, cwd=self.SIMDIC['OUTPUTPATH'], shell=False, stdout=PIPE, stderr=PIPE)
 
             q = Queue()
-            # ~ print('stacksize',stack_size())
-            # ~ stack_size(200 * 1024 * 1024)
-            # ~ print('stacksize2',stack_size())
-
             t = Thread(target=enqueue_output, args=(proc.stdout, proc.stderr, q))
 
             t.daemon = True  # thread dies with the program
