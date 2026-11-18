@@ -161,5 +161,5 @@ class IdrAgraToolsProvider(QgsProcessingProvider):
 
 	def icon(self):
 		self.plugin_dir = os.path.dirname(__file__)
-		icon = QIcon(os.path.join(self.plugin_dir, 'idragratools_provider.png'))
+		icon = QIcon(os.path.join(self.plugin_dir, 'icons', 'idragratools_provider.png'))
 		return icon

@@ -8,7 +8,7 @@
 
 [general]
 name=Idragra Tools
-version=0.5
+version=1.0
 qgisMinimumVersion=3.34.3
 qgisMaximumVersion=3.99
 description=Prepare inputs and visualize outputs for the IdrAgra model
@@ -31,7 +31,7 @@ tags=water management, irrigation, water balance, idragra
 
 homepage=https://github.com/rita-tools/IdragraTools
 category=Analysis
-icon=idragratools_logo.png
+icon=icons/idragratools_logo.png
 # experimental flag
 experimental=False
 

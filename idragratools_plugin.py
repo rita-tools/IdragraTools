@@ -48,7 +48,7 @@ from qgis.PyQt import QtSql
 from qgis.PyQt.QtXml import QDomDocument
 from qgis import processing
 
-from tools.export_geodata_vector import ExportGeodataVector
+from .tools.export_geodata_vector import ExportGeodataVector
 from .forms.report_view import ReportDialog
 from .tools.show_message import showInfoMessageBox, showCriticalMessageBox
 from .tools.network_analyst import NetworkAnalyst
@@ -76,7 +76,7 @@ from qgis.core import Qgis, QgsProcessingAlgorithm, QgsApplication, QgsProject, 
     QgsGeometry, QgsFeature, QgsFeatureRequest, QgsExpression
 from qgis.PyQt.QtCore import QVariant, QUrl
 
-from qgis.PyQt.QtCore import qVersion, QCoreApplication, QLocale, QSettings, QTranslator, QThread, Qt, QTimer
+from qgis.PyQt.QtCore import QSettings, QThread, Qt, QTimer
 from qgis.PyQt.QtGui import QIcon, QColor, QPixmap
 from qgis.PyQt.QtWidgets import QMenu, QMessageBox, QProgressBar, QDialog, QFileDialog
 
@@ -146,17 +146,6 @@ class IdrAgraTools():
 
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
-        # initialize locale
-        locale = QSettings().value("locale/userLocale")[0:2]
-        localePath = os.path.join(self.plugin_dir, 'i18n', 'idragra_tools_{}.qm'.format(locale))
-
-        if os.path.exists(localePath):
-            self.translator = QTranslator(QCoreApplication.instance())
-            self.translator.load(localePath)
-
-            if qVersion() > '4.3.3':
-                QCoreApplication.installTranslator(self.translator)
-
         # add processing provider
         self.provider = IdrAgraToolsProvider()
 
