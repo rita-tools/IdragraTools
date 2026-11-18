@@ -1239,6 +1239,22 @@ class IdrAgraTools():
 
     def importVector(self,fromLay,toLay, fieldDict, assignDate = None, saveEdit = False, progress=None,
                      generatePolygonIds=False, replaceExisting=False, featureOverrides=None):
+
+        #%PS%: if the user is importing a layer with selected features, ask for confirmation
+        selectedFeatureCount = fromLay.selectedFeatureCount()
+        if selectedFeatureCount > 0:
+            answer = QMessageBox.question(
+                self.iface.mainWindow(),
+                self.tr('Selected features'),
+                self.tr(
+                    'Layer "%s" has %d selected feature(s). Only those features will be imported '
+                    'into the IdrAgra project. Are you sure you want to proceed?'
+                ) % (fromLay.name(), selectedFeatureCount),
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No)
+            if answer != QMessageBox.Yes:
+                return False
+
         # reset counter
         self.DBM.resetCounter()
         # start ediding
@@ -1265,7 +1281,7 @@ class IdrAgraTools():
                     pass  # Existing features may have an unset ID.
 
         # loop in fromLay feature
-        nOfFeat =  fromLay.selectedFeatureCount()
+        nOfFeat = selectedFeatureCount
         if nOfFeat>0:
             featureList = fromLay.getSelectedFeatures()
         else:
