@@ -62,7 +62,7 @@ from .tools.export_irrigation_method import exportIrrigationMethod
 from .forms.attribute_table_view import AttributesTableView
 from .forms.new_db_dialog import NewDbDialog
 from .tools.utils import returnExtent
-from .tools.export_bat import exportIdrAgraBat
+from .tools.executable_selector import select_model_executable, ensure_is_executable
 from .tools.export_land_use import exportLandUse
 from .tools.export_water_sources import makeDischSerie, exportWaterSources
 from .tools.write_pars_to_template import writeParsToTemplate
@@ -161,8 +161,10 @@ class IdrAgraTools():
         self.provider = IdrAgraToolsProvider()
 
         self.s = QSettings('UNIMI-DISAA', 'IdrAgraTools')
-        # Use a separate setting so an existing 2.x configuration cannot select the old engine.
-        if self.s.value('idragra3Path','')=='': self.s.setValue('idragra3Path', os.path.join(self.plugin_dir,'bin','idragra.exe'))
+
+        # Set the default path to the IdrAgra executable (if not already set)
+        if self.s.value('idragraPath', '') == '':
+            self.s.setValue('idragraPath', select_model_executable(self.plugin_dir))
 
         self.PRJNAME = 'Idragra simulation'
         self.FILEFORMAT = 'Geopackage file (*.gpkg)'#'Idragra db (*.idb)'
@@ -563,7 +565,7 @@ class IdrAgraTools():
         self._addmenuitem(self.simulationMenu, 'Step5', self.tr('Export water sources data'), self.exportWaterSourcesData, False)
         self._addmenuitem(self.simulationMenu, 'Step6', self.tr('Export simulation project'), self.exportSimProj, False)
         self._addmenuitem(self.simulationMenu, 'Step8', self.tr('Run IdrAgra'),
-                          lambda: self.runAsThread(self.execBatFile, batFile ='run_idragra.bat'), False)
+                          lambda: self.runAsThread(self.runIdrAgra), False)
 
         self.mainMenu.addMenu(self.simulationMenu)
 
@@ -747,9 +749,10 @@ class IdrAgraTools():
         settings = QSettings('UNIMI-DISAA', 'IdrAgraTools')
         filename, _ = QFileDialog.getOpenFileName(
             self.iface.mainWindow(), self.tr('Select IdrAgra 3.x executable'),
-            settings.value('idragra3Path', ''), self.tr('Executable (*.exe)'))
+            settings.value('idragraPath', ''),
+            self.tr('Executable (*.exe)') if sys.platform == 'win32' else self.tr('Executable (*)'))
         if filename:
-            settings.setValue('idragra3Path', filename)
+            settings.setValue('idragraPath', filename)
 
 
     def extractDateTime(self, text, dateFormat='state_%d%m%y_%H%M.mat'):
@@ -1887,7 +1890,7 @@ class IdrAgraTools():
         self.updatePars()
 
         self.exportSimProjTH(progress)
-        self.execBatFile('run_idragra.bat',progress)
+        self.runIdrAgra(progress)
 
     def setSimulation(self, callback = None):
         tNameList = list(self.METEONAME.keys()) + list(self.WATERSOURCENAME.keys())
@@ -2095,23 +2098,15 @@ class IdrAgraTools():
         self.runAsThread(function = self.exportSimProjTH, onFinished = self.updatePars)
 
     def exportSimProjTH(self,progress):
-        # export cell list
-        progress.setPercentage(25.)
-        progress.setText(self.tr('Export ancillary file'))
-
         # export simulation parameters
-        progress.setPercentage(50.)
+        progress.setPercentage(0.)
         progress.setText(self.tr('Export IdrAgra simulation parameters'))
 
         writeParsToTemplate(outfile=os.path.join(self.SIMDIC['OUTPUTPATH'], 'idragra_parameters.txt'),
                             parsDict=self.SIMDIC,
                             templateName='idragra_parameters.txt')
 
-        # export bat/sh file
         progress.setPercentage(100.)
-        progress.setText(self.tr('Export bat file'))
-
-        exportIdrAgraBat(self.SIMDIC['OUTPUTPATH'])
 
     def exportSpatialData(self,progress):
         self.runAsThread(function = self.exportSpatialDataTH, onFinished = self.updatePars)
@@ -2175,11 +2170,9 @@ class IdrAgraTools():
 
         progress.setProgress(100.0)
 
-    def execBatFile(self, batFile, progress=None):
-        import sys
+    def runIdrAgra(self, progress=None):
         from subprocess import PIPE, Popen
-        from threading import Thread, stack_size
-        import os
+        from threading import Thread
 
         try:
             from Queue import Queue, Empty
@@ -2197,31 +2190,23 @@ class IdrAgraTools():
 
         if progress: progress.setPercentage(0.0)
 
-        # update here *.bat file
-        if batFile == 'run_idragra.bat':
-            exportIdrAgraBat(self.SIMDIC['OUTPUTPATH'])
-
         # delete existing simulation TODO better fix
-        if batFile == 'run_idragra.bat':
-            outputPath = os.path.join(self.SIMDIC['OUTPUTPATH'],self.SIMDIC['OUTPUTFOLDER'])
-            if os.path.exists(outputPath):
-                if progress: progress.reportError(
-                    self.tr('WARNING! output folder %s already exists and will be removed!')%outputPath,False)
-                shutil.rmtree(outputPath)
+        outputPath = os.path.join(self.SIMDIC['OUTPUTPATH'],self.SIMDIC['OUTPUTFOLDER'])
+        if os.path.exists(outputPath):
+            if progress: progress.reportError(
+                self.tr('WARNING! output folder %s already exists and will be removed!')%outputPath,False)
+            shutil.rmtree(outputPath)
 
-        execPath = os.path.join(self.SIMDIC['OUTPUTPATH'], batFile)
-        # print execPath,arg1,arg2
+        settings = QSettings('UNIMI-DISAA', 'IdrAgraTools')
+        execPath = settings.value('idragraPath', '')
+        command = [execPath, '-f', 'idragra_parameters.txt']
         if progress: progress.setText('%s' % (execPath))
 
         try:
-            # progress.setText('%s'%os.environ['PATH'])
-            proc = Popen(([execPath]), shell=True, stdout=PIPE, stderr=PIPE)
+            ensure_is_executable(execPath)
+            proc = Popen(command, cwd=self.SIMDIC['OUTPUTPATH'], shell=False, stdout=PIPE, stderr=PIPE)
 
             q = Queue()
-            # ~ print('stacksize',stack_size())
-            # ~ stack_size(200 * 1024 * 1024)
-            # ~ print('stacksize2',stack_size())
-
             t = Thread(target=enqueue_output, args=(proc.stdout, proc.stderr, q))
 
             t.daemon = True  # thread dies with the program

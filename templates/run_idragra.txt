@@ -1,4 +1,0 @@
-REM change dir
-cd /d "%~dp0" || exit /b 1
-REM run idragra
-"[%PATHTOIDRAGRA%]" -f "[%IDRAGRAPAR%]"
