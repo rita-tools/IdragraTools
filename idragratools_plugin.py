@@ -2195,6 +2195,33 @@ class IdrAgraTools():
 
         if progress: progress.setPercentage(0.0)
 
+        settings = QSettings('UNIMI-DISAA', 'IdrAgraTools')
+        configuredExecPath = settings.value('idragraPath', '') or ''
+        execPath = configuredExecPath
+        if not os.path.isfile(execPath):
+            bundledExecPath = select_model_executable(self.plugin_dir)
+            if bundledExecPath and os.path.isfile(bundledExecPath):
+                execPath = bundledExecPath
+                settings.setValue('idragraPath', execPath)
+                if progress and configuredExecPath:
+                    progress.pushInfo(
+                        self.tr('The specified IdrAgra executable was not found. Using the default: %s') %
+                        execPath)
+            else:
+                missingPath = configuredExecPath or self.tr('(no executable configured)')
+                raise RuntimeError(
+                    self.tr(
+                        'The IdrAgra executable could not be found at "%s". Choose a valid executable from '
+                        'IdrAgraTools > Advanced > Specify IdrAgra executable.'
+                    ) % missingPath)
+
+        workingPath = self.SIMDIC['OUTPUTPATH']
+        if not os.path.isdir(workingPath):
+            raise RuntimeError(
+                self.tr(
+                    'The simulation folder could not be found: "%s". Export the simulation project again and then retry.'
+                ) % workingPath)
+
         # delete existing simulation TODO better fix
         outputPath = os.path.join(self.SIMDIC['OUTPUTPATH'],self.SIMDIC['OUTPUTFOLDER'])
         if os.path.exists(outputPath):
@@ -2202,8 +2229,6 @@ class IdrAgraTools():
                 self.tr('WARNING! output folder %s already exists and will be removed!')%outputPath,False)
             shutil.rmtree(outputPath)
 
-        settings = QSettings('UNIMI-DISAA', 'IdrAgraTools')
-        execPath = settings.value('idragraPath', '')
         command = [execPath, '-f', 'idragra_parameters.txt']
         if progress: progress.setText('%s' % (execPath))
 
@@ -2270,7 +2295,9 @@ class IdrAgraTools():
                 raise RuntimeError(self.tr('IdrAgra failed with exit code %s') % returnCode)
 
         except OSError as error:
-            raise RuntimeError(self.tr('Unable to run IdrAgra: %s') % error) from error
+            raise RuntimeError(
+                self.tr('Windows could not start IdrAgra. Executable: "%s". Simulation folder: "%s". %s') %
+                (execPath, workingPath, error)) from error
 
         #if progress: progress.setText(self.tr('Process concluded'))
 

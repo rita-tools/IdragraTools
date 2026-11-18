@@ -115,6 +115,9 @@ class Worker(QgsProcessingFeedback):#(QtCore.QObject):
 		# add try to manage errors ...
 		try:
 			self._flag = self.function(*self.args, **self.kwargs)
+		except RuntimeError as e: #%PS%: these errors are "expected" and should print the informative text without long/confusing tracebacks
+			self.exception = e
+			self.setInfo('Error: %s' % str(e), True)
 		except Exception as e:
 			self.exception = e
 			self.setInfo('Unmanaged error %s'%str(e),True)
