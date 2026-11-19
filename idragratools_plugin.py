@@ -2176,6 +2176,7 @@ class IdrAgraTools():
         progress.setProgress(100.0)
 
     def runIdrAgra(self, progress=None):
+        import subprocess
         from subprocess import PIPE, Popen
         from threading import Thread
 
@@ -2234,7 +2235,10 @@ class IdrAgraTools():
 
         try:
             ensure_is_executable(execPath)
-            proc = Popen(command, cwd=self.SIMDIC['OUTPUTPATH'], shell=False, stdout=PIPE, stderr=PIPE)
+            popenOptions = {}
+            if sys.platform == 'win32':
+                popenOptions['creationflags'] = subprocess.CREATE_NO_WINDOW
+            proc = Popen(command, cwd=self.SIMDIC['OUTPUTPATH'], shell=False, stdout=PIPE, stderr=PIPE, **popenOptions)
 
             q = Queue()
             t = Thread(target=enqueue_output, args=(proc.stdout, proc.stderr, q))
