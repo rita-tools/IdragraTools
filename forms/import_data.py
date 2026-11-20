@@ -9,7 +9,7 @@ from qgis.PyQt.QtCore import Qt, pyqtSignal
 from qgis.PyQt.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox,
     QFileDialog, QHBoxLayout, QLabel, QMessageBox, QTableWidget,
-    QTableWidgetItem, QWidget,
+    QTableWidgetItem, QSizePolicy, QWidget,
 )
 
 from ..tools.timeseries_importer import (
@@ -38,7 +38,13 @@ class ImportData(QDialog):
         self._buildMappingTable()
         self._configureExistingWidgets()
         self._connectSignals()
-        self.resize(820, 720)
+
+        #%PS%: safe for smaller screen sizes/resolutions
+        availableGeometry = self.screen().availableGeometry()
+        self.resize(
+            min(820, max(320, availableGeometry.width() - 40)),
+            min(720, max(320, availableGeometry.height() - 80)),
+        )
         self.refreshColumns()
 
     def _buildModeSelector(self):
@@ -59,7 +65,6 @@ class ImportData(QDialog):
         self.horizontalLayout_3.insertWidget(1, self.TIMESTAMP_CB, 1)
 
     def _buildMappingTable(self):
-        self.MAPPING_LBL = QLabel(self.tr('Variable mappings'), self)
         self.MAPPING_TBL = QTableWidget(len(self.VARS), 3, self)
         self.MAPPING_TBL.setHorizontalHeaderLabels([
             self.tr('Import'), self.tr('Destination variable'), self.tr('Source column')
@@ -89,18 +94,18 @@ class ImportData(QDialog):
             + self.MAPPING_TBL.rowCount() * self.MAPPING_TBL.verticalHeader().defaultSectionSize()
             + 2 * self.MAPPING_TBL.frameWidth() + 4
         )
-        availableHeight = QApplication.primaryScreen().availableGeometry().height()
-        mappingHeight = min(idealHeight, max(160, int(availableHeight * 0.4)))
-        self.MAPPING_TBL.setMinimumHeight(mappingHeight)
-        self.MAPPING_TBL.setMaximumHeight(mappingHeight)
+        self.MAPPING_TBL.setMinimumHeight(100)
+        self.MAPPING_TBL.setMaximumHeight(idealHeight)
+        self.MAPPING_TBL.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         previewLabelIndex = self.verticalLayout.indexOf(self.label)
-        self.verticalLayout.insertWidget(previewLabelIndex, self.MAPPING_LBL)
-        self.verticalLayout.insertWidget(previewLabelIndex + 1, self.MAPPING_TBL)
+        self.verticalLayout.insertWidget(previewLabelIndex, self.MAPPING_TBL, 2)
 
     def _configureExistingWidgets(self):
         self.widget_5.hide()
         self.SAVEEDIT_CB.hide()
+        for widget in (self.widget, self.widget_6, self.widget_2, self.widget_3, self.widget_4, self.widget_7):
+            widget.layout().setContentsMargins(0, 0, 0, 0)
         timestampRowIndex = self.verticalLayout.indexOf(self.widget_2)
         self.verticalLayout.removeWidget(self.widget_4)
         self.verticalLayout.insertWidget(timestampRowIndex, self.widget_4)
@@ -208,13 +213,6 @@ class ImportData(QDialog):
 
     def refreshColumns(self, *args):
         filename = self.previewFilename()
-        if self.isFolderMode() and filename:
-            self.MAPPING_LBL.setText(
-                self.tr('Variable mappings — columns from %s, applied to every CSV file') %
-                os.path.basename(filename)
-            )
-        else:
-            self.MAPPING_LBL.setText(self.tr('Variable mappings'))
         hadColumns = bool(self.columns)
         previousTimestamp = self.TIMESTAMP_CB.currentText()
         previousMappings = {
