@@ -35,6 +35,7 @@ from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from qgis import processing
 from qgis.core import QgsProcessingParameterRasterDestination
 from qgis.core import (QgsProcessing,
+					   QgsProcessingFeedback,
 					   QgsFeatureSink,
 					   QgsProcessingException,
 					   QgsProcessingAlgorithm,
@@ -108,7 +109,7 @@ class IdragraCreateElevToField(QgsProcessingAlgorithm):
 
 	OUT_LAY = 'OUT_LAY'
 
-	FEEDBACK = None
+	FEEDBACK: QgsProcessingFeedback
 
 	alg_result = {'OUTPUT':None}
 	alg_result1 = {'OUTPUT':None}

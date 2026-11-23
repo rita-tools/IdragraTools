@@ -32,6 +32,7 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from qgis.analysis import QgsRasterCalculatorEntry, QgsRasterCalculator
 from qgis.core import (QgsRasterLayer,
+					   QgsProcessingFeedback,
 					   QgsProcessing,
 					   QgsProcessingAlgorithm,
 					   QgsProcessingParameterFeatureSource,
@@ -79,7 +80,7 @@ class IdragraCreateHSGMap(QgsProcessingAlgorithm):
 	WATERTABLE = 'WATERTABLE'
 	OUTPUT = 'OUTPUT'
 
-	FEEDBACK = None
+	FEEDBACK: QgsProcessingFeedback
 	
 
 	def tr(self, string):
@@ -289,7 +290,7 @@ class IdragraCreateHSGMap(QgsProcessingAlgorithm):
 			calc = QgsRasterCalculator('"elevation@1"-"watertable@1"', wtdepth, driverName, soilmap.extent(),
 									   soilmap.width(), soilmap.height(), entries)
 			res = calc.processCalculation(self.FEEDBACK)
-			if res>0: self.FEEDBACK.error(self.tr('Unable to resolve the formula'))
+			if res>0: self.FEEDBACK.reportError(self.tr('Unable to resolve the formula'))
 			#print('res',res)
 		else:
 			feedback.reportError(self.tr('Unable to calculate water table depth.'), False)
@@ -492,7 +493,7 @@ class IdragraCreateHSGMap(QgsProcessingAlgorithm):
 			self.FEEDBACK.pushInfo(self.tr('Grid exported to %s')%(filename))
 		except Exception as e:
 			# print 'Cannot save file: %s' %filename
-			self.FEEDBACK.error(self.tr('Cannot save to %s because %s') % (filename, str(e)))
+			self.FEEDBACK.reportError(self.tr('Cannot save to %s because %s') % (filename, str(e)))
 
 
 	def convertRasterToNumpyArray(self,lyrFile):  # Input: QgsRasterLayer

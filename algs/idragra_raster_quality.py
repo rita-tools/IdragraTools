@@ -32,6 +32,7 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from qgis.analysis import QgsRasterCalculatorEntry, QgsRasterCalculator
 from qgis.core import (QgsProcessing,
+					   QgsProcessingFeedback,
 					   QgsFeatureSink,
 					   QgsProcessingException,
 					   QgsProcessingAlgorithm,
@@ -98,7 +99,7 @@ class IdragraRasterQuality(QgsProcessingAlgorithm):
 	CELLDIM = 'CELL_DIM'
 	DESTFILE = 'DEST_FILE'
 		
-	FEEDBACK = None
+	FEEDBACK: QgsProcessingFeedback
 	
 
 	def tr(self, string):

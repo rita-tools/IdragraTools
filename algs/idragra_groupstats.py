@@ -36,6 +36,7 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication, QVariant, QDate
 from qgis.analysis import QgsZonalStatistics
 from qgis.core import (QgsProcessing,
+					   QgsProcessingFeedback,
 					   QgsFeatureSink,
 					   QgsProcessingException,
 					   QgsProcessingAlgorithm,
@@ -106,7 +107,7 @@ class IdragraGroupStats(QgsProcessingAlgorithm):
 	AGGRVAR = 'AGGR_VAR'
 	AGGRFUN = 'AGGR_FUN'
 	OUTPUTTABLE = 'OUTPUT_TABLE'
-	FEEDBACK = None
+	FEEDBACK: QgsProcessingFeedback
 
 	def __init__(self):
 		super().__init__()

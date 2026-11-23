@@ -36,6 +36,7 @@ from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from qgis.analysis import QgsZonalStatistics
 from qgis.core import QgsProcessingParameterCrs
 from qgis.core import (QgsProcessing,
+					   QgsProcessingFeedback,
 					   QgsFeatureSink,
 					   QgsProcessingException,
 					   QgsProcessingAlgorithm,
@@ -110,7 +111,7 @@ class IdragraSoilParams(QgsProcessingAlgorithm):
 	DEPTHS = 'DEPTHS'
 	OUT_TABLE = 'OUT_TABLE'
 
-	FEEDBACK = None
+	FEEDBACK: QgsProcessingFeedback
 
 	def tr(self, string):
 		"""
@@ -254,7 +255,7 @@ class IdragraSoilParams(QgsProcessingAlgorithm):
 			for v in aggrDepthList:
 				aggrDepths.append(float(v))
 		except Exception as e:
-			self.FEEDBACK.error(self.tr('Unable to parse %s parameter.') % self.DEPTHS, True)
+			self.FEEDBACK.reportError(self.tr('Unable to parse %s parameter.') % self.DEPTHS, True)
 
 		self.FEEDBACK.pushInfo(self.tr('Processing the following soil depths: %s' % (str(aggrDepths))))
 

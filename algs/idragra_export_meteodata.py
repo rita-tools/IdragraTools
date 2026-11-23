@@ -31,6 +31,7 @@ __revision__ = '$Format:%H$'
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from qgis.core import (QgsProcessing,
+					   QgsProcessingFeedback,
 						QgsFeatureSink,
 						QgsProcessingException,
 						QgsProcessingAlgorithm,
@@ -89,7 +90,7 @@ class IdragraExportMeteodata(QgsProcessingAlgorithm):
 	STARTDATE = 'START_DATE'
 	ENDDATE = 'END_DATE'
 	
-	FEEDBACK = None
+	FEEDBACK: QgsProcessingFeedback
 	
 
 	def tr(self, string):
@@ -280,4 +281,4 @@ sar.dat x%s            y%s
 		return {'NUMOFEXPORTEDSTATIONS': nOfWS}
 		
 		#https://www.faunalia.eu/fr/blog/2019-07-02-custom-processing-widget
-		
+

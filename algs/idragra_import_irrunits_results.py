@@ -35,6 +35,7 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication, QVariant, QDate
 
 from qgis.core import (QgsProcessing,
+					   QgsProcessingFeedback,
 					   QgsFeatureSink,
 					   QgsProcessingException,
 					   QgsProcessingAlgorithm,
@@ -100,7 +101,7 @@ class IdragraImportIrrUnitsResults(QgsProcessingAlgorithm):
 	AGGRVAR = 'AGGR_VAR'
 	DB_FILENAME = 'DB_FILENAME'
 	VOLUME = 'VOLUME'
-	FEEDBACK = None
+	FEEDBACK: QgsProcessingFeedback
 
 	def __init__(self):
 		super().__init__()

@@ -32,6 +32,7 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from qgis.core import QgsProcessingParameterRasterDestination
 from qgis.core import (QgsProcessing,
+					   QgsProcessingFeedback,
 					   QgsFeatureSink,
 					   QgsProcessingException,
 					   QgsProcessingAlgorithm,
@@ -94,7 +95,7 @@ class IdragraCleanOverlap(QgsProcessingAlgorithm):
 	IN_LAY = 'IN_LAY'
 	OUT_LAY = 'OUT_LAY'
 
-	FEEDBACK = None
+	FEEDBACK: QgsProcessingFeedback
 	
 
 	def tr(self, string):

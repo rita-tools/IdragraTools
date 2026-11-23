@@ -31,6 +31,7 @@ __revision__ = '$Format:%H$'
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from qgis.core import (QgsProcessing,
+					   QgsProcessingFeedback,
 					   QgsFeatureSink,
 					   QgsProcessingException,
 					   QgsProcessingAlgorithm,
@@ -98,7 +99,7 @@ class IdragraCreateCapriseTable(QgsProcessingAlgorithm):
 	DEPTHS = 'DEPTHS'
 	OUT_TABLE = 'OUT_TABLE'
 
-	FEEDBACK = None
+	FEEDBACK: QgsProcessingFeedback
 	
 
 	def tr(self, string):
@@ -218,7 +219,7 @@ class IdragraCreateCapriseTable(QgsProcessingAlgorithm):
 			for v in aggrDepthList:
 				aggrDepths.append(float(v))
 		except Exception as e:
-			self.FEEDBACK.error(self.tr('Unable to parse %s parameter.') % self.DEPTHS, True)
+			self.FEEDBACK.reportError(self.tr('Unable to parse %s parameter.') % self.DEPTHS, True)
 
 		self.FEEDBACK.pushInfo(self.tr('Processing the following soil depths: %s' % (str(aggrDepths))))
 

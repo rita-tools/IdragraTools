@@ -36,6 +36,7 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication, QVariant, QDate
 from qgis.analysis import QgsZonalStatistics
 from qgis.core import (QgsProcessing,
+					   QgsProcessingFeedback,
 					   QgsFeatureSink,
 					   QgsProcessingException,
 					   QgsProcessingAlgorithm,
@@ -96,7 +97,7 @@ class IdragraResultsMap(QgsProcessingAlgorithm):
 	DOMAIN_LAY = 'DOMAIN_LAY'
 	RES_VAR = 'RES_VAR'
 	OUTPUT_LAY = 'OUTPUT_LAY'
-	FEEDBACK = None
+	FEEDBACK: QgsProcessingFeedback
 
 	def __init__(self):
 		super().__init__()

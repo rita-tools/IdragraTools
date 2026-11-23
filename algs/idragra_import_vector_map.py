@@ -35,6 +35,7 @@ from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from qgis.analysis import QgsZonalStatistics
 from qgis.core import QgsProcessingParameterCrs
 from qgis.core import (QgsProcessing,
+					   QgsProcessingFeedback,
 					   QgsFeatureSink,
 					   QgsProcessingException,
 					   QgsProcessingAlgorithm,
@@ -105,7 +106,7 @@ class IdragraImportVectorMap(QgsProcessingAlgorithm):
 	INIT_ASSIGN = 'INIT_ASSIGN'
 	INIT_DATE = 'INIT_DATE'
 	SAVE_EDIT = 'SAVE_EDIT'
-	FEEDBACK = None
+	FEEDBACK: QgsProcessingFeedback
 
 	EXTID_FLD = 'extid'
 	DATE_FLD = 'date'

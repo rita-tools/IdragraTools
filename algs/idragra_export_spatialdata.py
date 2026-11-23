@@ -31,6 +31,7 @@ __revision__ = '$Format:%H$'
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from qgis.core import (QgsProcessing,
+					   QgsProcessingFeedback,
 						QgsFeatureSink,
 						QgsProcessingException,
 						QgsProcessingAlgorithm,
@@ -84,7 +85,7 @@ class IdragraExportSpatialdataAlgorithm(QgsProcessingAlgorithm):
 	INPUTLIST = 'INPUT_LIST'
 	DESTFOLDER = 'DEST_FOLDER'
 	
-	FEEDBACK = None
+	FEEDBACK: QgsProcessingFeedback
 	
 
 	def tr(self, string):
@@ -202,4 +203,4 @@ class IdragraExportSpatialdataAlgorithm(QgsProcessingAlgorithm):
 		return {'NUMOFEXPORTEDMAP': numExportedMap}
 		
 		#https://www.faunalia.eu/fr/blog/2019-07-02-custom-processing-widget
-		
+

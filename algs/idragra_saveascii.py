@@ -31,6 +31,7 @@ __revision__ = '$Format:%H$'
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from qgis.core import (QgsProcessing,
+					   QgsProcessingFeedback,
 						QgsFeatureSink,
 						QgsProcessingException,
 						QgsProcessingAlgorithm,
@@ -97,7 +98,7 @@ class IdragraSaveAscii(QgsProcessingAlgorithm):
 	DIGITS = 'DIGITS'
 	OUTPUT = 'OUTPUT'
 
-	FEEDBACK = None
+	FEEDBACK: QgsProcessingFeedback
 	
 
 	def tr(self, string):
@@ -297,7 +298,7 @@ class IdragraSaveAscii(QgsProcessingAlgorithm):
 			self.FEEDBACK.pushInfo(self.tr('Grid exported to %s')%(filename))
 		except Exception as e:
 			# print 'Cannot save file: %s' %filename
-			self.FEEDBACK.error(self.tr('Cannot save to %s because %s') % (filename, str(e)))
+			self.FEEDBACK.reportError(self.tr('Cannot save to %s because %s') % (filename, str(e)))
 
 	def convertRasterToNumpyArray(self,lyrFile):  # Input: QgsRasterLayer
 		#self.FEEDBACK.pushInfo(self.tr('In convertRasterToNumpyArray, start %s') % (lyrFile))

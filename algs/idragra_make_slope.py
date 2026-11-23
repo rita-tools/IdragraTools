@@ -36,6 +36,7 @@ from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from qgis import processing
 from qgis.analysis import QgsZonalStatistics, QgsRasterCalculatorEntry, QgsRasterCalculator
 from qgis.core import (QgsProcessing,
+					   QgsProcessingFeedback,
 					   QgsFeatureSink,
 					   QgsProcessingException,
 					   QgsProcessingAlgorithm,
@@ -101,7 +102,7 @@ class IdragraMakeSlope(QgsProcessingAlgorithm):
 	UPPERLIM = 'UPPER_LIM'
 	OUTSLOPELAY = 'OUTSLOPE_LAY'
 
-	FEEDBACK = None
+	FEEDBACK: QgsProcessingFeedback
 
 	def tr(self, string):
 		"""

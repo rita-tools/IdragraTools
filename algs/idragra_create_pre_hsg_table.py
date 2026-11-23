@@ -32,6 +32,7 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from qgis.core import QgsProcessingParameterRasterDestination
 from qgis.core import (QgsProcessing,
+					   QgsProcessingFeedback,
 					   QgsFeatureSink,
 					   QgsProcessingException,
 					   QgsProcessingAlgorithm,
@@ -98,7 +99,7 @@ class IdragraCreatePreHSGTable(QgsProcessingAlgorithm):
 	KSAT_FLD = 'KSAT_FLD'
 	OUT_TABLE = 'OUT_TABLE'
 
-	FEEDBACK = None
+	FEEDBACK: QgsProcessingFeedback
 	
 
 	def tr(self, string):

@@ -35,6 +35,7 @@ from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from qgis.analysis import QgsZonalStatistics
 from qgis.core import QgsProcessingParameterCrs
 from qgis.core import (QgsProcessing,
+					   QgsProcessingFeedback,
 					   QgsFeatureSink,
 					   QgsProcessingException,
 					   QgsProcessingAlgorithm,
@@ -100,7 +101,7 @@ class IdragraImportCropPar(QgsProcessingAlgorithm):
 	DB_FILENAME= 'DB_FILENAME'
 	FILE_DIR = 'FILE_DIR'
 	REPLACE_LIBRARY = 'REPLACE_LIBRARY'
-	FEEDBACK = None
+	FEEDBACK: QgsProcessingFeedback
 	DBM = None
 
 	def tr(self, string):

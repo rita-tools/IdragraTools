@@ -38,6 +38,7 @@ from osgeo import gdal
 from qgis.analysis import QgsZonalStatistics
 from qgis.core import QgsProcessingParameterCrs
 from qgis.core import (QgsProcessing,
+					   QgsProcessingFeedback,
 					   QgsFeatureSink,
 					   QgsProcessingException,
 					   QgsProcessingAlgorithm,
@@ -106,7 +107,7 @@ class IdragraImportFromExistingDB(QgsProcessingAlgorithm):
 	DEST_DB = 'DEST_DB'
 	ASSETS = 'ASSETS'
 	RASTER_FLAG = 'RASTER_FLAG'
-	FEEDBACK = None
+	FEEDBACK: QgsProcessingFeedback
 	DBM = None
 
 	def tr(self, string):

@@ -35,6 +35,7 @@ from qgis.PyQt.QtCore import QCoreApplication,QVariant,QDate
 from qgis.analysis import QgsZonalStatistics
 from qgis.core import QgsProcessingParameterCrs
 from qgis.core import (QgsProcessing,
+					   QgsProcessingFeedback,
 					   QgsFeatureSink,
 					   QgsProcessingException,
 					   QgsProcessingAlgorithm,
@@ -102,7 +103,7 @@ class IdragraCreateDB(QgsProcessingAlgorithm):
 	LOAD_SAMPLE_PAR = 'LOAD_SAMPLE_PAR'
 	LOAD_SAMPLE_DATA = 'LOAD_SAMPLE_DATA'
 	CRS = 'CRS'
-	FEEDBACK = None
+	FEEDBACK: QgsProcessingFeedback
 	DBM = None
 
 	def tr(self, string):

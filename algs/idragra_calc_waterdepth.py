@@ -32,6 +32,7 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from qgis.analysis import QgsRasterCalculatorEntry, QgsRasterCalculator
 from qgis.core import (QgsProcessing,
+					   QgsProcessingFeedback,
 					   QgsFeatureSink,
 					   QgsProcessingException,
 					   QgsProcessingAlgorithm,
@@ -100,7 +101,7 @@ class IdragraCalcWaterDepth(QgsProcessingAlgorithm):
 	CELLSIZE = 'CELLSIZE'
 	OUTPUT = 'OUTPUT'
 
-	FEEDBACK = None
+	FEEDBACK: QgsProcessingFeedback
 	
 
 	def tr(self, string):
@@ -338,7 +339,7 @@ class IdragraCalcWaterDepth(QgsProcessingAlgorithm):
 			ncols, nrows, entries)
 
 		res = calc.processCalculation(self.FEEDBACK)
-		if res > 0: self.FEEDBACK.error(self.tr('Unable to resolve the formula'))
+		if res > 0: self.FEEDBACK.reportError(self.tr('Unable to resolve the formula'))
 		# save file
 		feedback.pushInfo(self.tr('Saving output ...'))
 		feedback.setProgress(90)

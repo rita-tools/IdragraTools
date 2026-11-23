@@ -33,6 +33,7 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication
 
 from qgis.core import (QgsProcessingAlgorithm,
+					   QgsProcessingFeedback,
 					   QgsProcessingParameterFileDestination,
 					   QgsProcessingParameterFile, QgsProcessingParameterEnum)
 						
@@ -68,7 +69,7 @@ class IdragraReportOverview(QgsProcessingAlgorithm):
 	SIM_FOLDER= 'SIM_FOLDER'
 	OUTPUT = 'OUTPUT'
 	REPORT_FORMAT = 'REPORT_FORMAT'
-	FEEDBACK = None
+	FEEDBACK: QgsProcessingFeedback
 
 	def __init__(self):
 		super().__init__()

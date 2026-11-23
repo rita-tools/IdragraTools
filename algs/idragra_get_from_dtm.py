@@ -34,6 +34,7 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from qgis.analysis import QgsZonalStatistics
 from qgis.core import (QgsProcessing,
+					   QgsProcessingFeedback,
 					   QgsFeatureSink,
 					   QgsProcessingException,
 					   QgsProcessingAlgorithm,
@@ -98,7 +99,7 @@ class IdragraGetFromDtm(QgsProcessingAlgorithm):
 	DTMLAY = 'DTM_LAY'
 	EMPTYONLY = 'EMPTY_ONLY'
 
-	FEEDBACK = None
+	FEEDBACK: QgsProcessingFeedback
 
 	SLOPEFLD = 'slope'
 	ELEVFLD = 'alt'

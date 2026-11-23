@@ -32,6 +32,7 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from qgis.core import QgsProcessingParameterMapLayer, QgsFeature
 from qgis.core import (QgsProcessing,
+					   QgsProcessingFeedback,
 						QgsFeatureSink,
 						QgsProcessingException,
 						QgsProcessingAlgorithm,
@@ -103,7 +104,7 @@ class IdragraImportTimeserie(QgsProcessingAlgorithm):
 	SENSORID_FLD = 'wsid'
 	VALUE_FLD = 'recval'
 
-	FEEDBACK = None
+	FEEDBACK: QgsProcessingFeedback
 	
 
 	def tr(self, string):

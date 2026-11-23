@@ -35,6 +35,7 @@ from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from qgis.analysis import QgsZonalStatistics
 from qgis.core import QgsProcessingParameterCrs
 from qgis.core import (QgsProcessing,
+					   QgsProcessingFeedback,
 					   QgsFeatureSink,
 					   QgsProcessingException,
 					   QgsProcessingAlgorithm,
@@ -106,7 +107,7 @@ class IdragraBulkImportTimeserie(QgsProcessingAlgorithm):
 	TIMEFORMAT = 'TIME_FORMAT'
 	SEP = 'SEP'
 	REPLACE_EXISTING = 'REPLACE_EXISTING'
-	FEEDBACK = None
+	FEEDBACK: QgsProcessingFeedback
 
 	def __init__(self):
 		super().__init__()

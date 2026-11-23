@@ -31,6 +31,7 @@ __revision__ = '$Format:%H$'
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from qgis.core import (QgsProcessing,
+					   QgsProcessingFeedback,
 					   QgsFeatureSink,
 					   QgsProcessingException,
 					   QgsProcessingAlgorithm,
@@ -97,7 +98,7 @@ class IdragraExportControlPointsVector(QgsProcessingAlgorithm):
 	IDCOL = 'ID_COL'
 	DESTFILE = 'DEST_FILE'
 		
-	FEEDBACK = None
+	FEEDBACK: QgsProcessingFeedback
 	
 
 	def tr(self, string):
@@ -235,4 +236,4 @@ class IdragraExportControlPointsVector(QgsProcessingAlgorithm):
 
 
 		return {'OUTPUT':cpDict}
-		
+
