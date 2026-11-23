@@ -29,47 +29,16 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtCore import QCoreApplication,QVariant
+from qgis.PyQt.QtCore import QCoreApplication
 from qgis.core import (QgsProcessing,
 					   QgsProcessingFeedback,
-						QgsFeatureSink,
-						QgsProcessingException,
 						QgsProcessingAlgorithm,
-						QgsProcessingParameterFeatureSource,
-						QgsProcessingParameterFeatureSink,
-						QgsProcessingParameterMultipleLayers,
 						QgsProcessingParameterFileDestination,
-						QgsProcessingParameterEnum,
-						QgsProcessingParameterRasterLayer,
 						QgsProcessingParameterVectorLayer,
-						QgsProcessingParameterFile,
-						QgsProcessingParameterString,
 						QgsProcessingParameterNumber,
-						QgsProcessingParameterBoolean,
 						QgsProcessingParameterField,
-						QgsProcessingParameterExtent,
-						QgsProcessingParameterRasterDestination,
-						QgsExpression,
-						QgsFeatureRequest,
-						QgsCoordinateReferenceSystem,
-						QgsCoordinateTransform,
-						QgsProcessingParameterFolderDestination,
-						QgsWkbTypes,
-						QgsFields,
-						QgsField,
-						QgsVectorFileWriter,
-						QgsRasterFileWriter,
-						QgsVectorLayer,
-						QgsRasterLayer,
-						QgsProject,
-						NULL)
-						
+						QgsProcessingParameterExtent)
 import processing
-
-from numpy import array
-
-from datetime import datetime
-
 import os
 
 class IdragraRasterizeMap(QgsProcessingAlgorithm):

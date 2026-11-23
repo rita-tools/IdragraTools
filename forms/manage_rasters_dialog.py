@@ -28,21 +28,14 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-import processing
 from qgis.PyQt.QtCore import *
-
 from qgis.PyQt import uic
-
-from qgis.PyQt.QtWidgets import QDialog, QToolBox, QWidget, QVBoxLayout, QFileDialog, QListWidgetItem, QDialogButtonBox, \
-	QAbstractItemView, QMainWindow
-
+from qgis.PyQt.QtWidgets import QAbstractItemView, QMainWindow
 import os
-
 from ..tools.delete_raster_from_DB import deleteRasterFromDB
 from ..tools.import_raster_in_db import importRasterInDB
 from ..tools.array_table_model import ArrayTableModel
 from forms.import_raster_dialog import ImportRasterDialog
-
 
 class ManageRastersDialog(QMainWindow):
 	closed = pyqtSignal()

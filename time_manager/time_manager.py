@@ -28,32 +28,11 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-import sys
-
 import os
-import os.path as osp
-from os.path import dirname, join, exists, abspath, isfile, basename
-import sys
-import inspect
-from shutil import copyfile
-import numpy as np
-import glob
-import operator
-import sqlite3 as sqlite
-from datetime import datetime
-
-from qgis.core import QgsVectorLayerCache,QgsVectorLayer
-
 from qgis.PyQt.QtCore import *
 from qgis.PyQt.QtGui import *
 from qgis.PyQt.QtWidgets import *
-from qgis.PyQt import QtSql
 from qgis.PyQt import uic
-
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-import matplotlib.pyplot as plt
-from matplotlib.patches import Polygon
 
 class TimeManager(QMainWindow):#(QDialog)QMainWindow:
 

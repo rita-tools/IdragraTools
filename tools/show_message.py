@@ -30,7 +30,6 @@ __revision__ = '$Format:%H$'
 
 from qgis.PyQt.QtWidgets import QMessageBox
 
-
 def showCriticalMessageBox(text, infoText, detailText, title = 'IdrAgraTools'):
     msg = QMessageBox()
     msg.setIcon(QMessageBox.Critical)

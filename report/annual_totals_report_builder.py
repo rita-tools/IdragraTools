@@ -13,12 +13,8 @@ from matplotlib.sankey import Sankey
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
-from matplotlib import cm
-import matplotlib.patches as mpatches
-import matplotlib.patheffects as pe
-from matplotlib.gridspec import GridSpec
 from matplotlib.transforms import Bbox
-from datetime import datetime,timedelta
+from datetime import datetime
 
 # import as module
 from report.overview_report_builder import OverviewReportBuilder

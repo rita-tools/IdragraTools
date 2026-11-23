@@ -28,20 +28,12 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-
 from qgis.PyQt.QtCore import *
 from qgis.PyQt.QtGui import *
-
 from qgis.PyQt import uic
-
-from qgis.PyQt.QtWidgets import QDialog, QToolBox, QWidget, QVBoxLayout, QFileDialog, QListWidgetItem, QToolButton, \
-	QSpinBox, QCalendarWidget, QMainWindow
-
+from qgis.PyQt.QtWidgets import QMainWindow
 import os
-
 from qgis.core import QgsProviderRegistry
-
-
 
 class ImportRasterDialog(QMainWindow):
 	closed = pyqtSignal()

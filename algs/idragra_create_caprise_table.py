@@ -33,46 +33,17 @@ from qgis.PyQt.QtCore import QCoreApplication,QVariant
 from qgis.core import (QgsProcessing,
 					   QgsProcessingFeedback,
 					   QgsFeatureSink,
-					   QgsProcessingException,
 					   QgsProcessingAlgorithm,
 					   QgsProcessingParameterFeatureSource,
 					   QgsProcessingParameterFeatureSink,
-					   QgsProcessingParameterMultipleLayers,
-					   QgsProcessingParameterFileDestination,
-					   QgsProcessingParameterEnum,
-					   QgsProcessingParameterRasterLayer,
-					   QgsProcessingParameterVectorLayer,
-					   QgsProcessingParameterFile,
 					   QgsProcessingParameterString,
-					   QgsProcessingParameterNumber,
-					   QgsProcessingParameterBoolean,
 					   QgsProcessingParameterField,
-					   QgsExpression,
-					   QgsFeatureRequest,
-					   QgsCoordinateReferenceSystem,
-					   QgsCoordinateTransform,
-					   QgsProcessingParameterFolderDestination,
-					   QgsWkbTypes,
 					   QgsFields,
 					   QgsField,
-					   QgsVectorFileWriter,
-					   QgsRasterFileWriter,
-					   QgsVectorLayer,
-					   QgsRasterLayer,
-					   QgsProject,
-					   NULL, QgsFeature)
-						
-import processing
-
+					   QgsFeature)
 import numpy as np
-
-from datetime import datetime
-
 import os
-
 from ..tools.import_from_csv import *
-from ..tools.compact_dataset import getRasterInfos
-
 
 class IdragraCreateCapriseTable(QgsProcessingAlgorithm):
 	"""

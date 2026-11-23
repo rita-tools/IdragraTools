@@ -28,22 +28,15 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-
 from qgis.PyQt.QtCore import *
 from qgis.PyQt.QtGui import *
-
 from qgis.PyQt import uic
-
-from qgis.PyQt.QtWidgets import QDialog, QToolBox, QWidget, QVBoxLayout, QFileDialog, QListWidgetItem, QSpinBox, \
+from qgis.PyQt.QtWidgets import QSpinBox, \
 	QCalendarWidget, QToolButton, QLabel, QCheckBox, QMainWindow
-
 import os
-
-from qgis import processing
-from qgis.core import QgsCoordinateReferenceSystem, QgsRectangle, QgsProject, QgsPoint, QgsGeometry, QgsPointXY, \
+from qgis.core import QgsCoordinateReferenceSystem, QgsPoint, QgsGeometry, QgsPointXY, \
 	QgsWkbTypes
 from qgis.gui import QgsDateTimeEdit, QgsRubberBand, QgsVertexMarker
-
 from ..tools.utils import returnExtent
 
 class NoYearCalendar(QCalendarWidget):

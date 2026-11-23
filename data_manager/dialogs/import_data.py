@@ -29,10 +29,8 @@ __revision__ = '$Format:%H$'
 
 from qgis.PyQt.QtCore import *
 from qgis.PyQt.QtGui import *
-
 from qgis.PyQt import uic
-
-from qgis.PyQt.QtWidgets import QDialog, QToolBox, QWidget, QVBoxLayout, QFileDialog, QListWidgetItem, QDialogButtonBox, \
+from qgis.PyQt.QtWidgets import QDialog, QFileDialog, QDialogButtonBox, \
 	QTableWidgetItem
 
 # qgis import
@@ -40,8 +38,6 @@ from qgis.core import *
 from qgis.gui import *
 # other
 import os
-import sys
-import glob
 from datetime import datetime
 
 

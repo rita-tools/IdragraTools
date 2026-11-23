@@ -29,7 +29,7 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtCore import QCoreApplication,QVariant
+from qgis.PyQt.QtCore import QCoreApplication
 from qgis.analysis import QgsRasterCalculatorEntry, QgsRasterCalculator
 from qgis.core import (QgsRasterLayer,
 					   QgsProcessingFeedback,
@@ -41,14 +41,9 @@ from qgis.core import (QgsRasterLayer,
 					   QgsProcessingParameterField,
 					   QgsProcessingParameterRasterDestination,
 					   QgsRasterFileWriter)
-						
 import processing
-
 import numpy as np
-
 import os
-
-from ..tools.gis_grid import GisGrid
 from ..tools.compact_dataset import getRasterInfos
 
 class IdragraCreateHSGMap(QgsProcessingAlgorithm):

@@ -1,8 +1,4 @@
-import matplotlib
 from qgis.PyQt.QtWidgets import *
-from qgis.PyQt import uic
-from datetime import datetime
-from datetime import timedelta
 import os
 
 from matplotlib.backends.backend_qt5 import NavigationToolbar2QT

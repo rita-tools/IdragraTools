@@ -29,11 +29,8 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 import os
-
 from qgis.core import QgsProcessingProvider
-
 from qgis.PyQt.QtGui import QIcon
-
 from .algs.idragra_create_elev_to_field import IdragraCreateElevToField
 from .algs.idragra_clean_overlap import IdragraCleanOverlap
 from .algs.idragra_multi_join import IdragraMultiJoin

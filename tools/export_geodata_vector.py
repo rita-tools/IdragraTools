@@ -30,13 +30,10 @@ __revision__ = '$Format:%H$'
 
 import os
 from datetime import date
-
 from qgis.PyQt.QtCore import QObject, QVariant
 from qgis import processing
-from qgis.core import QgsRasterLayer, QgsVectorLayer, QgsField, QgsProcessing
-
+from qgis.core import QgsRasterLayer, QgsVectorLayer, QgsField
 from tools.write_pars_to_template import writeParsToTemplate
-
 
 class ExportGeodataVector(QObject):
 

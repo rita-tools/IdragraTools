@@ -27,22 +27,16 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-
 from qgis.PyQt.QtCore import *
 from qgis.PyQt.QtGui import *
-
 from qgis.PyQt import uic
-
-from qgis.PyQt.QtWidgets import QDialog,QToolBox,QWidget,QVBoxLayout,QFileDialog,QListWidgetItem,QMessageBox
+from qgis.PyQt.QtWidgets import QDialog,QMessageBox
 	
 #qgis import
 from qgis.core import *
 from qgis.gui import *
 #other
 import os
-import sys
-import glob
-
 
 class RemoveData(QDialog):
 	closed = pyqtSignal()

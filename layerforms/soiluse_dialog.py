@@ -32,15 +32,12 @@ from qgis.PyQt.QtCore import *
 from qgis.PyQt.QtGui import *
 from qgis.PyQt.QtWidgets import *
 from qgis.gui import *
-
 from IdragraTools.qt_compat import QAction
 
 #from QWaDiS.layerforms.utils import *
 
-from IdragraTools.layerforms.utils import toFloat, parseString, toInt,updateListItems
-
+from IdragraTools.layerforms.utils import parseString, toInt,updateListItems
 from tools.array_table_model import ArrayTableModel
-
 
 def formOpen(dialog,layerid,featureid):
 	global myDialog

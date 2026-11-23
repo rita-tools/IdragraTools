@@ -28,27 +28,16 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-import os
-import sys
-from qgis.PyQt import QtGui
 from qgis.PyQt.QtCore import pyqtSignal
-from qgis.PyQt.QtWidgets import QDialog,QMenu,QMessageBox,QPushButton,QVBoxLayout
-
+from qgis.PyQt.QtWidgets import QDialog,QPushButton,QVBoxLayout
 from matplotlib.backends.backend_qt5agg  import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdt
 from matplotlib.font_manager import FontProperties
 from matplotlib.patches import Polygon,Patch
-
-
 import numpy as np
-
 import random
-from datetime import datetime
-
 from data_manager.chart_tool_bar import ChartToolBar
-
 
 class ChartDialog(QDialog):
 	sizeChanged = pyqtSignal()

@@ -29,14 +29,14 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 import os
-
-from qgis.PyQt import QtGui, uic
-from qgis.PyQt.QtCore import QMetaObject, Qt, QVariant
-from qgis.PyQt.QtWidgets import QDialog, QVBoxLayout, QTableView, QPushButton, QAbstractItemView, QItemDelegate, QComboBox, \
+from qgis.PyQt import uic
+from qgis.PyQt.QtCore import QMetaObject, Qt
+from qgis.PyQt.QtWidgets import QDialog, QAbstractItemView, QItemDelegate, QComboBox, \
 	QApplication, QStyleOptionComboBox, QStyle, QHeaderView
 
 
 # credits: https://stackoverflow.com/questions/18068439/pyqt-simplest-working-example-of-a-combobox-inside-qtableview/48055193
+
 class ComboBoxDelegate(QItemDelegate):
 	def __init__(self, parent, itemsDict):
 		super().__init__(parent)

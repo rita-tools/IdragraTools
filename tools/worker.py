@@ -29,13 +29,8 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 import traceback
-
-from qgis.PyQt import QtGui, QtCore
-from qgis.PyQt.QtCore import QThread
-from time import sleep
-
-from qgis.core import QgsProcessingFeedback, QgsFeedback
-
+from qgis.PyQt import QtCore
+from qgis.core import QgsProcessingFeedback
 
 class Worker(QgsProcessingFeedback):#(QtCore.QObject):
 	finished = QtCore.pyqtSignal()

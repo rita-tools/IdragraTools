@@ -10,7 +10,6 @@ import re
 import matplotlib
 from osgeo import ogr
 
-from report.toc_item import TocItem
 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -19,7 +18,7 @@ from matplotlib import cm
 from matplotlib.colors import Normalize
 
 
-from datetime import datetime,timedelta
+from datetime import datetime
 
 # import as module
 from report.annual_totals_report_builder import AnnualTotalsReportBuilder

@@ -29,14 +29,10 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 import os
-from os.path import relpath
-
 import processing
 from qgis.core import QgsCoordinateReferenceSystem, QgsRectangle, QgsRasterLayer, QgsRasterBlockFeedback, \
-    QgsRasterFileWriter, QgsRasterPipe, QgsRasterProjector, QgsProject
-
+    QgsRasterFileWriter, QgsRasterPipe, QgsRasterProjector
 from tools.delete_raster_from_DB import deleteRasterFromDB
-
 
 def importRasterInDB(DBM, rasterFileName, tableName, crs=QgsCoordinateReferenceSystem(),
                      extension=QgsRectangle()):

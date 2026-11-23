@@ -28,59 +28,18 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from math import tan, radians
-
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtCore import QCoreApplication,QVariant
-from qgis.analysis import QgsZonalStatistics
-from qgis.core import QgsProcessingParameterCrs
+from qgis.PyQt.QtCore import QCoreApplication
 from qgis.core import (QgsProcessing,
 					   QgsProcessingFeedback,
-					   QgsFeatureSink,
-					   QgsProcessingException,
 					   QgsProcessingAlgorithm,
 					   QgsProcessingParameterFeatureSource,
 					   QgsProcessingParameterFeatureSink,
-					   QgsProcessingParameterMultipleLayers,
-					   QgsProcessingParameterFileDestination,
-					   QgsProcessingParameterEnum,
-					   QgsProcessingParameterRasterLayer,
-					   QgsProcessingParameterVectorLayer,
-					   QgsProcessingParameterFile,
 					   QgsProcessingParameterString,
-					   QgsProcessingParameterNumber,
-					   QgsProcessingParameterBoolean,
 					   QgsProcessingParameterField,
-					   QgsProcessingParameterExtent,
-					   QgsProcessingParameterRasterDestination,
-					   QgsExpression,
-					   QgsFeatureRequest,
-					   QgsCoordinateReferenceSystem,
-					   QgsCoordinateTransform,
-					   QgsProcessingParameterFolderDestination,
-					   QgsWkbTypes,
-					   QgsFields,
-					   QgsField,
-					   QgsVectorFileWriter,
-					   QgsRasterFileWriter,
-					   QgsVectorLayer,
-					   QgsRasterLayer,
-					   QgsProject,
-					   NULL, QgsFeature, edit, QgsRaster)
-						
-import processing
-
-from numpy import array
-
-from datetime import datetime
-
+					   QgsFeature)
 import os
-
 from algs.date_time_widget import DateTimeWidget
-from tools.add_features_from_csv import addFeaturesFromCSV
-from tools.parse_par_file import parseParFile
-from tools.sqlite_driver import SQLiteDriver
-
 
 class IdragraImportVectorMap(QgsProcessingAlgorithm):
 	"""

@@ -29,7 +29,7 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 from qgis.PyQt.QtGui import QColor
-from qgis.core import QgsGradientColorRamp, QgsGradientStop,QgsMapLayer,QgsVectorLayer,QgsClassificationEqualInterval,QgsRendererRange,QgsGraduatedSymbolRenderer,QgsSymbol
+from qgis.core import QgsGradientColorRamp, QgsGradientStop,QgsMapLayer,QgsClassificationEqualInterval,QgsRendererRange,QgsGraduatedSymbolRenderer,QgsSymbol
 ## https://gis.stackexchange.com/questions/342352/apply-a-color-ramp-to-vector-layer-using-pyqgis3
 
 def replaceColorRamp(vLayer,varToPlot,fieldName = 'tempvalue',minmax = None):

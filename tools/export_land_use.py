@@ -30,7 +30,6 @@ __revision__ = '$Format:%H$'
 
 import os
 import shutil
-
 from .check_value import checkValue
 from .landuse_library import crop_filename
 from .write_pars_to_template import writeParsToTemplate

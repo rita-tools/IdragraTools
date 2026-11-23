@@ -28,13 +28,10 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 from datetime import datetime
-
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtWidgets import QMdiSubWindow, QTableView
 from qgis.PyQt import QtSql
-
 from data_manager.chart_widget import ChartWidget
-
 
 class DataWindow(QMdiSubWindow):
     def __init__(self, parent=None, title='', dbPath='', sql=''):

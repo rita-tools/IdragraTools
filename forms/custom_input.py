@@ -28,18 +28,13 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from qgis.PyQt import QtCore, QtGui
 from qgis.PyQt.QtCore import QDate
-from qgis.PyQt.QtWidgets import QWidget, QLabel, QLineEdit, QGridLayout, QComboBox, QListWidget, QPushButton, QCheckBox, \
-	QFileDialog, QSpacerItem, QToolButton, QDateTimeEdit, QPlainTextEdit
-import os.path as osp
+from qgis.PyQt.QtWidgets import QWidget, QLabel, QLineEdit, QGridLayout, QComboBox, QListWidget, QCheckBox, \
+	QFileDialog, QToolButton, QDateTimeEdit, QPlainTextEdit
 from os import sep as oss
-
 from qgis.core import *
 from qgis.gui import *
-
 from ast import literal_eval
-
 
 class CRSInput(QWidget):
 

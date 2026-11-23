@@ -29,11 +29,6 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 import numpy as np
-
-import scipy.io as sio
-
-from qgis.PyQt.QtCore import QObject
-
 from qgis.PyQt.QtCore import QVariant
 from qgis.core import QgsVectorLayer,QgsField,QgsPoint,QgsPointXY,QgsFeature,QgsGeometry,QgsProject,QgsVectorFileWriter,QgsCoordinateReferenceSystem,QgsFields,QgsWkbTypes
 

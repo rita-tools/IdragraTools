@@ -29,12 +29,9 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 import qgis.utils
-from qgis.PyQt.QtWidgets import QPushButton, QLineEdit, QDialog, QMainWindow, QLabel, QComboBox
-
+from qgis.PyQt.QtWidgets import QPushButton, QLineEdit, QMainWindow, QLabel, QComboBox
 from data_manager.chart_widget import ChartWidget
-
-from tools.show_message import showInfoMessageBox,showCriticalMessageBox
-
+from tools.show_message import showCriticalMessageBox
 
 def formOpen(dialog,layerid,featureid):
 	global myDialog

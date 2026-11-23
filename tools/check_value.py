@@ -28,7 +28,6 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-
 def checkValue(nameVal, testVal, testPar, testFun, tr, feedback):
     res = 1
     if testFun == 'in':

@@ -1,6 +1,5 @@
-from qgis.PyQt.QtCore import QSize
-from qgis.PyQt.QtGui import QImage, QColor, QPainter
-from qgis.core import QgsMapSettings, QgsProject, QgsRectangle, QgsMapRendererCustomPainterJob, QgsPrintLayout, \
+from qgis.PyQt.QtGui import QColor
+from qgis.core import QgsProject, QgsPrintLayout, \
     QgsLayoutSize, QgsUnitTypes, QgsLayoutItemLegend, QgsLayerTree, QgsLayoutExporter, QgsLayoutItemMap, QgsLayoutPoint, \
     QgsLayoutItemScaleBar
 

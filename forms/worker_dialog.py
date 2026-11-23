@@ -29,21 +29,16 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 import time
-
 from qgis.PyQt.QtCore import *
 from qgis.PyQt.QtGui import *
-
 from qgis.PyQt import uic
-
-from qgis.PyQt.QtWidgets import QDialog,QToolBox,QWidget,QVBoxLayout,QApplication
+from qgis.PyQt.QtWidgets import QDialog,QApplication
 	
 #qgis import
 from qgis.core import *
 from qgis.gui import *
 #other
 import os
-import sys
-
 from .custom_input import *
 
 class WorkerDialog(QDialog):

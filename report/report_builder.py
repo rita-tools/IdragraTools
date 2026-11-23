@@ -1,4 +1,3 @@
-import copy
 import glob
 import os
 
@@ -10,14 +9,12 @@ import matplotlib
 from matplotlib.colors import Normalize
 from matplotlib.pyplot import cm
 import matplotlib.patches as mpatches
-import matplotlib.pyplot as plt
-from osgeo import ogr
 
 from report.toc_item import TocItem
 
 matplotlib.use('Agg')
 
-from datetime import datetime,date,timedelta
+from datetime import datetime
 
 # import as module
 from report.my_progress import MyProgress

@@ -6,7 +6,6 @@ import pandas as pd
 import re
 
 import matplotlib
-from qgis.core import QgsVectorLayer
 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -15,7 +14,7 @@ import matplotlib.patheffects as pe
 from matplotlib.gridspec import GridSpec
 from osgeo import ogr
 
-from datetime import datetime,timedelta
+from datetime import datetime
 import math
 # import as module
 from report.report_builder import ReportBuilder

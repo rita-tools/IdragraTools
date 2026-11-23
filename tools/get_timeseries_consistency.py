@@ -30,9 +30,6 @@ __revision__ = '$Format:%H$'
 
 import sqlite3 as sqlite
 import numpy as np
-from datetime import datetime
-from qgis.core import QgsVectorLayer
-import os
 
 def queryDB(sql,dbname):
 	msg = ''

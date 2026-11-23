@@ -29,61 +29,24 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 import sqlite3
-from math import tan, radians
-
 import qgis
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtCore import QCoreApplication,QVariant
+from qgis.PyQt.QtCore import QCoreApplication
 from osgeo import gdal
-from qgis.analysis import QgsZonalStatistics
-from qgis.core import QgsProcessingParameterCrs
-from qgis.core import (QgsProcessing,
-					   QgsProcessingFeedback,
-					   QgsFeatureSink,
-					   QgsProcessingException,
+from qgis.core import (QgsProcessingFeedback,
 					   QgsProcessingAlgorithm,
-					   QgsProcessingParameterFeatureSource,
-					   QgsProcessingParameterFeatureSink,
-					   QgsProcessingParameterMultipleLayers,
-					   QgsProcessingParameterFileDestination,
 					   QgsProcessingParameterEnum,
-					   QgsProcessingParameterRasterLayer,
-					   QgsProcessingParameterVectorLayer,
 					   QgsProcessingParameterFile,
-					   QgsProcessingParameterString,
-					   QgsProcessingParameterNumber,
 					   QgsProcessingParameterBoolean,
-					   QgsProcessingParameterField,
-					   QgsProcessingParameterExtent,
-					   QgsProcessingParameterRasterDestination,
-					   QgsExpression,
-					   QgsFeatureRequest,
-					   QgsCoordinateReferenceSystem,
-					   QgsCoordinateTransform,
-					   QgsProcessingParameterFolderDestination,
-					   QgsWkbTypes,
-					   QgsFields,
-					   QgsField,
-					   QgsVectorFileWriter,
 					   QgsRasterFileWriter,
-					   QgsVectorLayer,
 					   QgsRasterLayer,
 					   QgsProject,
-					   NULL, QgsFeature, edit, QgsRaster, QgsGeometry, QgsRasterBlockFeedback, QgsRasterPipe,
+					   NULL, QgsRasterBlockFeedback, QgsRasterPipe,
 					   QgsRasterProjector)
-						
-import processing
-
-from numpy import array
-
-from datetime import datetime
-
 import os
 
 #from tools.add_features_from_csv import addFeaturesFromCSV
-from tools.parse_par_file import parseParFile
 from tools.sqlite_driver import SQLiteDriver
-
 
 class IdragraImportFromExistingDB(QgsProcessingAlgorithm):
 	"""

@@ -30,23 +30,15 @@ __copyright__ = '(C) 2018 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-import sys
-from qgis.PyQt import QtGui
-from qgis.PyQt.QtWidgets import QDialog,QMenu,QMessageBox,QPushButton,QWidget,QVBoxLayout,QComboBox,QLabel
-		
+from qgis.PyQt.QtWidgets import QWidget,QVBoxLayout,QComboBox,QLabel
 import matplotlib
 from matplotlib.backends.backend_qt5agg  import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdt
 from matplotlib.patches import Polygon, Patch
 import matplotlib.dates as mdates
-
 import numpy as np
-
 import random
-from datetime import datetime
-
 from matplotlib.sankey import Sankey
 
 if (matplotlib.__version__).startswith('3.1.'):

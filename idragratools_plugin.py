@@ -36,18 +36,10 @@ import shutil
 import sys
 import inspect
 import glob
-from datetime import datetime, timedelta, date
-import time
-import random
-
-import scipy.io as sio
-import os.path as osp
+from datetime import datetime, timedelta
 import numpy as np
-
-from qgis.PyQt import QtSql
 from qgis.PyQt.QtXml import QDomDocument
 from qgis import processing
-
 from .tools.export_geodata_vector import ExportGeodataVector
 from .forms.report_view import ReportDialog
 from .tools.show_message import showInfoMessageBox, showCriticalMessageBox
@@ -55,11 +47,9 @@ from .tools.network_analyst import NetworkAnalyst
 from .data_manager.chart_widget import ChartWidget
 from .tools.gis_grid import GisGrid
 from .tools.iface_progress import IfaceProgress
-from .tools.import_raster_in_db import importRasterInDB
 from .tools.my_progress import MyProgress
 from .forms.manage_rasters_dialog import ManageRastersDialog
 from .tools.export_irrigation_method import exportIrrigationMethod
-from .forms.attribute_table_view import AttributesTableView
 from .forms.new_db_dialog import NewDbDialog
 from .tools.utils import returnExtent
 from .tools.executable_selector import select_model_executable, ensure_is_executable
@@ -68,37 +58,21 @@ from .tools.export_water_sources import makeDischSerie, exportWaterSources
 from .tools.write_pars_to_template import writeParsToTemplate
 
 cmd_folder = os.path.split(inspect.getfile(inspect.currentframe()))[0]
-
 if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
 
-from qgis.core import Qgis, QgsProcessingAlgorithm, QgsApplication, QgsProject, QgsProviderRegistry, QgsVectorLayer, \
+from qgis.core import Qgis, QgsApplication, QgsProject, QgsProviderRegistry, QgsVectorLayer, \
     QgsGeometry, QgsFeature, QgsFeatureRequest, QgsExpression
-from qgis.PyQt.QtCore import QVariant, QUrl
-
-from qgis.PyQt.QtCore import QSettings, QThread, Qt, QTimer
-from qgis.PyQt.QtGui import QIcon, QColor, QPixmap
-from qgis.PyQt.QtWidgets import QMenu, QMessageBox, QProgressBar, QDialog, QFileDialog
-
+from qgis.PyQt.QtCore import QVariant
+from qgis.PyQt.QtCore import QSettings, Qt
+from qgis.PyQt.QtGui import QIcon, QPixmap
+from qgis.PyQt.QtWidgets import QMenu, QMessageBox, QProgressBar, QFileDialog
 from .qt_compat import QAction
-
 from .idragratools_provider import IdrAgraToolsProvider
-
 from .forms.custom_input import *
-
-from .tools.save_metadata import saveMetadata
-from .tools.get_raster_geoinfo import getRasterGeoinfo
-from .tools.get_vector_geoinfo import getVectorGeoinfo
-from .tools.raster_extractor import rasterExtractor
-from .tools.vector_extractor import vectorExtractor
 from .tools.export_geodata import Exporter
-
 from .tools.sqlite_driver import SQLiteDriver
-from .tools.parse_par_file import parseParFile
-from .tools.add_features_from_csv import addFeaturesFromCSV
-
 from .tools.export_meteodata import exportMeteodataFromDB
-
 import pandas as pd
 import sys
 if (sys.version_info >= (3, 9)):
@@ -107,7 +81,6 @@ if (sys.version_info >= (3, 9)):
 else:
     def checkTread(t):
         return t.isAlive()
-
 
 class Feedback():
     def __init__(self, iface):
@@ -2782,7 +2755,6 @@ class IdrAgraTools():
 
 
     def waterDemandAtNode(self, destTable, sourceTable, progress=None,mode = 1,exclNodeType = [13,14]):
-        import copy
 
         if progress: progress.setText(self.tr('Calculating water demand at nodes...'))
         # loop in node list and check if there are data

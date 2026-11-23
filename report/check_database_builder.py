@@ -1,9 +1,6 @@
-import glob
 import os
 
-import numpy as np
 import pandas as pd
-import re
 
 import sqlite3 as sqlite
 
@@ -11,12 +8,7 @@ import matplotlib
 matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
-from matplotlib import cm
-import matplotlib.patches as mpatches
-import matplotlib.patheffects as pe
-from matplotlib.gridspec import GridSpec
 
-from datetime import datetime,timedelta
 
 # import as module
 from report.report_builder import ReportBuilder

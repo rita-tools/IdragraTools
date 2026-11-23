@@ -1,12 +1,9 @@
 import os
 
-from qgis.PyQt.QtGui import QCursor
-from qgis.PyQt.QtWidgets import QApplication
 from matplotlib.backend_tools import cursors
 from matplotlib.backends.backend_qt5 import NavigationToolbar2QT
 from matplotlib.backend_bases import MouseButton
-import matplotlib.dates as mdt
-from qgis.PyQt import QtWidgets, QtCore, QtGui
+from qgis.PyQt import QtWidgets, QtCore
 
 from data_manager.dialogs.edit_legend import EditLegend
 

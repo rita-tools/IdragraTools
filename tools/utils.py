@@ -30,7 +30,6 @@ __revision__ = '$Format:%H$'
 
 from qgis.core import QgsRectangle
 
-
 def returnExtent(extStr):
     ext = None
     try:

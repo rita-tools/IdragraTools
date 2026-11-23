@@ -30,12 +30,9 @@ __revision__ = '$Format:%H$'
 
 import sqlite3 as sqlite
 from datetime import datetime
-from qgis.core import QgsVectorLayer
 import os
 import numpy as np
-
 from tools.check_value import checkValue
-
 
 def queryDB(sql,DBM,feedback,tr):
 	data = []

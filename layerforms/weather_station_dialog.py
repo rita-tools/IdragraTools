@@ -30,20 +30,12 @@ __revision__ = '$Format:%H$'
 
 import datetime
 import numpy as np
-import os
-
 from qgis.PyQt.QtWidgets import *
 from qgis.core import *
-
 from IdragraTools.qt_compat import QAction
-
-
 from IdragraTools.layerforms.utils import *
-
 from IdragraTools.data_manager.chart_widget import ChartWidget
-
 from tools.show_message import showCriticalMessageBox
-
 
 def formOpen(dialog,layerid,featureid):
 	global myDialog

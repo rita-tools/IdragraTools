@@ -31,22 +31,15 @@ __revision__ = '$Format:%H$'
 import qgis
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication
-
 from qgis.core import (QgsProcessingAlgorithm,
 					   QgsProcessingFeedback,
 					   QgsProcessingParameterFileDestination,
 					   QgsProcessingParameterFile, QgsProcessingParameterEnum)
-						
-
-
 import os
-
 from report.annual_totals_report_builder import AnnualTotalsReportBuilder
 from report.irrunit_totals_report_builder import IrrunitTotalsReportBuilder
 from report.report_builder import ReportBuilder
 from ..report.overview_report_builder import OverviewReportBuilder
-
-
 
 class IdragraReportOverview(QgsProcessingAlgorithm):
 	"""

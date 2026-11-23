@@ -29,50 +29,21 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 import glob
-from math import tan, radians
-
 import qgis
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtCore import QCoreApplication, QVariant, QDate
-from qgis.analysis import QgsZonalStatistics
+from qgis.PyQt.QtCore import QCoreApplication, QVariant
 from qgis.core import (QgsProcessing,
 					   QgsProcessingFeedback,
 					   QgsFeatureSink,
-					   QgsProcessingException,
 					   QgsProcessingAlgorithm,
 					   QgsProcessingParameterFeatureSource,
 					   QgsProcessingParameterFeatureSink,
-					   QgsProcessingParameterMultipleLayers,
-					   QgsProcessingParameterFileDestination,
 					   QgsProcessingParameterEnum,
-					   QgsProcessingParameterRasterLayer,
-					   QgsProcessingParameterVectorLayer,
 					   QgsProcessingParameterFile,
-					   QgsProcessingParameterString,
-					   QgsProcessingParameterNumber,
-					   QgsProcessingParameterBoolean,
-					   QgsProcessingParameterField,
-					   QgsProcessingParameterExtent,
-					   QgsProcessingParameterRasterDestination,
-					   QgsExpression,
-					   QgsFeatureRequest,
-					   QgsCoordinateReferenceSystem,
-					   QgsCoordinateTransform,
-					   QgsProcessingParameterFolderDestination,
-					   QgsWkbTypes,
 					   QgsFields,
 					   QgsField,
-					   QgsVectorFileWriter,
-					   QgsRasterFileWriter,
-					   QgsVectorLayer,
-					   QgsRasterLayer,
-					   QgsProject,
-					   NULL, QgsFeature, edit, QgsRaster, QgsProcessingUtils)
-
-from datetime import datetime,timedelta
-
+					   QgsFeature)
 import os
-
 import pandas as pd
 
 class IdragraResultsMap(QgsProcessingAlgorithm):

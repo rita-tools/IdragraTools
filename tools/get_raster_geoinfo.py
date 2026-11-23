@@ -29,9 +29,7 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 from qgis.core import QgsRasterLayer
-
 import os.path as osp
-
 
 def getRasterGeoinfo(fileName):
 	# init variable

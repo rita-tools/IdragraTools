@@ -28,57 +28,17 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from math import tan, radians
-
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtCore import QCoreApplication,QVariant
-from qgis.analysis import QgsZonalStatistics
-from qgis.core import QgsProcessingParameterCrs
-from qgis.core import (QgsProcessing,
-					   QgsProcessingFeedback,
-					   QgsFeatureSink,
+from qgis.PyQt.QtCore import QCoreApplication
+from qgis.core import (QgsProcessingFeedback,
 					   QgsProcessingException,
 					   QgsProcessingAlgorithm,
-					   QgsProcessingParameterFeatureSource,
-					   QgsProcessingParameterFeatureSink,
-					   QgsProcessingParameterMultipleLayers,
-					   QgsProcessingParameterFileDestination,
-					   QgsProcessingParameterEnum,
-					   QgsProcessingParameterRasterLayer,
-					   QgsProcessingParameterVectorLayer,
 					   QgsProcessingParameterFile,
-					   QgsProcessingParameterString,
-					   QgsProcessingParameterNumber,
-					   QgsProcessingParameterBoolean,
-					   QgsProcessingParameterField,
-					   QgsProcessingParameterExtent,
-					   QgsProcessingParameterRasterDestination,
-					   QgsExpression,
-					   QgsFeatureRequest,
-					   QgsCoordinateReferenceSystem,
-					   QgsCoordinateTransform,
-					   QgsProcessingParameterFolderDestination,
-					   QgsWkbTypes,
-					   QgsFields,
-					   QgsField,
-					   QgsVectorFileWriter,
-					   QgsRasterFileWriter,
-					   QgsVectorLayer,
-					   QgsRasterLayer,
-					   QgsProject,
-					   NULL, QgsFeature, edit, QgsRaster, QgsGeometry)
-						
-import processing
-
-from numpy import array
-
-from datetime import datetime
-
+					   QgsProcessingParameterBoolean)
 import os
 
 #from tools.add_features_from_csv import addFeaturesFromCSV
 from ..tools.landuse_library import import_crops, read_crop_file
-
 
 class IdragraImportCropPar(QgsProcessingAlgorithm):
 	"""

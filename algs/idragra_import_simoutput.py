@@ -29,44 +29,14 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtCore import QCoreApplication,QVariant
-from qgis.core import (QgsProcessing,
-					   QgsProcessingFeedback,
-						QgsFeatureSink,
-						QgsProcessingException,
+from qgis.PyQt.QtCore import QCoreApplication
+from qgis.core import (QgsProcessingFeedback,
 						QgsProcessingAlgorithm,
-						QgsProcessingParameterFeatureSource,
-						QgsProcessingParameterFeatureSink,
-						QgsProcessingParameterMultipleLayers,
-						QgsProcessingParameterFileDestination,
 						QgsProcessingParameterEnum,
-						QgsProcessingParameterRasterLayer,
 						QgsProcessingParameterFile,
-						QgsExpression,
-						QgsFeatureRequest,
-						QgsCoordinateReferenceSystem,
-						QgsCoordinateTransform,
 						QgsProcessingParameterFolderDestination,
-						QgsWkbTypes,
-						QgsFields,
-						QgsField,
-						QgsVectorFileWriter,
-						QgsRasterFileWriter,
-						QgsVectorLayer,
-						QgsRasterLayer,
-						QgsProject,
-						NULL)
-						
-import processing
-
-from numpy import array
-
-from datetime import datetime
-
-import os.path as osp
-
+						QgsRasterFileWriter)
 from ..tools.regenerate_idragra_output import *
-
 
 class IdragraImportSimoutput(QgsProcessingAlgorithm):
 	"""

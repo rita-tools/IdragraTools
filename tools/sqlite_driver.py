@@ -28,18 +28,15 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-
 import os
 import numpy as np
 import sqlite3 as sqlite
 import io
 from datetime import datetime,date
 import pandas as pd
-
 from qgis.core import QgsFeatureRequest
 from qgis.core import Qgis, QgsVectorLayer, QgsField, QgsVectorFileWriter, QgsCoordinateTransformContext
 from qgis.PyQt.QtCore import QVariant, QObject, QMetaType
-
 
 def adapt_array(arr):
 	"""
@@ -541,7 +538,6 @@ class SQLiteDriver(QObject):
 		return joinedData
 		
 	def importNumpyArray(self, name, columnNames, columnTypes, values, overwrite=True):
-		from numpy import apply_along_axis
 		#name = name.encode('utf-8')
 		name = "'%s'"%name
 		numCols = len(columnNames)

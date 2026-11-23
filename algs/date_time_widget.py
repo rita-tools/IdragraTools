@@ -30,7 +30,7 @@ __revision__ = '$Format:%H$'
 
 from processing.gui.wrappers import WidgetWrapper
 from qgis.PyQt.QtWidgets import QDateTimeEdit
-from qgis.PyQt.QtCore import QCoreApplication, QDate, Qt
+from qgis.PyQt.QtCore import QDate
 
 class DateTimeWidget(WidgetWrapper):
 	"""

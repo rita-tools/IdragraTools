@@ -29,42 +29,18 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 import sys
-
 import numpy as np
 import math
 from math import floor,ceil
 import struct 
-
 import os
-
 import scipy.io as sio
-
 from qgis.PyQt.QtCore import QObject
-
 from qgis.core import (Qgis,
 									QgsRasterBlock,
 									QgsErrorMessage,
 									QgsProcessingException,
-									QgsProcessing,
-									QgsFeatureSink,
-									QgsProcessingAlgorithm,
-									QgsProcessingParameterFeatureSource,
-									QgsProcessingParameterFeatureSink,
-									QgsProcessingParameterFile,
-									QgsVectorLayer,
-									QgsProcessingParameterRasterLayer,
-									QgsProcessingParameterRasterDestination,
-									QgsProcessingParameterEnum,
 									QgsCoordinateReferenceSystem,
-									QgsApplication,
-									QgsField,
-									QgsFields,
-									QgsPointXY,
-									QgsFeature,
-									QgsGeometry,
-									QgsProject,
-									QgsAction,
-									QgsWkbTypes,
 									QgsRectangle,
 									QgsRasterFileWriter)
 

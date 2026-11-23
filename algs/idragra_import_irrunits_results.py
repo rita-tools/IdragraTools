@@ -29,55 +29,20 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 import glob
-
 import qgis
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtCore import QCoreApplication, QVariant, QDate
-
-from qgis.core import (QgsProcessing,
-					   QgsProcessingFeedback,
-					   QgsFeatureSink,
-					   QgsProcessingException,
+from qgis.PyQt.QtCore import QCoreApplication
+from qgis.core import (QgsProcessingFeedback,
 					   QgsProcessingAlgorithm,
-					   QgsProcessingParameterFeatureSource,
-					   QgsProcessingParameterFeatureSink,
-					   QgsProcessingParameterMultipleLayers,
-					   QgsProcessingParameterFileDestination,
 					   QgsProcessingParameterEnum,
-					   QgsProcessingParameterRasterLayer,
-					   QgsProcessingParameterVectorLayer,
 					   QgsProcessingParameterFile,
-					   QgsProcessingParameterString,
-					   QgsProcessingParameterNumber,
 					   QgsProcessingParameterBoolean,
-					   QgsProcessingParameterField,
-					   QgsProcessingParameterExtent,
-					   QgsProcessingParameterRasterDestination,
-					   QgsExpression,
-					   QgsFeatureRequest,
-					   QgsCoordinateReferenceSystem,
-					   QgsCoordinateTransform,
-					   QgsProcessingParameterFolderDestination,
-					   QgsWkbTypes,
-					   QgsFields,
-					   QgsField,
-					   QgsVectorFileWriter,
-					   QgsRasterFileWriter,
-					   QgsVectorLayer,
-					   QgsRasterLayer,
-					   QgsProject,
-					   NULL, QgsFeature, edit, QgsRaster, QgsProcessingUtils)
-						
-
+					   QgsProject)
 import numpy as np
 import pandas as pd
-
 from datetime import datetime,timedelta
-
 import os
-
 from tools.sqlite_driver import SQLiteDriver
-
 
 class IdragraImportIrrUnitsResults(QgsProcessingAlgorithm):
 	"""

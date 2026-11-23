@@ -8,7 +8,7 @@ from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt, pyqtSignal
 from qgis.PyQt.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox,
-    QFileDialog, QHBoxLayout, QLabel, QMessageBox, QTableWidget,
+    QFileDialog, QHBoxLayout, QMessageBox, QTableWidget,
     QTableWidgetItem, QSizePolicy, QWidget,
 )
 

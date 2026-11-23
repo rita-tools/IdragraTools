@@ -29,7 +29,6 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 import os
-
 from .check_value import checkValue
 from .speaking_name import speakingName
 from .write_pars_to_template import writeParsToTemplate

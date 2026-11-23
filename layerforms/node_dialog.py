@@ -28,20 +28,13 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-import sys
-import os
 from qgis.PyQt.QtCore import *
 from qgis.PyQt.QtGui import *
 from qgis.PyQt.QtWidgets import *
-from qgis.PyQt import uic
-from qgis.PyQt import QtSql
-
 from IdragraTools.layerforms.utils import *
 from IdragraTools.tools.array_table_model import ArrayTableModel
 from IdragraTools.data_manager.chart_widget import ChartWidget
-
 from layerforms.utils import updateLineEdit, updateSelected, updateComboItems
-
 
 def formOpen(dialog, layerid, featureid):
     global myDialog

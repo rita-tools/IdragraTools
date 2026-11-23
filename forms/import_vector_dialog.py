@@ -30,27 +30,21 @@ __revision__ = '$Format:%H$'
 
 from qgis.PyQt.QtCore import *
 from qgis.PyQt.QtGui import *
-
 from qgis.PyQt import uic
-
-from qgis.PyQt.QtWidgets import QDialog, QToolBox, QWidget, QVBoxLayout, QFileDialog, QListWidgetItem, QDialogButtonBox, \
-	QTableWidgetItem, QComboBox
+from qgis.PyQt.QtWidgets import QDialog, QFileDialog, QDialogButtonBox, \
+	QComboBox
 
 # qgis import
 from qgis.core import *
 from qgis.gui import *
 # other
 import os
-import sys
-import glob
-from datetime import datetime
 
 
 # ~ uiFilePath = os.path.abspath(os.path.join(os.path.dirname(__file__), 'project_dialog.ui'))
 # ~ print('uiFilePath: %s'%uiFilePath)
 # ~ FormClass = uic.loadUiType(uiFilePath)[0]
 from forms.custom_input import FieldInput, CheckInput, DateInput
-
 
 class ImportVectorDialog(QDialog):
     closed = pyqtSignal()

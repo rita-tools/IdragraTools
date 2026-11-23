@@ -28,12 +28,10 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-
 from qgis.PyQt.QtCore import *
 from qgis.PyQt import uic
 from qgis.PyQt.QtWidgets import QDialog,QFileDialog
 import os
-
 
 class ImportData(QDialog):
 	closed = pyqtSignal()

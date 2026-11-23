@@ -29,38 +29,15 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 import numpy as np
-from osgeo import gdal
 import os
 import struct
 import glob
 import shutil
-
-from qgis.PyQt.QtCore import QObject
-
 from qgis.core import (Qgis,
 									QgsRasterBlock,
 									QgsErrorMessage,
 									QgsProcessingException,
-									QgsProcessing,
-									QgsFeatureSink,
-									QgsProcessingAlgorithm,
-									QgsProcessingParameterFeatureSource,
-									QgsProcessingParameterFeatureSink,
-									QgsProcessingParameterFile,
-									QgsVectorLayer,
-									QgsProcessingParameterRasterLayer,
-									QgsProcessingParameterRasterDestination,
-									QgsProcessingParameterEnum,
 									QgsCoordinateReferenceSystem,
-									QgsApplication,
-									QgsField,
-									QgsFields,
-									QgsPointXY,
-									QgsFeature,
-									QgsGeometry,
-									QgsProject,
-									QgsAction,
-									QgsWkbTypes,
 									QgsRectangle,
 									QgsRasterFileWriter)
 
