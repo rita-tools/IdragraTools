@@ -280,20 +280,38 @@ class IdragraResultsMap(QgsProcessingAlgorithm):
 				self.FEEDBACK.reportError(self.tr('Unmanaged file %s') %
 										  (fname), False)
 
-		if (varToUse[4:] == 'irr'):
-			self.FEEDBACK.pushInfo(self.tr('Add special outputs'))
-			# 2010_irr_mean.asc, 2010_irr_nr.asc, 2010_irr_tot.asc
-			# get list of output of the selected variable
-			for special_case in ['_mean','_nr','_tot']:
-				fileFilter = '*' + varToUse[4:] + special_case+'.asc'
-				pathToImport = os.path.join(rootSimPath, outputPath)[:-1]  # because ends with //
-				fileList = glob.glob(os.path.join(pathToImport, fileFilter))
-				for f in fileList:
-					# parse file name
+		# Mapping between variable name and its annual cumulative file name
+		annualOutputNames = {
+			'irr': 'irr_tot',
+			'irr_loss': 'irr_loss',
+			'prec': 'prec_tot',
+			'runoff': 'run_tot',
+			'trasp_act': 'trasp_act_tot',
+			'trasp_pot': 'trasp_pot_tot',
+			'et_act': 'eva_act_agr',
+			'et_pot': 'eva_pot_agr',
+			'flux2': 'net_flux_gw'
+		}
+
+		stepVarName = varToUse[4:]
+		annualOutputName = annualOutputNames.get(stepVarName)
+		if annualOutputName:
+			self.FEEDBACK.pushInfo(self.tr('Add annual output'))
+			fileFilter = '[0-9][0-9][0-9][0-9]_' + annualOutputName + '.asc'
+			for f in glob.glob(os.path.join(pathToImport, fileFilter)):
+				fname = os.path.basename(f)
+				y = int(fname[0:4])
+				resFldNames.append('%s_tot' % y)
+				newFileList.append(f)
+
+		# Irrigation also has annual mean depth and event-count maps
+		if stepVarName == 'irr':
+			for specialCase in ['mean', 'nr']:
+				fileFilter = '[0-9][0-9][0-9][0-9]_irr_' + specialCase + '.asc'
+				for f in glob.glob(os.path.join(pathToImport, fileFilter)):
 					fname = os.path.basename(f)
 					y = int(fname[0:4])
-					parsedFld = '%s%s' % (y,special_case)
-					resFldNames.append(parsedFld)
+					resFldNames.append('%s_%s' % (y, specialCase))
 					newFileList.append(f)
 
 		# order fields to add
