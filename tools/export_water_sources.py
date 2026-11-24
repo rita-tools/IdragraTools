@@ -161,6 +161,10 @@ def exportWaterSources(DBM,outPath, startY,endY,feedback = None,tr=None):
 		else:
 			pass
 
+	if not (divList or publicWellList or privWellList or twoStageFlow):
+		raise RuntimeError(tr(
+			'No usable water source was found. Add a supported source node and, for monitored sources, import actual-discharge data.'
+		))
 
 	# save cr_sources.txt
 	# #SourceWellTotNum: number of public wells
@@ -197,7 +201,7 @@ def exportWaterSources(DBM,outPath, startY,endY,feedback = None,tr=None):
 	# make a big discharge query
 	data_df = None
 	step_div = list(range(0,len(divList),10))
-	if max(step_div)<len(divList): step_div+=[len(divList)] # add the last index
+	if step_div and max(step_div)<len(divList): step_div+=[len(divList)] # add the last index
 
 	for i in range(0,len(step_div)-1):
 		feedback.setPercentage(100.0*i/10)
@@ -222,8 +226,7 @@ def exportWaterSources(DBM,outPath, startY,endY,feedback = None,tr=None):
 			conn.close()
 
 		if msg != '':
-			feedback.reportError(tr('SQL error: %s at %s' % (msg, sql)), True)
-			return -1
+			raise RuntimeError(tr('Unable to read actual-discharge data: %s') % msg)
 
 		temp_data_df = pd.DataFrame(data, columns = ['date']+divList[step_div[i]:step_div[i+1]])
 		#print(temp_data_df)
@@ -236,11 +239,18 @@ def exportWaterSources(DBM,outPath, startY,endY,feedback = None,tr=None):
 
 	#print(data_df)
 
-	data_df.drop(columns = ['date'],inplace=True)
-	mean_disch = data_df.mean(axis=0,skipna=True).to_list()
+	if data_df is not None:
+		missingInPeriod = [sourceId for sourceId in divList if data_df[sourceId].notna().sum() == 0]
+		if missingInPeriod:
+			raise RuntimeError(tr(
+				'No measured discharge data were found between %s and %s for source node(s): %s.'
+			) % (fromTime, toTime, ', '.join(str(x) for x in missingInPeriod)))
 
-	data_df.fillna(0, inplace=True)
-
+		data_df.drop(columns = ['date'], inplace=True)
+		mean_disch = data_df.mean(axis=0, skipna=True).to_list()
+		data_df.fillna(0, inplace=True)
+	else:
+		mean_disch = []
 
 	#dischList = '\t'.join(str(x) for x in divDischList)
 	dischList = []
@@ -251,7 +261,9 @@ def exportWaterSources(DBM,outPath, startY,endY,feedback = None,tr=None):
 
 	dischList = '\t'.join(dischList)
 
-	dischTable = data_df.to_string(header=False,index=False, float_format=lambda x: "{:9.3f}".format(x))
+	dischTable = ''
+	if data_df is not None:
+		dischTable = data_df.to_string(header=False, index=False, float_format=lambda x: "{:9.3f}".format(x))
 	# parse data
 	# dischTable = ''
 	# for d in data:

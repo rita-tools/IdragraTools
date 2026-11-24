@@ -369,10 +369,12 @@ class ReportBuilder():
         end_day = None
         with open(mon_src_path, "r") as f:
             # read first line to get the list of monitored sources
-            toks = f.readline().split(' ')
-            mon_src_ids = [str(x.strip()) for x in toks]
-            # read the second libe to get the list of nominal discharges
-            toks = f.readline().split(' ')
+            toks = f.readline().split()
+            mon_src_ids = [str(x) for x in toks]
+            # read the second line to get the list of nominal discharges
+            toks = f.readline().split()
+            if not mon_src_ids or not toks:
+                return res #%PS%: safe early return if no monitored sources are present
             mon_src_q_nom = [float(x) for x in toks]
             # read the third line to get period (start and end days)
             toks = f.readline().split(' -> ')

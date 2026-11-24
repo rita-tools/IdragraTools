@@ -2055,13 +2055,23 @@ class IdrAgraTools():
 
     def exportWaterSourcesDataTH(self, progress):
         progress.setText(self.tr('Export water sources'))
-        path2WSources = os.path.join(self.SIMDIC['OUTPUTPATH'], self.SIMDIC['WATSOURFOLDER'])
-        if not os.path.exists(path2WSources):
-            os.makedirs(path2WSources)
-        else:
-            progress.pushInfo('Directory %s already exists' % path2WSources, False)
+        try:
+            path2WSources = os.path.join(self.SIMDIC['OUTPUTPATH'], self.SIMDIC['WATSOURFOLDER'])
+            if not os.path.exists(path2WSources):
+                os.makedirs(path2WSources)
+            else:
+                progress.pushInfo('Directory %s already exists' % path2WSources, False)
 
-        res = exportWaterSources(self.DBM, path2WSources, self.SIMDIC['YEARS'][0], self.SIMDIC['YEARS'][-1], progress, self.tr)
+            res = exportWaterSources(self.DBM, path2WSources, self.SIMDIC['YEARS'][0], self.SIMDIC['YEARS'][-1], progress, self.tr)
+        except Exception as e:
+            if self.SIMDIC['MODE'] in [1, '1']:
+                raise #%PS%: fails during exportWaterSources are only fatal in USE mode
+
+            #%PS%: other modes can still run, but lose monitored volume comparison in the IU report if this step failed
+            progress.reportError(self.tr(
+                'Water-source export was skipped because it failed: %s \nThe simulation will run as normal, but some analysis may be missing from the reports.'
+                ) % str(e), False)
+            res = {'nbasins': 0, 'nsource': 0, 'nsourceder': 0, 'noftwostage': 0, 'npubwell': 0}
 
         # update sim parameters
         self.SIMDIC['NBASINS'] = res['nbasins']
