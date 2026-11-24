@@ -1397,6 +1397,38 @@ class SQLiteDriver(QObject):
 						
 		return minTime,maxTime
 		
+	def getWeatherDataGaps(self, yearList):
+		"""Return incomplete years for each weather station."""
+		tableList = ['ws_tmax', 'ws_tmin', 'ws_ptot', 'ws_umax',
+					 'ws_umin', 'ws_vmed', 'ws_rgcorr']
+		gaps = {}
+		try:
+			self.startConnection()
+			self.cur.execute('SELECT id, name FROM idr_weather_stations ORDER BY id')
+			stations = self.cur.fetchall()
+			for stationId, stationName in stations:
+				missingYears = []
+				for year in yearList:
+					expectedDays = (date(year + 1, 1, 1) - date(year, 1, 1)).days
+					complete = True
+					for tableName in tableList:
+						sql = ("SELECT count(DISTINCT date(timestamp)) FROM [%s] "
+							   "WHERE wsid = ? AND strftime('%%Y', timestamp) = ? "
+							   "AND recval IS NOT NULL AND recval != ''") % tableName
+						self.cur.execute(sql, (stationId, str(year)))
+						if self.cur.fetchone()[0] != expectedDays:
+							complete = False
+							break
+					if not complete:
+						missingYears.append(year)
+				if missingYears:
+					gaps['%s [%s]' % (stationName, stationId)] = missingYears
+		except Exception as e:
+			self.progress.setInfo('Unable to check weather data completeness: %s' % str(e), True)
+		finally:
+			self.stopConnection()
+		return gaps
+
 	def getMinMax(self, tName,fName):
 		sql = """select
 					substr(min([%table%].[%field%]),0,11) as minValue,

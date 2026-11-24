@@ -72,7 +72,7 @@ class SetSimulationDialog(QMainWindow):
 	VARLIST = {}
 	FUNLIST = {}
 	
-	def __init__(self, parent=None, yearList=[],modeList = [], simSettings = {}, defLuDict = {},defImDict={}):
+	def __init__(self, parent=None, yearList=[], modeList=[], simSettings={}, defLuDict={}, defImDict={}, weatherDataGaps={}):
 		QMainWindow.__init__(self, parent.mainWindow())
 		# Set up the user interface from Designer.
 		uiFilePath = os.path.abspath(os.path.join(os.path.dirname(__file__), 'set_simulation_dialog.ui'))
@@ -84,6 +84,8 @@ class SetSimulationDialog(QMainWindow):
 		#self.allCaseYearList = allCaseYearList
 		#self.consumeYearList = consumeYearList
 		self.yearList = yearList
+		self.weatherDataGaps = weatherDataGaps
+		self.plainTextEdit.setEnabled(True)
 		self.defLuDict = defLuDict
 		self.defImDict = defImDict
 
@@ -152,12 +154,24 @@ class SetSimulationDialog(QMainWindow):
 		# 	self.FROM_CB.setCurrentText(str(simSettings['PERIOD']))
 
 		self.FROM_CB.addItems(yearList)
+		self.styleWeatherYears(self.FROM_CB)
 		if str(simSettings['STARTYEAR']) in yearList:
 			self.FROM_CB.setCurrentText(str(simSettings['STARTYEAR']))
 
 		self.TO_CB.addItems(yearList)
 		if str(simSettings['ENDYEAR']) in yearList:
 			self.TO_CB.setCurrentText(str(simSettings['ENDYEAR']))
+
+		# Default simulation period selection: longest block of years that is complete at every weather station.
+		if (str(simSettings['STARTYEAR']) not in yearList or
+				str(simSettings['ENDYEAR']) not in yearList):
+			completeYears = [int(year) for year in yearList if all(
+				int(year) not in missingYears
+				for missingYears in self.weatherDataGaps.values())]
+			period = self.longestConsecutivePeriod(completeYears)
+			if period:
+				self.FROM_CB.setCurrentText(str(period[0]))
+				self.TO_CB.setCurrentText(str(period[-1]))
 
 		# update based on selection
 		self.updateLastYear()
@@ -236,6 +250,9 @@ class SetSimulationDialog(QMainWindow):
 		self.STEPDATE_SB.setValue(simSettings['STEPOUTPUT'])
 
 		self.FROM_CB.currentTextChanged.connect(self.updateLastYear)
+		self.FROM_CB.currentTextChanged.connect(self.updateWeatherWarning)
+		self.TO_CB.currentTextChanged.connect(self.updateWeatherWarning)
+		self.updateWeatherWarning()
 
 		# connect gridded domain options
 		self.GRID_MODE.toggled.connect(self.enableGridDomain)
@@ -278,11 +295,66 @@ class SetSimulationDialog(QMainWindow):
 
 		self.updateYearList(self.TO_CB, self.yearList, fromYear, selYear)
 
+	def longestConsecutivePeriod(self, years):
+		periods = []
+		for year in years:
+			if not periods or year != periods[-1][-1] + 1:
+				periods.append([year])
+			else:
+				periods[-1].append(year)
+		return max(periods, key=len) if periods else []
+
+	def formatYearList(self, years):
+		periods = self.longestConsecutivePeriods(years)
+		return ', '.join(str(period[0]) if len(period) == 1 else
+					'%s-%s' % (period[0], period[-1]) for period in periods)
+
+	def longestConsecutivePeriods(self, years):
+		periods = []
+		for year in sorted(years):
+			if not periods or year != periods[-1][-1] + 1:
+				periods.append([year])
+			else:
+				periods[-1].append(year)
+		return periods
+
+	def updateWeatherWarning(self):
+		if not self.FROM_CB.currentText() or not self.TO_CB.currentText():
+			return
+		fromYear = int(self.FROM_CB.currentText())
+		toYear = int(self.TO_CB.currentText())
+		messages = []
+		for station, missingYears in self.weatherDataGaps.items():
+			selectedMissingYears = [year for year in missingYears
+									if fromYear <= year <= toYear]
+			if selectedMissingYears:
+				messages.append('%s: %s' %
+							(station, self.formatYearList(selectedMissingYears)))
+		if messages:
+			self.plainTextEdit.setVisible(True)
+			self.plainTextEdit.setStyleSheet('color: red;')
+			self.plainTextEdit.setPlainText(
+				self.tr('Incomplete weather data for:\n') + '\n'.join(messages))
+		else:
+			self.plainTextEdit.setPlainText('')
+			self.plainTextEdit.setVisible(False)
+
+	def styleWeatherYears(self, comboBox):
+		for index in range(comboBox.count()):
+			year = int(comboBox.itemText(index))
+			stations = [station for station, missingYears in self.weatherDataGaps.items()
+						if year in missingYears]
+			if stations:
+				item = comboBox.model().item(index)
+				item.setForeground(QColor('gray'))
+				item.setToolTip(self.tr('Incomplete weather data: ') + ', '.join(stations))
+
 	def updateYearList(self,yearCB,yearList,minYear,selYear):
 		minYearIdx = yearList.index(str(minYear))
 		yearList=yearList[minYearIdx:]
 		yearCB.clear()
 		yearCB.addItems(yearList)
+		self.styleWeatherYears(yearCB)
 		if str(selYear) in yearList:
 			yearCB.setCurrentText(str(selYear))
 

@@ -1884,6 +1884,8 @@ class IdrAgraTools():
                                    self.tr('It is necessary to complete the database with time series'))
             return
 
+        weatherDataGaps = self.DBM.getWeatherDataGaps(list(range(startDate, endDate + 1)))
+
         # get dictionary of landuses
         luDict = {0:self.tr('Not selected')}
         luDict.update(self.DBM.getDictFromTable('idr_soiluses','id','name'))
@@ -1901,7 +1903,8 @@ class IdrAgraTools():
         # fix proj issues
         self.SIMDIC['CRS'] = self.getVectorLayerByName('idr_domainmap').crs().authid()
 
-        dlg = SetSimulationDialog(self.iface, yearList, list(self.SIMMODE.values()),self.SIMDIC, luDict,imDict)
+        dlg = SetSimulationDialog(self.iface, yearList, list(self.SIMMODE.values()),
+                                  self.SIMDIC, luDict, imDict, weatherDataGaps)
         result = 1
         #result = dlg.exec()
         # See if OK was pressed
