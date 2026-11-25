@@ -23,7 +23,6 @@ MeteoPath = [%METEOFOLDER%]\\
 # MeteoFileName: file, located in root folder, in which meteorological filenames are stored (default: weather_stations.dat)
 MeteoFileName = weather_stations.dat
 
-# Crop inputs are read directly by IdrAgra 3.x.
 CropInputsFolder = [%LANDUSES%]\\
 SoilUsesFilename = soil_uses.txt
 CropFolder = [%LANDUSES%]\\crop_parameters\\
@@ -137,25 +136,6 @@ StartIrrSeason = [%STARTIRRSEASON%]
 
 # EndIrrSeason: Julian day [1...366] in which irrigation season starts (e.g. 273)
 EndIrrSeason = [%ENDIRRSEASON%] 
-
-# if Mode = 1 (consumptions), define irrigation sources
-# BasinsTotNum: total number of irrigation districts
-# BasinsTotNum = [%NBASINS%]
-
-# BasinsXSourceTotNum: number of combinations of irrigation districts and diversions
-# BasinsXSourceTotNum = [%NSOURCE%]
-
-# SourceSurfDerivTotNum: total number of surface derivations
-# SourceSurfDerivTotNum = [%NSOURCEDER%]
-
-# SourceFlowWellTotNum: total number of flowing wells
-# SourceFlowWellTotNum = [%NSFLOWWELLS%]
-
-# SourceTailwaterTotNum: total number of tailwater sources
-# SourceTailwaterTotNum = [%NTAILWAT%]
-
-# SourceWellTotNum: total number of public wells
-# SourceWellTotNum = [%NPUBWELL%]
 
 # 2.3. Layers depth [m]
 

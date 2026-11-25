@@ -382,12 +382,6 @@ class IdrAgraTools():
                         'RANDWIND':6,
                         'STARTIRRSEASON':1,
                         'ENDIRRSEASON':366,
-                        'NBASINS':0,
-                        'NSOURCE':0,
-                        'NSOURCEDER':0,
-                        'NSFLOWWELLS':0,
-                        'NTAILWAT':0,
-                        'NPUBWELL':0,
                         'STARTYEAR' : '',
                         'ENDYEAR': '',
                         'YEARS':[],
@@ -2087,7 +2081,7 @@ class IdrAgraTools():
             else:
                 progress.pushInfo('Directory %s already exists' % path2WSources, False)
 
-            res = exportWaterSources(self.DBM, path2WSources, self.SIMDIC['YEARS'][0], self.SIMDIC['YEARS'][-1], progress, self.tr)
+            exportWaterSources(self.DBM, path2WSources, self.SIMDIC['YEARS'][0], self.SIMDIC['YEARS'][-1], progress, self.tr)
         except Exception as e:
             if self.SIMDIC['MODE'] in [1, '1']:
                 raise #%PS%: fails during exportWaterSources are only fatal in USE mode
@@ -2096,15 +2090,6 @@ class IdrAgraTools():
             progress.reportError(self.tr(
                 'Water-source export was skipped because it failed: %s \nThe simulation will run as normal, but some analysis may be missing from the reports.'
                 ) % str(e), False)
-            res = {'nbasins': 0, 'nsource': 0, 'nsourceder': 0, 'noftwostage': 0, 'npubwell': 0}
-
-        # update sim parameters
-        self.SIMDIC['NBASINS'] = res['nbasins']
-        self.SIMDIC['NSOURCE'] = res['nsource']
-        self.SIMDIC['NSOURCEDER'] = res['nsourceder']
-        self.SIMDIC['NTAILWAT'] = res['noftwostage']
-        self.SIMDIC['NPUBWELL'] = res['npubwell']
-
         progress.setPercentage(100.)
 
     def exportSimProj(self, progress):
