@@ -40,7 +40,7 @@ from qgis.core import (QgsProcessing,
 from datetime import datetime
 import os
 from .date_time_widget import DateTimeWidget
-from ..tools.export_meteodata import exportMeteodata
+from ..tools.export_meteodata import exportMeteodata, weatherStationFilename
 
 class IdragraExportMeteodata(QgsProcessingAlgorithm):
 	"""
@@ -188,7 +188,6 @@ class IdragraExportMeteodata(QgsProcessingAlgorithm):
 		else:
 			feedback.pushInfo(self.tr('"meteo_data" folder already exists. Output files will be overwritten.'))
 		
-		c = 0
 		nFeat = vectorLay.featureCount()
 		layName = vectorLay.sourceName()
 		layers = QgsProject.instance().mapLayersByName(layName)
@@ -210,22 +209,24 @@ class IdragraExportMeteodata(QgsProcessingAlgorithm):
 		nOfWS = 0
 		# loop in selected feature
 		wsData = ''
+		usedFilenames = set()
 		for feature in vectorLay.getFeatures():
 			sName = feature['name']
-			sId = feature['fid']
+			sId = feature['id']
 			sLat = feature['lat']
 			sAlt = feature['alt']
 			sx = feature.geometry().asMultiPoint()[0].x()
 			sy = feature.geometry().asMultiPoint()[0].y()
+			stationFilename = weatherStationFilename(sId, sName, usedFilenames)
 			feedback.pushInfo(self.tr('Exporting station %s [%s]')%(sName,sId))
-			exportMeteodata(filename=os.path.join(datFolder,sName+'.dat'), dbname = dbName,
+			exportMeteodata(filename=os.path.join(datFolder,stationFilename), dbname = dbName,
 									sensorId=sId, sensorName=sName, sensorLat=sLat, sensorAlt=sAlt,
 									fromTime =  startDateStr, toTime=endDateStr,
 									feedback=feedback,tr=self.tr)
 			
 			nOfWS+=1
-			wsData+='%s   %s   %s\n'%(str(sId)+'.dat',sx,sy)
-			feedback.setProgress(100*c/nFeat)
+			wsData+='%s   %s   %s\n'%(stationFilename,sx,sy)
+			feedback.setProgress(100*nOfWS/nFeat)
 		# save list of weather stations
 				
 		wsText = """################ Meterological station input file  #################

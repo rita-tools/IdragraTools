@@ -3671,7 +3671,7 @@ class IdrAgraTools():
     def test2(self):
         from .tools.get_timeseries_consistency import getTimeSeriesConsistency
         progress = MyProgress()
-        weatStatList = self.DBM.getUniqueValues('fid','idr_weather_stations')
+        weatStatList = self.DBM.getUniqueValues('id','idr_weather_stations')
         watSourceWithData = self.DBM.getUniqueValues('wsid','node_act_disc')
         watSourceList = []
         if (self.SIMDIC['MODE']  in [1,'1']):

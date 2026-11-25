@@ -168,7 +168,7 @@ class WeatherManagerDialog(QDialog):
 																			
 	def removeMeteoData(self):
 		from .remove_data import RemoveData
-		wsid = self.DBM.getDataFromTable(tableName = 'idr_weather_stations',fieldList = ['fid'])
+		wsid = self.DBM.getDataFromTable(tableName = 'idr_weather_stations',fieldList = ['id'])
 		wsid = [str(*x) for x in wsid]
 		wsname = self.DBM.getDataFromTable(tableName = 'idr_weather_stations',fieldList = ['name'])
 		wsname = [str(*x) for x in wsname]

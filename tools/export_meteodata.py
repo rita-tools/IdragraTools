@@ -31,6 +31,7 @@ __revision__ = '$Format:%H$'
 import sqlite3 as sqlite
 from datetime import datetime
 import os
+import re
 import numpy as np
 from tools.check_value import checkValue
 
@@ -46,6 +47,27 @@ def queryDB(sql,DBM,feedback,tr):
 		DBM.stopConnection()
 	
 	return list(zip(*data))
+
+# Returns the weather station filename as sensorName.dat (%PS%: strings are accepted as ws filenames since IdrAgra 2.3.0)
+# (fallbacks: sensorId.dat if sensorName is empty, or sensorName_sensorId.dat if more stations share the same name)
+def weatherStationFilename(sensorId, sensorName, usedNames=None):
+	"""Return a portable, whitespace-free filename for an IdrAgra weather station."""
+	name = str(sensorName or '').strip()
+	stem = re.sub(r'[^\w-]+', '_', name, flags=re.UNICODE).strip('_')
+	if not stem:
+		stem = str(sensorId)
+
+	candidate = stem + '.dat'
+	if usedNames is not None:
+		used = {name.casefold() for name in usedNames}
+		if candidate.casefold() in used:
+			candidate = '%s_%s.dat' % (stem, sensorId)
+			suffix = 2
+			while candidate.casefold() in used:
+				candidate = '%s_%s_%s.dat' % (stem, sensorId, suffix)
+				suffix += 1
+		usedNames.add(candidate)
+	return candidate
 
 
 def exportMeteodataFromDB(DBM, outpath,startY,endY,feedback,tr=None):
@@ -78,18 +100,20 @@ def exportMeteodataFromDB(DBM, outpath,startY,endY,feedback,tr=None):
 	
 	i=0
 	wsList = []
+	usedFilenames = set()
 
 	CO2 = []
 	for feat in wsLay.getFeatures():
 		
 		if feat['id'] in listOfUsedWS:
 			i+=1
-			filename = os.path.join(outpath,str(feat['id'])+'.dat')
+			stationFilename = weatherStationFilename(feat['id'], feat['name'], usedFilenames)
+			filename = os.path.join(outpath,stationFilename)
 			exportMeteodata(filename, DBM.DBName, feat['id'], feat['name'], feat['lat'], feat['alt'], fromTime, toTime, feedback,tr)
 			x = feat.geometry().asMultiPoint()[0].x()
 			y = feat.geometry().asMultiPoint()[0].y()
 			# add to list of exported ws
-			wsList.append('%s.dat %s %s'%(feat['id'],x,y))
+			wsList.append('%s %s %s'%(stationFilename,x,y))
 
 			# calculate average CO2 concentration
 			valueList = getAverageCO2(DBM, feat['id'], yearList)
@@ -117,8 +141,8 @@ def getAverageCO2(DBManager, sensorId, yearList):
 	
 def exportMeteodata(filename, dbname, sensorId, sensorName, sensorLat, sensorAlt, fromTime, toTime, feedback,tr=None):
 	
-	msg = ''
 	if not tr: tr = lambda x: x
+	sensorName = str(sensorName or '').strip() or str(sensorId)
 	
 	sql = createQuery(fromTime,toTime,sensorId)
 		
@@ -171,7 +195,7 @@ def exportMeteodata(filename, dbname, sensorId, sensorName, sensorLat, sensorAlt
 		
 	# save to file
 	
-	s = """Id stazione: %s, località: %s
+	s = """Station ID: %s, location: %s
 %s  %s
 %s -> %s
 T_max   T_min   P_tot   U_max   U_min   V_med   RG_CORR

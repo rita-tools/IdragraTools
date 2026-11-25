@@ -51,7 +51,7 @@ def queryDB(sql,dbname):
 	return data,msg
 
 def getWeatStatList(dbname):
-	sql = 'SELECT fid FROM idr_weather_stations'
+	sql = 'SELECT id FROM idr_weather_stations'
 	data, msg = queryDB(sql, dbname)
 	newData = [item for t in data for item in t]
 	return newData, msg
