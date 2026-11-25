@@ -8,5 +8,5 @@
 StatNum = [%NUMOFSTATIONS%]	
 # Weather stations table:
 Table =
-sar.dat x32632            y32632
+station_filename x([%CRS%]) y([%CRS%])
 [%STATIONSDATA%]

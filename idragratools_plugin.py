@@ -2038,9 +2038,11 @@ class IdrAgraTools():
         self.SIMDIC['NUMMETEOWEIGTH']= numOfMatrix
 
         stationsdata = '\n'.join(stationDataList)
+        crsLabel = self.getVectorLayerByName('idr_weather_stations').crs().authid()
         writeParsToTemplate(outfile=os.path.join(self.SIMDIC['OUTPUTPATH'], self.SIMDIC['WSFILE']),
                             parsDict={'NUMOFSTATIONS': numOfStat,
-                                      'STATIONSDATA': stationsdata
+                                      'STATIONSDATA': stationsdata,
+                                      'CRS': crsLabel
                                       },
                             templateName='weather_stations.txt')
 

@@ -41,6 +41,7 @@ from datetime import datetime
 import os
 from .date_time_widget import DateTimeWidget
 from ..tools.export_meteodata import exportMeteodata, weatherStationFilename
+from ..tools.write_pars_to_template import writeParsToTemplate
 
 class IdragraExportMeteodata(QgsProcessingAlgorithm):
 	"""
@@ -194,7 +195,7 @@ class IdragraExportMeteodata(QgsProcessingAlgorithm):
 		dbName = ''
 		for l in layers:
 			test = l.source().split('|')[0]
-			crsCode = l.sourceCrs().postgisSrid()
+			crsLabel = l.sourceCrs().authid()
 			if test.endswith('.gpkg'):
 				dbName = test
 				break
@@ -229,20 +230,15 @@ class IdragraExportMeteodata(QgsProcessingAlgorithm):
 			feedback.setProgress(100*nOfWS/nFeat)
 		# save list of weather stations
 				
-		wsText = """################ Meterological station input file  #################
-#                                                                                                                      #
-#                           Note: lines starting with <#> are comments                           #
-#                                                                                                                      #
-#####################################################
-
-# Number of weather stations:		
-StatNum = %s	
-# Weather stations table:
-Table =
-sar.dat x%s            y%s
-%s"""
-	
-		wsText = wsText%(nOfWS,crsCode,crsCode,wsData)
+		wsText = writeParsToTemplate(
+			outfile=None,
+			parsDict={
+				'NUMOFSTATIONS': nOfWS,
+				'CRS': crsLabel,
+				'STATIONSDATA': wsData.rstrip()
+			},
+			templateName='weather_stations.txt'
+		)
 
 		filename = os.path.join(destFolder, 'weather_stations.dat')
 		

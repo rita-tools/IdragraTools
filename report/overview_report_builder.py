@@ -39,16 +39,16 @@ class OverviewReportBuilder(ReportBuilder):
 
     def parseMeteoFile(self, pathToMeteoFile):
         # skip 10 rows
-        # sar.dat x32632            y32632
+        # filename x(EPSG:32632) y(EPSG:32632)
         # 100.dat 520827.026118634 5018562.6834552
         # 200.dat 520315.301608933 5019014.775729
 
-        df = pd.read_csv(pathToMeteoFile, sep=r'\s* \s*', engine='python', skiprows=10)
+        df = pd.read_csv(pathToMeteoFile, sep=r'\s+', engine='python', skiprows=10)
         # print(df)
         res = {}
         for index, row in df.iterrows():
             # print(row)
-            res[row['sar.dat']] = {'ws_x': row.iloc[1], 'ws_y': row.iloc[2]}
+            res[row['filename']] = {'ws_x': row.iloc[1], 'ws_y': row.iloc[2]}
 
         return res
 
