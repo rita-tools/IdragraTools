@@ -2188,22 +2188,15 @@ class IdrAgraTools():
 
     def runIdrAgra(self, progress=None):
         import subprocess
+        from collections import deque
         from subprocess import PIPE, Popen
         from threading import Thread
+        from queue import Queue, Empty
 
-        try:
-            from Queue import Queue, Empty
-        except ImportError:
-            from queue import Queue, Empty  # python 3.x
-
-        def enqueue_output(out, err, queue):
-            for line in iter(out.readline, b''):
+        def enqueue_output(stream, queue):
+            for line in iter(stream.readline, b''):
                 queue.put(line)
-            out.close()
-
-            for e in iter(err.readline, b''):
-                queue.put(e)
-            err.close()
+            stream.close()
 
         if progress: progress.setPercentage(0.0)
 
@@ -2252,22 +2245,30 @@ class IdrAgraTools():
             proc = Popen(command, cwd=self.SIMDIC['OUTPUTPATH'], shell=False, stdout=PIPE, stderr=PIPE, **popenOptions)
 
             q = Queue()
-            t = Thread(target=enqueue_output, args=(proc.stdout, proc.stderr, q))
 
-            t.daemon = True  # thread dies with the program
-            t.start()
-            # t.join()
+            #%PS%: use a thread for stdout and another for stderr
+            outputThreads = [
+                Thread(target=enqueue_output, args=(proc.stdout, q)),
+                Thread(target=enqueue_output, args=(proc.stderr, q)),
+            ]
+            for outputThread in outputThreads:
+                outputThread.daemon = True  # thread dies with the program
+                outputThread.start()
 
             perc = 0.0
             currentYear = -1
             year = -1
+            recentOutput = deque(maxlen=10)  # Store the last 10 lines printed by IdrAgra
+            simulationCompleted = False
 
-            while checkTread(t) or not q.empty():
+            while any(checkTread(outputThread) for outputThread in outputThreads) or not q.empty():
                 try:
-                    line = q.get(timeout=.1)  # q.get_nowait() # or #TODO_check performance
-                    #line = q.get_nowait()
+                    line = q.get(timeout=.1)  #%PS%: apparently better than q.get_nowait() to limit CPU usage
                     line = line.decode('utf-8','ignore')
                     line = line.strip()
+                    recentOutput.append(line)
+                    if 'Simulation complete!' in line or 'Simulation duration' in line:
+                        simulationCompleted = True
                 except Empty:
                     # do nothing
                     pass
@@ -2304,17 +2305,18 @@ class IdrAgraTools():
                             currentYear = year
                             progress.setText(self.tr('Current year: %s')%currentYear)
 
-
             returnCode = proc.wait()
-            if returnCode != 0:
-                raise RuntimeError(self.tr('IdrAgra failed with exit code %s') % returnCode)
+            #%PS%: Fortran's "stop" statements give returnCode = 0, so most failures don't get caught by that check alone
+            if returnCode != 0 or not simulationCompleted:
+                details = '\n'.join(recentOutput)
+                message = self.tr('IdrAgra did not complete successfully (exit code %s).') % returnCode
+                message += '\n' + self.tr('Last output from IdrAgra:') + '\n' + details
+                raise RuntimeError(message)
 
         except OSError as error:
             raise RuntimeError(
                 self.tr('Windows could not start IdrAgra. Executable: "%s". Simulation folder: "%s". %s') %
                 (execPath, workingPath, error)) from error
-
-        #if progress: progress.setText(self.tr('Process concluded'))
 
     def readControlPointsParams(self, r, c, yearList=[],varList = []):
         import pandas as pd

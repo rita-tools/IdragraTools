@@ -28,6 +28,7 @@ __copyright__ = '(C) 2020 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
+import html
 import time
 from qgis.PyQt.QtCore import *
 from qgis.PyQt.QtGui import *
@@ -65,6 +66,7 @@ class WorkerDialog(QDialog):
 	@QtCore.pyqtSlot(str,str)
 	def setText(self, text,col= None):
 		if text != '':
+			text = html.escape(text).replace('\n', '<br>')
 			if col is None:
 				text = '%s<br>'%text
 			else:
@@ -90,5 +92,4 @@ class WorkerDialog(QDialog):
 		if (event==QKeySequence.Copy):
 			repText = self.REP_TB.toHtml()
 			QApplication.clipboard().setText(repText)
-		
-		
+
