@@ -1881,12 +1881,9 @@ class IdrAgraTools():
         self.updatePars()
         self.exportSpatialDataTH(progress)
         self.updatePars()
-        self.exportIrrigationMethodsTH(progress)
-        self.updatePars()
-        # if (self.SIMDIC['MODE'] in [1,'1']):
-        #     self.exportWaterSourcesDataTH(progress)
-        #     self.updatePars()
-        #
+        if self.SIMDIC['MODE'] not in [0, '0']: #%PS%: irrigation method is not necessary in mode 0 since IdrAgra 2.3.1
+            self.exportIrrigationMethodsTH(progress)
+            self.updatePars()
         self.exportWaterSourcesDataTH(progress)
         self.updatePars()
 
