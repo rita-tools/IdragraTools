@@ -2,7 +2,7 @@
 <qgis version="3.18.0-Zürich" styleCategories="Forms">
   <fieldConfiguration>
     <field name="fid">
-      <editWidget type="TextEdit">
+      <editWidget type="Hidden">
         <config>
           <Option type="Map">
             <Option name="IsMultiline" type="bool" value="false"/>
@@ -116,7 +116,7 @@ def my_form_open(dialog, layer, feature):
   <featformsuppress>0</featformsuppress>
   <editorlayout>generatedlayout</editorlayout>
   <editable>
-    <field editable="1" name="fid"/>
+    <field editable="0" name="fid"/>
     <field editable="1" name="ksat"/>
     <field editable="1" name="maxdepth"/>
     <field editable="1" name="soilid"/>

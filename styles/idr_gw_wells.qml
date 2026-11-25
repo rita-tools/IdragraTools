@@ -71,7 +71,7 @@
   </geometryOptions>
   <fieldConfiguration>
     <field name="fid">
-      <editWidget type="TextEdit">
+      <editWidget type="Hidden">
         <config>
           <Option/>
         </config>
@@ -131,7 +131,7 @@
   </attributeactions>
   <attributetableconfig actionWidgetStyle="dropDown" sortOrder="0" sortExpression="">
     <columns>
-      <column width="-1" hidden="0" type="field" name="fid"/>
+      <column width="-1" hidden="1" type="field" name="fid"/>
       <column width="-1" hidden="0" type="field" name="name"/>
       <column width="-1" hidden="0" type="field" name="alt"/>
       <column width="-1" hidden="0" type="field" name="type"/>
@@ -168,7 +168,7 @@ def my_form_open(dialog, layer, feature):
   <editorlayout>generatedlayout</editorlayout>
   <editable>
     <field name="alt" editable="1"/>
-    <field name="fid" editable="1"/>
+    <field name="fid" editable="0"/>
     <field name="name" editable="1"/>
     <field name="type" editable="1"/>
   </editable>

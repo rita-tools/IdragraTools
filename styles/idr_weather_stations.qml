@@ -71,7 +71,7 @@
   </geometryOptions>
   <fieldConfiguration>
     <field name="fid">
-      <editWidget type="TextEdit">
+      <editWidget type="Hidden">
         <config>
           <Option/>
         </config>
@@ -131,7 +131,7 @@
   </attributeactions>
   <attributetableconfig actionWidgetStyle="dropDown" sortOrder="0" sortExpression="">
     <columns>
-      <column width="-1" hidden="0" type="field" name="fid"/>
+      <column width="-1" hidden="1" type="field" name="fid"/>
       <column width="-1" hidden="0" type="field" name="name"/>
       <column width="-1" hidden="0" type="field" name="long"/>
       <column width="-1" hidden="0" type="field" name="alt"/>

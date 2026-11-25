@@ -62,7 +62,7 @@ if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
 
 from qgis.core import Qgis, QgsApplication, QgsProject, QgsProviderRegistry, QgsVectorLayer, \
-    QgsGeometry, QgsFeature, QgsFeatureRequest, QgsExpression
+    QgsGeometry, QgsFeature, QgsFeatureRequest, QgsExpression, QgsEditorWidgetSetup, QgsEditFormConfig
 from qgis.PyQt.QtCore import QVariant
 from qgis.PyQt.QtCore import QSettings, Qt
 from qgis.PyQt.QtGui import QIcon, QPixmap
@@ -1033,6 +1033,29 @@ class IdrAgraTools():
         self.setupIrrigationUnitLayer()
         self.setupControlPointLayer()
         self.setupDomainLayer()
+        self.hideInternalFidFields()
+
+    def hideInternalFidFields(self):
+        """Keep GeoPackage row identifiers available internally but out of user-facing editors."""
+        for tableName in self.LYRNAME:
+            for layer in QgsProject.instance().mapLayersByName(self.LYRNAME[tableName]):
+                fieldIndex = layer.fields().indexOf('fid')
+                if fieldIndex < 0:
+                    continue
+
+                layer.setEditorWidgetSetup(fieldIndex, QgsEditorWidgetSetup('Hidden', {}))
+
+                editConfig = layer.editFormConfig()
+                editConfig.setReadOnly(fieldIndex, True)
+                layer.setEditFormConfig(editConfig)
+
+                tableConfig = layer.attributeTableConfig()
+                columns = tableConfig.columns()
+                for column in columns:
+                    if column.name == 'fid':
+                        column.hidden = True
+                tableConfig.setColumns(columns)
+                layer.setAttributeTableConfig(tableConfig)
 
     def setupControlPointLayer(self):
         vlayerList = QgsProject.instance().mapLayersByName(self.LYRNAME['idr_control_points'])
