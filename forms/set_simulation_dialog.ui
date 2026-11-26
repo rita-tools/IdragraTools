@@ -61,7 +61,34 @@
         <item row="0" column="1">
          <widget class="QComboBox" name="MODE_CB"/>
         </item>
-        <item row="1" column="0">
+        <item row="1" column="0" colspan="2">
+         <widget class="QLabel" name="MODE_INFO_LB">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>76</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QLabel {
+  background-color: palette(alternate-base);
+  border: 1px solid palette(mid);
+  border-radius: 3px;
+  padding: 8px;
+}</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="textFormat">
+           <enum>Qt::RichText</enum>
+          </property>
+          <property name="wordWrap">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
          <widget class="QCheckBox" name="SOILUSEVARFLAG_CB">
           <property name="enabled">
            <bool>false</bool>
@@ -77,34 +104,34 @@
           </property>
          </widget>
         </item>
-        <item row="2" column="0">
+        <item row="3" column="0">
          <widget class="QLabel" name="DEF_LU_LB">
           <property name="text">
            <string>Default land use</string>
           </property>
          </widget>
         </item>
-        <item row="2" column="1">
+        <item row="3" column="1">
          <widget class="QComboBox" name="DEF_LU_CB"/>
         </item>
-        <item row="3" column="0">
+        <item row="4" column="0">
          <widget class="QLabel" name="DEF_IM_LB">
           <property name="text">
            <string>Default irrigation method</string>
           </property>
          </widget>
         </item>
-        <item row="3" column="1">
+        <item row="4" column="1">
          <widget class="QComboBox" name="DEF_IM_CB"/>
         </item>
-        <item row="4" column="0">
+        <item row="5" column="0">
          <widget class="QLabel" name="RANDWIND_LB">
           <property name="text">
            <string>Random sowing window (days)</string>
           </property>
          </widget>
         </item>
-        <item row="4" column="1">
+        <item row="5" column="1">
          <widget class="QSpinBox" name="RANDWIND_SB">
           <property name="maximum">
            <number>365</number>

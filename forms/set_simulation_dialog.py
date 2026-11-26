@@ -119,7 +119,15 @@ class SetSimulationDialog(QMainWindow):
 
 		# simulation mode
 		self.MODE_CB.addItems(modeList)  # populate list of simulation mode
+
+		#%PS%: make scheduled irrigation mode unselectable
+		if self.MODE_CB.count() > 4:
+			scheduledItem = self.MODE_CB.model().item(4)
+			if scheduledItem is not None:
+				scheduledItem.setEnabled(False)
+
 		self.MODE_CB.currentIndexChanged.connect(self.enableIrrPeriod)
+		self.MODE_CB.currentIndexChanged.connect(self.updateModeInfo)
 		if simSettings['MODE'] in range(0, len(modeList)):
 			self.MODE_CB.setCurrentText(modeList[simSettings['MODE']])
 			self.MODE_CB.currentIndexChanged.emit(simSettings['MODE'])
@@ -365,6 +373,36 @@ class SetSimulationDialog(QMainWindow):
 
 		self.IRRSTART_TE.setEnabled(flag)
 		self.IRREND_TE.setEnabled(flag)
+
+	def updateModeInfo(self, index):
+		modeInfo = {
+			0: self.tr(
+				'&#8226; Irrigation will not be applied.<br>'
+				'&#8226; The following data are not required:<br>'
+				'&nbsp;&nbsp;&nbsp;&#8211; Irrigation method<br>'
+				'&nbsp;&nbsp;&nbsp;&#8211; Irrigation network (nodes, links, and units)'
+			),
+			1: self.tr(
+				'&#8226; Irrigation is triggered by soil dryness, but requires source availability.<br>'
+				'&#8226; Applied amount: the fixed amount defined by <b>Qadaq</b>, after subtracting losses '
+				'(see the irrigation method parameters <b>losses_a</b>, <b>losses_b</b>, and <b>losses_c</b>).<br>'
+				'&#8226; Water requirements at the source additionally account for the irrigation unit’s internal '
+				'distribution efficiency (<b>distr_eff</b>) and conveyance losses along network links (<b>inf_losses</b>).'
+			),
+			2: self.tr(
+				'&#8226; Irrigation is triggered by soil dryness; unlimited availability is assumed.<br>'
+				'&#8226; Applied amount: field capacity deficit divided by <b>irr_eff</b>.'
+			),
+			3: self.tr(
+				'&#8226; Irrigation is triggered by soil dryness; unlimited availability is assumed.<br>'
+				'&#8226; Applied amount: the fixed amount defined by <b>Qadaq</b>, after subtracting losses '
+				'(see the irrigation method parameters <b>losses_a</b>, <b>losses_b</b>, and <b>losses_c</b>).'
+			),
+			4: self.tr(
+				'&#8226; Irrigation is triggered on user-selected dates.<br>'
+			)
+		}
+		self.MODE_INFO_LB.setText(modeInfo.get(index, ''))
 
 	def enableOutTime(self,state):
 		flag = True

@@ -353,11 +353,11 @@ class IdrAgraTools():
         }
 
         self.SIMMODE = {
-                        '0':'Without irrigation',
-                        '1':'Consumptions',
-                        '2':'Field capacity needs satisfaction',
-                        '3':'Fixed volumes',
-                        '4':'Scheduled irrigation [NOT AVAILABLE]'
+                        '0':self.tr('0. No irrigation mode'),
+                        '1':self.tr('1. USE mode'),
+                        '2':self.tr('2. NEED mode - refill to field capacity'),
+                        '3':self.tr('3. NEED mode - fixed amounts'),
+                        '4':self.tr('4. Scheduled mode (currently unavailable)')
                         }
 
         self.SIMDIC = {'DBFILE':'',
